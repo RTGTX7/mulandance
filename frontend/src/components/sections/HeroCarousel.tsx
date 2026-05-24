@@ -6,48 +6,39 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-interface Slide {
-  title: string;
-  subtitle: string;
-  cta1: string;
-  cta2: string;
-  cta1Href: string;
-  cta2Href: string;
-  bgGradient: string;
-}
-
-const slides: Slide[] = [
-  {
-    title: 'Where Movement Becomes Art',
-    subtitle: 'Nurturing dancers from first steps to professional stages since 1985',
-    cta1: 'Explore Programs',
-    cta2: 'Watch Our Story',
-    cta1Href: '/programs/ballet',
-    cta2Href: '#',
-    bgGradient: 'from-primary/90 via-primary/70 to-primary/40',
-  },
-  {
-    title: '2025/2026 Season',
-    subtitle: 'Five productions, one unforgettable season. Get your tickets now.',
-    cta1: 'Get Tickets',
-    cta2: 'View Season',
-    cta1Href: '/performances/tickets',
-    cta2Href: '/performances/current-season',
-    bgGradient: 'from-secondary/90 via-secondary/70 to-accent/40',
-  },
-  {
-    title: 'Summer Camps 2026',
-    subtitle: 'Two weeks of dance, fun, and creativity for ages 5-17',
-    cta1: 'Register Now',
-    cta2: 'Learn More',
-    cta1Href: '/classes/register',
-    cta2Href: '/programs/summer-camps',
-    bgGradient: 'from-accent/90 via-accent/70 to-secondary/40',
-  },
-];
-
 export function HeroCarousel() {
   const t = useTranslations();
+
+  const slides = [
+    {
+      title: t('home.hero.slides.0.title'),
+      subtitle: t('home.hero.slides.0.subtitle'),
+      cta1: t('home.hero.slides.0.cta1'),
+      cta2: t('home.hero.slides.0.cta2'),
+      cta1Href: '/programs',
+      cta2Href: 'https://www.youtube.com/@mulandancestudio21',
+      bgGradient: 'from-primary/90 via-primary/70 to-primary/40',
+    },
+    {
+      title: t('home.hero.slides.1.title'),
+      subtitle: t('home.hero.slides.1.subtitle'),
+      cta1: t('home.hero.slides.1.cta1'),
+      cta2: t('home.hero.slides.1.cta2'),
+      cta1Href: '/performances/current-season',
+      cta2Href: 'https://www.youtube.com/@mulandancestudio21',
+      bgGradient: 'from-primary/95 via-primary/80 to-purple-900/60',
+    },
+    {
+      title: t('home.hero.slides.2.title'),
+      subtitle: t('home.hero.slides.2.subtitle'),
+      cta1: t('home.hero.slides.2.cta1'),
+      cta2: t('home.hero.slides.2.cta2'),
+      cta1Href: '/classes/register',
+      cta2Href: '/programs/summer-camps',
+      bgGradient: 'from-violet-800 via-purple-800 to-primary/80',
+    },
+  ];
+
   const [current, setCurrent] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -63,11 +54,11 @@ export function HeroCarousel() {
 
   const next = useCallback(() => {
     goTo((current + 1) % slides.length);
-  }, [current, goTo]);
+  }, [current, goTo, slides.length]);
 
   const prev = useCallback(() => {
     goTo((current - 1 + slides.length) % slides.length);
-  }, [current, goTo]);
+  }, [current, goTo, slides.length]);
 
   useEffect(() => {
     const timer = setInterval(next, 6000);
@@ -107,15 +98,17 @@ export function HeroCarousel() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href={slide.cta1Href}>
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 !px-8">
+              <Button 
+                size="lg" 
+                className="bg-white text-primary hover:bg-white/90 !px-8 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              >
                 {slide.cta1}
               </Button>
             </Link>
-            <Link href={slide.cta2Href}>
+            <Link href={slide.cta2Href} target={slide.cta2Href.startsWith('http') ? '_blank' : undefined}>
               <Button
                 size="lg"
-                variant="outline"
-                className="border-white/40 text-white hover:bg-white/10 !px-8"
+                className="bg-white/95 text-primary hover:bg-white !px-8 font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
                 <Play className="mr-2 h-4 w-4" />
                 {slide.cta2}

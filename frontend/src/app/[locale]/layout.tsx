@@ -20,8 +20,8 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   return {
-    title: locale === 'zh' ? '优雅舞蹈学院' : 'Grace Dance Academy',
-    description: 'Nurturing dancers from first steps to professional stages since 1985.',
+    title: locale === 'zh' ? '木兰舞蹈学校 — 舞动艺术' : 'Mulan Dance Studio — 舞动艺术',
+    description: locale === 'zh' ? '渥太华语舞蹈学校，提供中国舞、芭蕾、现代舞课程' : 'Ottawa Chinese Dance Studio — Chinese Dance, Ballet, Contemporary for all ages.',
     alternates: {
       canonical: `/${locale}`,
     },

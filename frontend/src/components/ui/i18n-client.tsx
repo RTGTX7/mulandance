@@ -3,7 +3,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 
 interface TranslationMessages {
-  [key: string]: string | TranslationMessages;
+  [key: string]: string | TranslationMessages | string[] | TranslationMessages[];
 }
 
 const MessagesContext = createContext<TranslationMessages>({});
@@ -51,8 +51,4 @@ export function useTranslations(namespace?: string) {
 
 export function useLocale() {
   return useContext(LocaleContext);
-}
-
-export function getMessages(): TranslationMessages {
-  return useContext(MessagesContext);
 }

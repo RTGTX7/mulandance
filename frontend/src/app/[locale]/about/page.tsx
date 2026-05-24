@@ -1,7 +1,7 @@
-import { useTranslations } from 'next-intl';
+'use client';
+
+import { useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -9,92 +9,77 @@ export default function AboutPage() {
   const t = useTranslations();
 
   return (
-    <div className="section-padding">
-      <div className="container container-narrow">
-        <Breadcrumbs items={[{ label: t('common.nav.about'), href: 'about' }]} />
-        <h1 className="heading-xl mb-6">{t('about.title')}</h1>
-        <p className="text-lead mb-12">{t('home.hero.subtitle')}</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Link href="/about/mission-values">
-            <Card className="card-hover h-full cursor-pointer">
-              <CardContent className="pt-6">
-                <h3 className="heading-sm mb-2">{t('about.mission.title')}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t('about.mission.mission')}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/about/history">
-            <Card className="card-hover h-full cursor-pointer">
-              <CardContent className="pt-6">
-                <h3 className="heading-sm mb-2">{t('about.history.title')}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t('about.history.founded')}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/about/leadership">
-            <Card className="card-hover h-full cursor-pointer">
-              <CardContent className="pt-6">
-                <h3 className="heading-sm mb-2">{t('about.leadership.title')}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t('about.leadership.artisticStaff')}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+    <div className="pt-16">
+      {/* Hero Section */}
+      <section className="relative h-[300px] bg-gradient-to-r from-primary to-purple-700 overflow-hidden">
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white relative z-10 px-4">
+            <Breadcrumbs
+              items={[
+                { label: t('common.nav.about'), href: '/about' },
+              ]}
+            />
+            <h1 className="heading-xl mb-4 text-white">{t('about.title')}</h1>
+            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+              {t('about.intro_intro')}
+            </p>
+          </div>
         </div>
+      </section>
 
-        <Accordion type="single" collapsible className="space-y-3">
-          <AccordionItem value="mission">
-            <AccordionTrigger>{t('about.mission.title')}</AccordionTrigger>
-            <AccordionContent>
-              <p className="mb-4">{t('about.mission.mission')}</p>
-              <Accordion type="single" collapsible className="space-y-2">
-                <AccordionItem value="excellence">
-                  <AccordionTrigger>{t('about.mission.values.excellence')}</AccordionTrigger>
-                  <AccordionContent>
-                    {t('about.mission.values.excellenceDesc')}
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="inclusivity">
-                  <AccordionTrigger>{t('about.mission.values.inclusivity')}</AccordionTrigger>
-                  <AccordionContent>
-                    {t('about.mission.values.inclusivityDesc')}
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="community">
-                  <AccordionTrigger>{t('about.mission.values.community')}</AccordionTrigger>
-                  <AccordionContent>
-                    {t('about.mission.values.communityDesc')}
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="innovation">
-                  <AccordionTrigger>{t('about.mission.values.innovation')}</AccordionTrigger>
-                  <AccordionContent>
-                    {t('about.mission.values.innovationDesc')}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="edi">
-            <AccordionTrigger>{t('about.edi.title')}</AccordionTrigger>
-            <AccordionContent>
-              {t('about.edi.statement')}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+      {/* Main Content */}
+      <section className="section-padding">
+        <div className="container">
+          {/* About Content */}
+          <div className="space-y-12 mb-12">
+            <section>
+              <h2 className="heading-lg mb-4">{t('about.philosophy.heading')}</h2>
+              <p className="text-lead mb-4">{t('about.philosophy.desc')}</p>
+            </section>
 
-        <div className="mt-12 text-center">
-          <Link href="/about/contact">
-            <Button size="lg">{t('about.contact.title')}</Button>
-          </Link>
+            <section>
+              <h2 className="heading-lg mb-4">{t('about.goals.title')}</h2>
+              <div className="space-y-2 text-body text-muted-foreground">
+                <p>• {t('about.goals.items.0')}</p>
+                <p>• {t('about.goals.items.1')}</p>
+                <p>• {t('about.goals.items.2')}</p>
+                <p>• {t('about.goals.items.3')}</p>
+                <p>• {t('about.goals.items.4')}</p>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="heading-lg mb-4">{t('about.vision.title')}</h2>
+              <div className="space-y-2 text-body text-muted-foreground">
+                <p>• {t('about.vision.items.0')}</p>
+                <p>• {t('about.vision.items.1')}</p>
+                <p>• {t('about.vision.items.2')}</p>
+                <p>• {t('about.vision.items.3')}</p>
+                <p>• {t('about.vision.items.4')}</p>
+              </div>
+            </section>
+          </div>
+
+          {/* Coming Soon Section */}
+          <div className="bg-accent/30 rounded-2xl p-12 text-center">
+            <h2 className="heading-lg mb-4">Coming Soon</h2>
+            <p className="text-lead text-muted-foreground mb-6">
+              More content is under development.
+            </p>
+            <p className="text-body text-muted-foreground">
+              {t('about.joinUs.subtitle')}
+            </p>
+          </div>
+
+          {/* CTA Section */}
+          <div className="mt-12 text-center">
+            <Link href="/about/contact">
+              <Button size="lg">{t('about.contact.title')}</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

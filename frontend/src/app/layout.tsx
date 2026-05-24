@@ -23,35 +23,38 @@ const fontAccent = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Grace Dance Academy — Where Movement Becomes Art',
-    template: '%s | Grace Dance Academy',
+    default: '木兰舞蹈学校 Mulan Dance Studio — 舞动艺术',
+    template: '%s | 木兰舞蹈学校 Mulan Dance Studio',
   },
   description:
-    'Nurturing dancers from first steps to professional stages since 1985. Offering ballet, contemporary, Chinese dance, jazz, and hip-hop programs for all ages.',
+    '渥太华语舞蹈学校，提供中国舞、芭蕾、现代舞、爵士舞、街舞课程。适合所有年龄段的舞者。Mulan Dance Studio in Ottawa — Chinese Dance, Ballet, Contemporary, Jazz, Hip-Hop for all ages.',
   keywords: [
-    'dance academy',
+    '木兰舞蹈',
+    'Mulan Dance',
+    '渥太华舞蹈',
+    'Ottawa dance',
+    'Chinese dance',
     'ballet',
     'contemporary dance',
-    'Chinese dance',
     'jazz dance',
     'hip-hop',
-    'dance classes',
+    '舞蹈学校',
     'dance school',
-    'RAD examinations',
+    '华语舞蹈',
   ],
-  authors: [{ name: 'Grace Dance Academy' }],
+  authors: [{ name: '木兰舞蹈学校 Mulan Dance Studio' }],
   openGraph: {
     type: 'website',
-    locale: 'en_US',
-    siteName: 'Grace Dance Academy',
-    title: 'Grace Dance Academy — Where Movement Becomes Art',
+    locale: 'zh_CN',
+    siteName: '木兰舞蹈学校 Mulan Dance Studio',
+    title: '木兰舞蹈学校 Mulan Dance Studio — 舞动艺术',
     description:
-      'Nurturing dancers from first steps to professional stages since 1985.',
+      '渥太华语舞蹈学校，传承中国文化，培养舞者从第一步到舞台。',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Grace Dance Academy',
-    description: 'Where Movement Becomes Art',
+    title: '木兰舞蹈学校 Mulan Dance Studio',
+    description: '舞动艺术',
   },
 };
 

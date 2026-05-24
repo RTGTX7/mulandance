@@ -12,40 +12,33 @@ interface Article {
   summary: string;
   date: string;
   category: string;
-  image: string;
   href: string;
 }
 
 const articles: Article[] = [
   {
     id: '1',
-    title: 'Spring Showcase 2026 Announced',
-    summary:
-      'Join us for our annual student performance featuring over 200 dancers across all programs.',
-    date: '2026-04-15',
-    category: 'Events',
-    image: '/images/news/spring-showcase.jpg',
-    href: '/media/news/spring-showcase-2026',
+    title: '2026 Summer Camp Registration Now Open',
+    summary: 'Early bird pricing available for our 2026 summer dance camps. Classes available for ages 5-17 in ballet, Chinese dance, contemporary, jazz, and hip-hop. Register before June 30.',
+    date: '2026-05-15',
+    category: 'Programs',
+    href: '/programs/summer-camps',
   },
   {
     id: '2',
-    title: 'New RAD Examination Centre',
-    summary:
-      'Grace Dance Academy is now an approved RAD examination centre for the 2026-2027 session.',
-    date: '2026-04-01',
-    category: 'Announcements',
-    image: '/images/news/rad-centre.jpg',
-    href: '/media/news/rad-examination-centre',
+    title: 'Annual Showcase 2026 Date Announced',
+    summary: 'Mark your calendars! Our annual student showcase will be held in June 2026 at the Grand Hotel Ottawa. All students are invited to participate.',
+    date: '2026-05-01',
+    category: 'Events',
+    href: '/performances/current-season',
   },
   {
     id: '3',
-    title: 'Summer Camp Registration Open',
-    summary:
-      'Early bird pricing available for our 2026 summer dance camps. Register before May 31.',
-    date: '2026-03-20',
-    category: 'Programs',
-    image: '/images/news/summer-camp.jpg',
-    href: '/media/news/summer-camp-2026',
+    title: 'New Students Welcome - All Ages, All Levels',
+    summary: 'Whether you are a complete beginner or have dance experience, Mulan Dance Studio has a program for you. Come join our warm dance family today!',
+    date: '2026-04-20',
+    category: 'Studio',
+    href: '/about/contact',
   },
 ];
 
@@ -60,7 +53,7 @@ export function NewsGrid() {
             <h2 className="heading-lg mb-2">{t('home.news.title')}</h2>
             <p className="text-lead">{t('home.news.subtitle')}</p>
           </div>
-          <Link href="/media/news">
+          <Link href="/about/contact">
             <span className="text-sm font-medium text-secondary hover:underline">
               {t('home.news.viewAll')} &rarr;
             </span>
@@ -71,7 +64,7 @@ export function NewsGrid() {
           {articles.map((article) => (
             <Link key={article.id} href={article.href}>
               <Card className="card-hover h-full group cursor-pointer flex flex-col">
-                <div className="h-44 bg-muted rounded-t-lg overflow-hidden" />
+                <div className="h-44 bg-gradient-to-br from-primary/10 to-purple-400/5 rounded-t-lg overflow-hidden" />
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-semibold text-secondary uppercase tracking-wide">
@@ -88,7 +81,7 @@ export function NewsGrid() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground line-clamp-3">
-                    {truncate(article.summary, 140)}
+                    {article.summary}
                   </p>
                 </CardContent>
               </Card>

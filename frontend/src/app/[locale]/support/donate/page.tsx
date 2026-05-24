@@ -1,7 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button');
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const tiers = [

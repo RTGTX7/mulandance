@@ -1,31 +1,21 @@
 {
   "common": {
-    "appName": "Grace Dance Academy",
+    "appName": "Mulan Dance Studio",
     "nav": {
+      "home": "Home",
       "about": "About",
       "programs": "Programs",
       "performances": "Performances",
-      "events": "Events",
       "classes": "Classes",
-      "media": "Media",
-      "support": "Support",
-      "alumni": "Alumni",
-      "resources": "Resources",
-      "portal": "Portal",
       "contact": "Contact"
     },
     "buttons": {
       "learnMore": "Learn More",
       "register": "Register Now",
-      "donate": "Donate",
       "subscribe": "Subscribe",
       "viewAll": "View All",
-      "apply": "Apply",
-      "download": "Download",
       "submit": "Submit",
-      "cancel": "Cancel",
       "back": "Back",
-      "next": "Next",
       "close": "Close",
       "openMenu": "Open Menu",
       "closeMenu": "Close Menu"
@@ -35,11 +25,10 @@
       "programs": "Programs",
       "performances": "Performances",
       "events": "Events",
-      "support": "Support",
       "contact": "Contact Us",
-      "address": "123 Dance Avenue, Arts District",
-      "phone": "+1 (555) 123-4567",
-      "email": "info@gracedanceacademy.org",
+      "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
+      "phone": "343-777-1766",
+      "email": "info@mulandance.com",
       "followUs": "Follow Us",
       "newsletter": "Newsletter",
       "newsletterPlaceholder": "Enter your email",
@@ -52,9 +41,7 @@
     },
     "hero": {
       "tagline": "Where Movement Becomes Art",
-      "subtitle": "Nurturing dancers from first steps to professional stages since 1985",
-      "cta1": "Explore Programs",
-      "cta2": "Watch Reel"
+      "subtitle": "学中乐、学中思、学中悟 — Ottawa Chinese Dance Studio for All Ages"
     },
     "sections": {
       "ourPrograms": "Our Programs",
@@ -66,13 +53,9 @@
     },
     "features": {
       "worldClassFaculty": "World-Class Faculty",
-      "facultyDesc": "Learn from professional dancers with international experience",
       "allLevels": "All Levels Welcome",
-      "levelsDesc": "From beginners to pre-professional training",
       "performanceOpportunities": "Performance Opportunities",
-      "performanceDesc": "Regular showcases and stage productions",
-      "examPreparation": "Exam Preparation",
-      "examDesc": "RAD and graded examination preparation available"
+      "examPreparation": "Exam Preparation"
     },
     "accessibility": {
       "skipToContent": "Skip to main content",
@@ -95,116 +78,190 @@
   },
   "home": {
     "hero": {
-      "title": "Where Movement Becomes Art",
-      "subtitle": "Nurturing dancers from first steps to professional stages since 1985",
-      "cta1": "Explore Programs",
-      "cta2": "Watch Our Story"
+      "slides": [
+        {
+          "title": "Where Movement Becomes Art",
+          "subtitle": "学中乐、学中思、学中悟 — Mulan Dance Studio in Ottawa",
+          "cta1": "Explore Programs",
+          "cta2": "Watch Our Story"
+        },
+        {
+          "title": "2025/2026 Season",
+          "subtitle": "Annual Student Showcase + Xiaohe Fengchi Children's Dance Competition",
+          "cta1": "Learn About Performances",
+          "cta2": "Watch on YouTube"
+        },
+        {
+          "title": "Summer Camps 2026",
+          "subtitle": "Dance summer camp for ages 5-17, one-week immersive experience",
+          "cta1": "Register Now",
+          "cta2": "Learn More"
+        }
+      ]
     },
     "programs": {
       "title": "Our Programs",
-      "subtitle": "Comprehensive dance training for every age and level",
+      "subtitle": "Comprehensive dance training for every age and level in Ottawa",
+      "chinese": "Classical Chinese Dance",
+      "chineseDesc": "Heritage of Chinese culture and tradition, inherited from China's intangible cultural heritage",
+      "folk": "Chinese Folk Dance",
+      "folkDesc": "Rich ethnic dance styles from across China's diverse regions",
       "ballet": "Ballet",
-      "balletDesc": "Classical technique from early years to pre-professional",
+      "balletDesc": "Solid foundation with systematic training — the basis for all dance disciplines",
       "contemporary": "Contemporary",
-      "contemporaryDesc": "Modern movement and improvisation",
-      "chinese": "Chinese Dance",
-      "chineseDesc": "Traditional and folk dance heritage",
+      "contemporaryDesc": "Creative Chinese-style modern dance that encourages deep thinking",
       "jazz": "Jazz",
-      "jazzDesc": "Commercial and theatrical jazz technique",
+      "jazzDesc": "Fashionable commercial and performance jazz with Chinese style",
       "hiphop": "Hip-Hop",
-      "hiphopDesc": "Urban dance styles and choreography",
-      "summer": "Summer Camps",
-      "summerDesc": "Intensive programs during school holidays"
-    },
-    "events": {
-      "title": "Upcoming Events",
-      "subtitle": "Join us for performances, workshops, and community events",
-      "viewAll": "View All Events"
-    },
-    "testimonials": {
-      "title": "What Our Students Say",
-      "subtitle": "Hear from our dance community",
-      "viewAll": "Read More Stories"
-    },
-    "news": {
-      "title": "Latest News",
-      "subtitle": "Updates from the academy",
-      "viewAll": "View All News"
+      "hiphopDesc": "Trendy street dance training with our popular instructor Teacher Yezi"
     },
     "stats": {
       "students": "Students",
       "years": "Years of Excellence",
       "performances": "Annual Performances",
-      "faculty": "Professional Faculty"
+      "teachers": "Professional Teachers"
+    },
+    "events": {
+      "title": "Season Performances",
+      "subtitle": "Join us for student showcases, competitions, and special events",
+      "viewAll": "Learn About All Events"
+    },
+    "testimonials": {
+      "title": "What Our Students Say",
+      "subtitle": "Hear from our dance community",
+      "viewAll": "Read More Stories",
+      "tangtang": "Tangtang (糖糖)",
+      "tangtangQuote": "I love music, and dance helps me feel and express music better, making me more confident. In Teacher Bao's class, she always encourages me to overcome challenges and master the basics of dance.",
+      "tangtangAff": "Mulan Student, Ages 5-8",
+      "tangtang2": "Tangtang (糖糖)",
+      "tangtang2Quote": "I love food, music, dance, art, and reading. Teacher Bao's classes inspire me to keep going, and I often sing along while practicing the moves she taught us.",
+      "tangtang2Aff": "Young Dancer, Mulan Dance Studio",
+      "gege": "Gege (格格)",
+      "gegeQuote": "I love dance, I love Mulan, and I love Teacher Bao even more. Following Teacher Bao for many years, I love how ballet forms the foundation for all dance styles, and especially the Chinese-style contemporary and jazz that deepen my understanding of dance as an art.",
+      "gegeAff": "Long-time Student, Mulan Dance Studio",
+      "gege2": "Gege (格格)",
+      "gege2Quote": "加油我的小妹妹们，你们一定也会爱上舞蹈，爱上Mulan，爱上鲍老师的。",
+      "gege2Aff": "Mulan Dance Studio Student"
+    },
+    "news": {
+      "title": "Latest News",
+      "subtitle": "Updates from Mulan Dance Studio",
+      "viewAll": "View All News"
+    },
+    "cta": {
+      "title": "Join the Mulan Dance Family",
+      "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
+      "register": "Register Now",
+      "contact": "Contact Us"
     }
   },
   "about": {
     "title": "About Us",
-    "mission": {
-      "title": "Our Mission & Values",
-      "mission": "To inspire and empower individuals through the art of dance, fostering creativity, discipline, and community.",
-      "values": {
-        "excellence": "Excellence",
-        "excellenceDesc": "We uphold the highest standards in dance education and artistic expression.",
-        "inclusivity": "Inclusivity",
-        "inclusivityDesc": "Dance is for everyone. We welcome students of all backgrounds and abilities.",
-        "community": "Community",
-        "communityDesc": "We build lasting connections through shared artistic experiences.",
-        "innovation": "Innovation",
-        "innovationDesc": "We embrace new approaches while honoring dance traditions."
-      }
+    "intro_intro": "Mulan Dance Studio was founded by Teacher Bao Junwei in 2021 in Ottawa, Canada, specializing in early childhood dance education and professional youth training.",
+    "intro_created": "Founded in 2021 by Teacher Bao Junwei in Ottawa, Canada.",
+    "intro_experience": "Drawing on Teacher Bao's many years of experience in children's dance education and leading students to compete at the highest national dance competitions, we've developed a unique teaching model and philosophy.",
+    "philosophy": {
+      "title": "Teaching Philosophy",
+      "heading": "Learn Through Joy, Learn Through Thinking, Learn Through Understanding",
+      "desc": "Under this teaching philosophy, students not only learn solid dance fundamentals, but also experience the joy that dance brings. Through dance as an art form, students can discover and feel the charm of China's 5,000 years of culture, freely exploring the world of dance art."
+    },
+    "goals": {
+      "title": "Our Goals",
+      "items": [
+        "Cultivate students' comprehensive dance literacy",
+        "Understand various dance styles and performance modes",
+        "Experience the perfect fusion of art and body through systematic teaching",
+        "Inspire students' interest and confidence in learning",
+        "Develop teamwork spirit and stage presence"
+      ]
     },
     "history": {
       "title": "Our History",
-      "founded": "Founded in 1985",
-      "story": "Grace Dance Academy began as a small studio with a big dream. Our founder, Principal Dancer Li Wei, envisioned a space where dancers of all ages could discover the transformative power of movement. From those humble beginnings, we have grown into one of the region's most respected dance institutions, training over 2,000 students annually across all dance disciplines.",
-      "expansion": "Expanded to a second studio location to accommodate growing demand.",
-      "newStudio": "Opened our state-of-the-art main studio in the Arts District.",
-      "recognition": "Received the Regional Arts Excellence Award for outstanding contribution to dance education.",
-      "expansion2": "Launched adult education programs and community outreach initiatives.",
-      "present": "Celebrated 39 years of dance education with a record enrollment of 2,200+ students."
+      "founded": "Founded in 2021 by Teacher Bao Junwei"
     },
     "leadership": {
-      "title": "Leadership",
-      "board": "Board of Directors",
-      "artisticStaff": "Artistic Staff",
-      "faculty": "Faculty",
-      "founder": "Li Wei",
-      "founderDesc": "Founder and Artistic Director. Former principal dancer with the National Ballet, Li founded Grace Dance Academy in 1985 with a vision to make world-class dance education accessible to all.",
-      "artisticDir": "Sarah Chen",
-      "artisticDirRole": "Artistic Director",
-      "artisticDirDesc": "Oversees all artistic programming and curriculum development. Former soloist with the Contemporary Dance Company with 20 years of teaching experience.",
-      "opsDir": "Marcus Williams",
-      "opsDirRole": "Operations Director",
-      "opsDirDesc": "Manages daily operations, facilities, and administrative functions. Brings 15 years of arts management experience.",
-      "eduDir": "Dr. Yuki Tanaka",
-      "eduDirRole": "Education Director",
-      "eduDirDesc": "Leads curriculum design and teacher training. Holds a PhD in Dance Education and specializes in inclusive dance pedagogy."
+      "title": "Our Faculty",
+      "founder": "Teacher Bao Junwei",
+      "founderRole": "Founder & Principal Instructor",
+      "founderDesc": "Founder of Mulan Dance Studio with many years of children's dance education experience. Specializes in Classical Chinese Dance, Chinese Folk Dance, Ballet, and Contemporary. Creator of the \"Learn Through Joy, Think, and Understand\" teaching philosophy. Known for inspiring students to overcome challenges and build confidence while integrating traditional Chinese culture into dance teaching.",
+      "kayley": "Kayley",
+      "kayleyRole": "Choreography / Jazz / K-Pop / Hip-Hop Instructor",
+      "kayleyDesc": "One of Ottawa's most dynamic dance instructors with extensive competition and performance experience.",
+      "kayleyAchievements": [
+        "2022 Shandong Children's Spring Gala Outstanding Choreography Director",
+        "China-Korea Street Dance Exchange Competition Third Prize",
+        "Invited Guest at China Dance Festival",
+        "Invited Guest at Beijing Yukou Cultural Festival",
+        "Invited Guest at Tangshan May Fourth Youth Day",
+        "Top 8 at 'Keep the Love' Freestyle Competition",
+        "Top 8 at Qingdao Battle of the Wings 2v2 Freestyle",
+        "Runner-up at Weifang Dance Out Miracles Group Competition",
+        "Personal resume included in China Youth Talent Database",
+        "Studied at Dance邦, HelloDance, Old Dog and other renowned dance studios",
+        "Collaborated with artists: Zhuo Hai Tun, Wang OK, Li Tianze, Li Peiling, Park Jae-jung, Zhou Shen, Zhang Yuzi Stage 2023 Finals"
+      ],
+      "hailey": "Hailey Smith",
+      "haileyRole": "Ballet / Jazz / Acro Instructor",
+      "haileyDesc": "Hailey Smith holds a Bachelor's degree in Cognitive Science with a concentration in Neuroscience and a minor in Linguistics. She brings strong technical foundation and competitive experience to her teaching.",
+      "haileyAchievements": [
+        "Top 24 at Youth America Grand Prix",
+        "Highest-scoring acro audition at Candance 2024",
+        "Top 5 overall with jazz solo 2024",
+        "Strong styles: Ballet, Jazz, and Acro",
+        "Acro is a particular passion with extensive teaching experience"
+      ]
     },
-    "edi": {
-      "title": "Equity, Diversity & Inclusion",
-      "statement": "We are committed to creating an environment where every dancer feels valued, respected, and empowered to reach their full potential."
-    },
-    "careers": {
-      "title": "Careers",
-      "subtitle": "Join our team",
-      "openPositions": "Open Positions",
-      "apply": "Apply Now"
-    },
-    "annualReports": {
-      "title": "Annual Reports",
-      "subtitle": "Transparency and accountability in our community"
+    "vision": {
+      "title": "Our Vision",
+      "items": [
+        "Become a benchmark in Chinese-language dance education in Ottawa",
+        "Help Chinese-speaking children overseas receive systematic professional dance education",
+        "Pass on and promote Chinese traditional culture through dance art",
+        "Cultivate more excellent young dancers",
+        "Create a warm and caring dance learning community"
+      ]
     },
     "contact": {
       "title": "Contact Us",
       "form": {
         "name": "Your Name",
+        "namePlaceholder": "Your full name",
         "email": "Email Address",
+        "emailPlaceholder": "your@email.com",
         "subject": "Subject",
         "message": "Message",
+        "messagePlaceholder": "What would you like to know?",
         "submit": "Send Message",
         "success": "Thank you for your message. We will respond within 2 business days."
       }
+    },
+    "joinUs": {
+      "title": "Join Our Family",
+      "subtitle": "Whether you are a complete beginner or already have dance experience, Mulan Dance Studio has a program and stage for you."
+    }
+  },
+  "performance": {
+    "title": "Performances",
+    "currentSeason": "Current Season",
+    "seasonSubtle": "Annual Student Showcase + Xiaohe Fengchi Competition",
+    "seasonDesc": "Mulan Dance Studio holds annual student showcases where every student has the opportunity to shine on their own stage, plus participation in the highest-level children's dance competition in China.",
+    "showcase": {
+      "title": "Annual Student Showcase",
+      "desc": "Held every mid-year or end of year, every student has the chance to showcase their talent on the dedicated stage. Students learn from each other, inspiring interest in dance. Outstanding students receive the title of \"Little Dance King\" at Mulan Dance Studio.",
+      "date": "June / December",
+      "venue": "Grand Theatre, Ottawa"
+    },
+    "xiaohe": {
+      "title": "Xiaohe Fengchi Children's Dance Competition",
+      "desc": "The highest-level children's dance competition in China. Mulan Dance Studio students have achieved outstanding results, providing our students with a high-level competitive and exhibition stage.",
+      "date": "Varies",
+      "venue": "Various locations in China"
+    },
+    "summer": {
+      "title": "Summer Camp Demo Performance",
+      "desc": "Summer camp graduation showcase, presenting what students have accomplished after a week of intensive training.",
+      "date": "August",
+      "venue": "Mulan Dance Studio"
     }
   },
   "programs": {
@@ -213,67 +270,67 @@
     "levels": {
       "children": "Children (Ages 3-12)",
       "teens": "Teens (Ages 13-17)",
-      "adults": "Adults (Ages 18+)",
-      "preProfessional": "Pre-Professional"
+      "parents": "Parents (Ages 18+)",
+      "summer": "Summer Camps (Ages 5-17)"
     },
     "ballet": {
       "title": "Ballet",
-      "description": "Our ballet program follows the Royal Academy of Dance syllabus, providing a structured pathway from early years to pre-professional training.",
+      "description": "Our ballet program provides a solid foundation with systematic training, using ballet as the basis for all other dance disciplines.",
       "features": {
-        "radSyllabus": "RAD Syllabus-Based",
-        "exams": "Examination Preparation",
+        "radSyllabus": "Solid Ballet Fundamentals",
+        "exams": "Systematic Training",
         "performances": "Annual Showcase",
-        "crossTraining": "Cross-Training Included"
+        "crossTraining": "Foundation for All Dance Styles"
       }
     },
     "contemporary": {
       "title": "Contemporary",
-      "description": "Explore modern movement, improvisation, and choreographic techniques in our contemporary dance program.",
+      "description": "Creative Chinese-style modern dance that encourages deep thinking, integrating traditional Chinese cultural elements into contemporary movement.",
       "features": {
         "technique": "Modern Technique",
-        "improvisation": "Improvisation",
+        "improvisation": "Chinese Style Creativity",
         "choreography": "Choreographic Lab",
         "performances": "Season Performances"
       }
     },
     "chinese": {
-      "title": "Chinese Dance",
-      "description": "Preserve and celebrate Chinese dance heritage through traditional and folk dance training.",
+      "title": "Classical Chinese Dance",
+      "description": "Classical Chinese dance rich in Chinese cultural heritage, inheriting and passing on traditional Chinese dance art through systematic training.",
       "features": {
         "classical": "Classical Chinese Dance",
         "folk": "Ethnic Folk Dance",
-        "acrobatics": "Dance Acrobatics",
+        "acrobatics": "Dance Acrobatics (flexibility)",
         "cultural": "Cultural Context"
       }
     },
     "jazz": {
       "title": "Jazz",
-      "description": "Our jazz program combines technical precision with dynamic energy, covering styles from Broadway to commercial jazz.",
+      "description": "Fashionable commercial and performance jazz with a distinctive Chinese style, helping students understand the art of dance through a blend of Western and Eastern influences.",
       "features": {
         "broadway": "Broadway Jazz",
         "commercial": "Commercial Jazz",
-        "lyrical": "Lyrical Jazz",
+        "lyrical": "Chinese-Style Jazz",
         "performances": "Performance Opportunities"
       }
     },
     "hiphop": {
       "title": "Hip-Hop",
-      "description": "Our hip-hop program brings energy, creativity, and street culture into the studio, teaching everything from foundational moves to complex choreography.",
+      "description": "Trendy street dance training class led by our popular instructor Teacher Yezi, one of Ottawa's most beloved dance teachers. Learn everything from foundational moves to complex choreography.",
       "features": {
         "fundamentals": "Fundamentals",
         "choreography": "Choreography",
         "freestyle": "Freestyle & Improv",
-        "styles": "Styles Covered"
+        "styles": "Various Styles Covered"
       }
     },
     "summer": {
-      "title": "Summer Camps",
-      "description": "Intensive dance programs during school holidays for all ages and levels.",
+      "title": "Summer Camp",
+      "description": "Intensive dance programs during school holidays for ages 5-17. A one-week immersive dance experience covering ballet, Chinese dance, contemporary, jazz, and more.",
       "features": {
         "youngDancers": "Young Dancers Camp",
         "intermediate": "Intermediate Camp",
-        "intensive": "Pre-Professional Intensive",
-        "adult": "Adult Immersion"
+        "intensive": "Dance Intensive",
+        "adult": "Family Activities"
       }
     },
     "pricing": {
@@ -309,33 +366,22 @@
     "subscribe": "Subscribe",
     "season": {
       "title": "2025/2026 Season",
-      "subtitle": "Five productions, one unforgettable season",
+      "subtitle": "Student showcases and special events",
       "tickets": "Get Tickets",
       "productions": {
-        "swanLake": "Swan Lake",
-        "swanLakeDesc": "Tchaikovsky's timeless masterpiece in full costume",
-        "midsummer": "A Midsummer Night's Dream",
-        "midsummerDesc": "Fantasy and comedy through dance",
-        "contemporary": "Contemporary Visions",
-        "contemporaryDesc": "New works by emerging choreographers",
-        "nutcracker": "The Nutcracker",
-        "nutcrackerDesc": "Our beloved annual holiday tradition",
-        "galas": "Spring Showcase",
-        "galasDesc": "Student performances across all programs"
+        "showcase": {
+          "title": "Annual Student Showcase",
+          "desc": "Every student has the opportunity to showcase their talent on the dedicated stage"
+        },
+        "xiaohe": {
+          "title": "Xiaohe Fengchi Dance Competition",
+          "desc": "The highest-level children's dance competition in China"
+        },
+        "summer": {
+          "title": "Summer Camp Demo",
+          "desc": "Summer camp graduation showcase and progress report"
+        }
       }
-    }
-  },
-  "events": {
-    "title": "Events",
-    "calendar": "Event Calendar",
-    "gala": "Annual Gala",
-    "workshops": "Workshops",
-    "type": {
-      "performance": "Performance",
-      "workshop": "Workshop",
-      "gala": "Gala",
-      "openHouse": "Open House",
-      "community": "Community Event"
     }
   },
   "classes": {
@@ -354,84 +400,42 @@
       "capacity": "Capacity"
     }
   },
-  "media": {
-    "title": "Media",
-    "news": "News",
-    "gallery": "Photo Gallery",
-    "videoGallery": "Video Gallery",
-    "press": "Press & Media Kit",
-    "testimonials": "Testimonials",
-    "newsletter": "Newsletter",
-    "search": {
-      "placeholder": "Search news, events, programs...",
-      "results": "Search Results",
-      "noResults": "No results found",
-      "clear": "Clear filters"
-    }
-  },
-  "support": {
-    "title": "Support Us",
-    "donate": "Donate",
-    "membership": "Membership",
-    "sponsorship": "Sponsorship",
-    "legacy": "Legacy Giving",
-    "volunteer": "Volunteer",
-    "partners": "Our Partners",
-    "tiers": {
-      "supporter": "Supporter",
-      "supporterDesc": "Annual donation from $50",
-      "patron": "Patron",
-      "patronDesc": "Annual donation from $250",
-      "benefactor": "Benefactor",
-      "benefactorDesc": "Annual donation from $1,000",
-      "visionary": "Visionary",
-      "visionaryDesc": "Annual donation from $5,000"
-    },
-    "donateForm": {
-      "amount": "Donation Amount",
-      "frequency": "Frequency",
-      "oneTime": "One-Time",
-      "monthly": "Monthly",
-      "custom": "Custom Amount",
-      "dedicate": "Dedicate This Gift",
-      "submit": "Donate Now",
-      "secure": "Secure payment via Stripe"
-    }
-  },
-  "alumni": {
-    "title": "Alumni",
-    "directory": "Alumni Directory",
-    "events": "Alumni Events",
-    "awards": "Alumni Awards",
-    "story": "Share Your Story",
-    "join": "Join the Alumni Network",
-    "update": "Update Your Information"
-  },
   "portal": {
     "title": "Student Portal",
     "login": "Login",
     "register": "Register",
     "dashboard": "Dashboard",
-    "schedule": "My Schedule",
-    "payments": "Payments",
-    "records": "Records",
-    "messages": "Messages",
-    "logout": "Logout",
     "email": "Email",
-    "password": "Password",
-    "forgotPassword": "Forgot Password?",
-    "noAccount": "Don't have an account?",
-    "haveAccount": "Already have an account?",
-    "welcome": "Welcome back",
-    "upcomingClasses": "Upcoming Classes",
-    "paymentHistory": "Payment History",
-    "announcements": "Announcements"
+    "password": "Password"
   },
-  "resources": {
-    "title": "Resources",
-    "educators": "For Educators",
-    "students": "For Students",
-    "families": "For Families",
-    "research": "Research"
+  "footer": {
+    "quickLinks": "Quick Links",
+    "programs": "Programs",
+    "performances": "Performances",
+    "events": "Events",
+    "contact": "Contact Us",
+    "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
+    "phone": "343-777-1766",
+    "email": "info@mulandance.com",
+    "followUs": "Follow Us"
+  },
+  "error": {
+    "title": "Page Not Found",
+    "description": "Oops! The page you're looking for doesn't exist or has been moved.",
+    "returnHome": "Return Home",
+    "explorePrograms": "Explore Programs",
+    "helpTitle": "How to Find What You're Looking For",
+    "checkUrl": {
+      "label": "Check the URL",
+      "desc": "Make sure you've typed the address correctly"
+    },
+    "useSearch": {
+      "label": "Use Search",
+      "desc": "Try searching for the content you need"
+    },
+    "contactUs": {
+      "label": "Contact Us",
+      "desc": "Reach out and we'll help you find your way"
+    }
   }
 }

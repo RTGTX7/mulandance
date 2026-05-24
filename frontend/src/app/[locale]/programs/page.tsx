@@ -1,45 +1,73 @@
-import { useTranslations } from 'next-intl';
+'use client';
+
+import { useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { BookOpen, Footprints, Sparkles, Music, Zap, Globe } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
-const programs = [
+const programData = [
   {
-    titleKey: 'home.programs.ballet',
-    descKey: 'home.programs.balletDesc',
-    href: '/programs/ballet',
-    icon: '🩰',
+    id: 'chinese',
+    key: 'chinese',
+    icon: BookOpen,
+    href: '/programs#chinese',
+    color: 'from-red-500 to-pink-500',
+    title: 'home.programs.chinese',
+    desc: 'home.programs.chineseDesc',
+    description: 'programs.chinese.description',
   },
   {
-    titleKey: 'home.programs.contemporary',
-    descKey: 'home.programs.contemporaryDesc',
-    href: '/programs/contemporary',
-    icon: '🌊',
+    id: 'folk',
+    key: 'folk',
+    icon: Globe,
+    href: '/programs#folk',
+    color: 'from-emerald-500 to-teal-500',
+    title: 'home.programs.folk',
+    desc: 'home.programs.folkDesc',
+    description: 'programs.folkDesc',
   },
   {
-    titleKey: 'home.programs.chinese',
-    descKey: 'home.programs.chineseDesc',
-    href: '/programs/chinese-dance',
-    icon: '🏮',
+    id: 'ballet',
+    key: 'ballet',
+    icon: Footprints,
+    href: '/programs#ballet',
+    color: 'from-purple-500 to-violet-500',
+    title: 'home.programs.ballet',
+    desc: 'home.programs.balletDesc',
+    description: 'programs.ballet.description',
   },
   {
-    titleKey: 'home.programs.jazz',
-    descKey: 'home.programs.jazzDesc',
-    href: '/programs/jazz',
-    icon: '🎷',
+    id: 'contemporary',
+    key: 'contemporary',
+    icon: Sparkles,
+    href: '/programs#contemporary',
+    color: 'from-blue-500 to-cyan-500',
+    title: 'home.programs.contemporary',
+    desc: 'home.programs.contemporaryDesc',
+    description: 'programs.contemporary.description',
   },
   {
-    titleKey: 'home.programs.hiphop',
-    descKey: 'home.programs.hiphopDesc',
-    href: '/programs/hip-hop',
-    icon: '🎤',
+    id: 'jazz',
+    key: 'jazz',
+    icon: Music,
+    href: '/programs#jazz',
+    color: 'from-amber-500 to-orange-500',
+    title: 'home.programs.jazz',
+    desc: 'home.programs.jazzDesc',
+    description: 'programs.jazz.description',
   },
   {
-    titleKey: 'home.programs.summer',
-    descKey: 'home.programs.summerDesc',
-    href: '/programs/summer-camps',
-    icon: '☀️',
+    id: 'hiphop',
+    key: 'hiphop',
+    icon: Zap,
+    href: '/programs#hiphop',
+    color: 'from-green-500 to-emerald-500',
+    title: 'home.programs.hiphop',
+    desc: 'home.programs.hiphopDesc',
+    description: 'programs.hiphop.description',
   },
 ];
 
@@ -47,44 +75,207 @@ export default function ProgramsPage() {
   const t = useTranslations();
 
   return (
-    <div className="section-padding">
-      <div className="container container-narrow">
-        <Breadcrumbs items={[{ label: t('common.nav.programs'), href: 'programs' }]} />
-        <h1 className="heading-xl mb-4">{t('programs.title')}</h1>
-        <p className="text-lead mb-12">{t('programs.subtitle')}</p>
+    <div className="pt-16">
+      {/* Hero Section */}
+      <section className="relative h-[300px] bg-gradient-to-r from-primary to-purple-700 overflow-hidden">
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white relative z-10 px-4">
+            <Breadcrumbs
+              items={[
+                { label: t('common.nav.programs'), href: '/programs' },
+              ]}
+            />
+            <h1 className="heading-xl mb-4 text-white">{t('home.programs.title')}</h1>
+            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+              {t('home.programs.subtitle')}
+            </p>
+          </div>
+        </div>
+      </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {programs.map((prog) => (
-            <Link key={prog.href} href={prog.href}>
-              <Card className="card-hover h-full cursor-pointer">
-                <CardContent className="pt-6">
-                  <span className="text-4xl mb-4 block">{prog.icon}</span>
-                  <h3 className="heading-sm mb-2">{t(prog.titleKey)}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {t(prog.descKey)}
-                  </p>
-                  <Button variant="outline" size="sm">
-                    {t('common.buttons.learnMore')}
-                  </Button>
-                </CardContent>
-              </Card>
+      {/* Program Cards Section */}
+      <section className="section-padding bg-background">
+        <div className="container">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {programData.map((prog) => {
+              const Icon = prog.icon;
+              return (
+                <Link key={prog.id} href={`/${prog.id === 'chinese' || prog.id === 'folk' ? 'programs/chinese-dance' : prog.id === 'hiphop' ? 'programs/hip-hop' : `programs/${prog.id}`}`}>
+                  <Card className="card-hover h-full group cursor-pointer border-0 shadow-soft">
+                    <CardHeader className="pb-4">
+                      <div className={`mb-4 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${prog.color} text-white group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg`}>
+                        <Icon className="h-7 w-7" />
+                      </div>
+                      <CardTitle className="heading-sm text-foreground">{t(prog.title)}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-5 leading-relaxed">{t(prog.desc)}</p>
+                      <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:text-secondary transition-colors">
+                        {t('common.buttons.learnMore')}
+                        <span className="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Detailed Programs Section */}
+      <section className="section-padding bg-accent/20">
+        <div className="container space-y-20">
+          {/* Chinese Dance */}
+          <div id="chinese" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 text-white mb-6">
+                  <BookOpen className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('home.programs.chinese')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('home.programs.chineseDesc')}
+                </p>
+                <p className="text-body text-muted-foreground">
+                  {t('programs.chinese.description')}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/chinese-dance.jpg" alt="Chinese Dance" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+
+          {/* Folk Dance */}
+          <div id="folk" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white mb-6">
+                  <Globe className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('home.programs.folk')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('home.programs.folkDesc')}
+                </p>
+                <p className="text-body text-muted-foreground">
+                  {t('programs.folkDesc')}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/folk-dance.jpg" alt="Folk Dance" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+
+          {/* Ballet */}
+          <div id="ballet" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-500 text-white mb-6">
+                  <Footprints className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('home.programs.ballet')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('home.programs.balletDesc')}
+                </p>
+                <p className="text-body text-muted-foreground">
+                  {t('programs.ballet.description')}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/ballet.jpg" alt="Ballet" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+
+          {/* Contemporary */}
+          <div id="contemporary" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white mb-6">
+                  <Sparkles className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('home.programs.contemporary')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('home.programs.contemporaryDesc')}
+                </p>
+                <p className="text-body text-muted-foreground">
+                  {t('programs.contemporary.description')}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/contemporary.jpg" alt="Contemporary Dance" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+
+          {/* Jazz */}
+          <div id="jazz" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white mb-6">
+                  <Music className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('home.programs.jazz')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('home.programs.jazzDesc')}
+                </p>
+                <p className="text-body text-muted-foreground">
+                  {t('programs.jazz.description')}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/jazz.jpg" alt="Jazz Dance" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+
+          {/* Hip-Hop */}
+          <div id="hiphop" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 text-white mb-6">
+                  <Zap className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('home.programs.hiphop')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('home.programs.hiphopDesc')}
+                </p>
+                <p className="text-body text-muted-foreground">
+                  {t('programs.hiphop.description')}
+                </p>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/hip-hop.jpg" alt="Hip-Hop Dance" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="section-padding bg-background">
+        <div className="container text-center">
+          <h3 className="heading-lg mb-4">{t('programs.register.title')}</h3>
+          <p className="text-lead text-muted-foreground mb-8 max-w-xl mx-auto">
+            {t('programs.register.subtitle')}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/classes/register">
+              <Button size="lg" className="bg-primary hover:bg-primary/90">
+                {t('programs.register.form.submit')}
+              </Button>
             </Link>
-          ))}
+            <Link href="/classes/pricing">
+              <Button variant="outline" size="lg">
+                {t('programs.pricing.title')}
+              </Button>
+            </Link>
+          </div>
         </div>
-
-        <div className="text-center">
-          <Link href="/classes/pricing">
-            <Button size="lg" className="mr-4">
-              {t('programs.pricing.title')}
-            </Button>
-          </Link>
-          <Link href="/classes/register">
-            <Button variant="outline" size="lg">
-              {t('programs.register.title')}
-            </Button>
-          </Link>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

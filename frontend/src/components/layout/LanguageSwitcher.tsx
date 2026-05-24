@@ -26,9 +26,9 @@ export function LanguageSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border/50">
         <Languages className="h-4 w-4" />
-        <span className="hidden sm:inline">{locale.toUpperCase()}</span>
+        <span>{locale === 'en' ? 'EN' : '中文'}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {locales.map((loc) => (

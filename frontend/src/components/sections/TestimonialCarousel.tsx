@@ -7,46 +7,30 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-interface Testimonial {
-  id: string;
-  name: string;
-  quote: string;
-  affiliation: string;
-  image: string;
-}
-
-const testimonials: Testimonial[] = [
+const testimonials = [
   {
     id: '1',
-    name: 'Sarah Mitchell',
-    quote:
-      'Grace Dance Academy transformed my daughter\'s confidence. The faculty is world-class and the community feels like family.',
-    affiliation: 'Parent, RAD Level 5 Student',
-    image: '',
+    nameKey: 'testimonials.tangtang',
+    quoteKey: 'testimonials.tangtangQuote',
+    affiliationKey: 'testimonials.tangtangAff',
   },
   {
     id: '2',
-    name: 'James Park',
-    quote:
-      'The contemporary program pushed me to discover movement I never knew I was capable of. The training here is truly exceptional.',
-    affiliation: 'Pre-Professional Program, Class of 2024',
-    image: '',
+    nameKey: 'testimonials.gege',
+    quoteKey: 'testimonials.gegeQuote',
+    affiliationKey: 'testimonials.gegeAff',
   },
   {
     id: '3',
-    name: 'Li Mei',
-    quote:
-      'Learning Chinese dance at Grace Academy connected me to my cultural heritage in the most beautiful way. Every class is a celebration.',
-    affiliation: 'Chinese Dance, Advanced Level',
-    image: '',
+    nameKey: 'testimonials.tangtang2',
+    quoteKey: 'testimonials.tangtang2Quote',
+    affiliationKey: 'testimonials.tangtang2Aff',
   },
   {
     id: '4',
-    name: 'Emma Rodriguez',
-    quote:
-      'As an adult beginner, I was nervous about starting dance. The supportive environment and patient instructors made all the difference.',
-    affiliation: 'Adult Beginner Ballet',
-    image: '',
+    nameKey: 'testimonials.gege2',
+    quoteKey: 'testimonials.gege2Quote',
+    affiliationKey: 'testimonials.gege2Aff',
   },
 ];
 
@@ -77,22 +61,21 @@ export function TestimonialCarousel() {
 
           <div className="text-center py-8 px-4">
             <blockquote className="text-lg md:text-xl font-accent leading-relaxed text-foreground mb-8 max-w-2xl mx-auto">
-              &ldquo;{testimonial.quote}&rdquo;
+              &ldquo;{t(testimonial.quoteKey)}&rdquo;
             </blockquote>
 
             <div className="flex flex-col items-center gap-2">
               <Avatar className="h-14 w-14 border-2 border-secondary/30">
-                <AvatarImage src={testimonial.image} />
                 <AvatarFallback className="bg-secondary/10 text-secondary">
-                  {testimonial.name
-                    .split(' ')
-                    .map((n) => n[0])
+                  {t(testimonial.nameKey)
+                    .split('')
+                    .slice(0, 2)
                     .join('')}
                 </AvatarFallback>
               </Avatar>
               <div className="text-center">
-                <p className="font-semibold text-foreground">{testimonial.name}</p>
-                <p className="text-sm text-muted-foreground">{testimonial.affiliation}</p>
+                <p className="font-semibold text-foreground">{t(testimonial.nameKey)}</p>
+                <p className="text-sm text-muted-foreground">{t(testimonial.affiliationKey)}</p>
               </div>
             </div>
           </div>
@@ -130,9 +113,9 @@ export function TestimonialCarousel() {
         </div>
 
         <div className="text-center mt-8">
-          <Link href="/media/testimonials">
+          <Link href="/about/contact">
             <span className="text-sm font-medium text-secondary hover:underline">
-              {t('home.testimonials.viewAll')} &rarr;
+              {t('home.events.viewAll')} &rarr;
             </span>
           </Link>
         </div>
