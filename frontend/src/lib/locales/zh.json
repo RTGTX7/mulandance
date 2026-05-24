@@ -1,0 +1,437 @@
+{
+  "common": {
+    "appName": "优雅舞蹈学院",
+    "nav": {
+      "about": "关于我们",
+      "programs": "课程",
+      "performances": "演出",
+      "events": "活动",
+      "classes": "课堂",
+      "media": "媒体",
+      "support": "支持我们",
+      "alumni": "校友",
+      "resources": "资源",
+      "portal": "门户",
+      "contact": "联系我们"
+    },
+    "buttons": {
+      "learnMore": "了解更多",
+      "register": "立即报名",
+      "donate": "捐款",
+      "subscribe": "订阅",
+      "viewAll": "查看全部",
+      "apply": "申请",
+      "download": "下载",
+      "submit": "提交",
+      "cancel": "取消",
+      "back": "返回",
+      "next": "下一步",
+      "close": "关闭",
+      "openMenu": "打开菜单",
+      "closeMenu": "关闭菜单"
+    },
+    "footer": {
+      "quickLinks": "快速链接",
+      "programs": "课程",
+      "performances": "演出",
+      "events": "活动",
+      "support": "支持我们",
+      "contact": "联系我们",
+      "address": "舞蹈大道123号，艺术区",
+      "phone": "+1 (555) 123-4567",
+      "email": "info@gracedanceacademy.org",
+      "followUs": "关注我们",
+      "newsletter": "通讯",
+      "newsletterPlaceholder": "输入您的邮箱",
+      "newsletterButton": "订阅",
+      "newsletterSuccess": "感谢您的订阅！",
+      "copyright": "版权所有。",
+      "privacyPolicy": "隐私政策",
+      "termsOfService": "服务条款",
+      "accessibility": "无障碍"
+    },
+    "hero": {
+      "tagline": "让舞动成为艺术",
+      "subtitle": "自1985年以来，培养从第一步到专业舞台的舞者",
+      "cta1": "探索课程",
+      "cta2": "观看宣传片"
+    },
+    "sections": {
+      "ourPrograms": "我们的课程",
+      "upcomingEvents": "即将举行的活动",
+      "testimonials": "学员评价",
+      "latestNews": "最新资讯",
+      "whyChooseUs": "为什么选择我们",
+      "featuredPerformances": "精选演出"
+    },
+    "features": {
+      "worldclassFaculty": "世界级师资",
+      "facultyDesc": "向具有国际经验的职业舞者学习",
+      "allLevels": "欢迎所有级别",
+      "levelsDesc": "从初学者到准专业训练",
+      "performanceOpportunities": "表演机会",
+      "performanceDesc": "定期展示和舞台制作",
+      "examPreparation": "考试准备",
+      "examDesc": "提供RAD和等级考试准备"
+    },
+    "accessibility": {
+      "skipToContent": "跳转到主要内容",
+      "skipToNavigation": "跳转到导航",
+      "mainContent": "主要内容",
+      "navigation": "导航",
+      "search": "搜索",
+      "language": "语言",
+      "menu": "菜单",
+      "close": "关闭",
+      "expand": "展开",
+      "collapse": "收起",
+      "previous": "上一个",
+      "next": "下一个",
+      "loading": "加载中...",
+      "error": "发生错误",
+      "required": "必填字段",
+      "formSubmitted": "表单提交成功"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "让舞动成为艺术",
+      "subtitle": "自1985年以来，培养从第一步到专业舞台的舞者",
+      "cta1": "探索课程",
+      "cta2": "观看我们的故事"
+    },
+    "programs": {
+      "title": "我们的课程",
+      "subtitle": "为每个年龄和级别提供全面的舞蹈培训",
+      "ballet": "芭蕾",
+      "balletDesc": "从幼儿到准专业的古典技巧训练",
+      "contemporary": "现代舞",
+      "contemporaryDesc": "现代舞步和即兴创作",
+      "chinese": "中国舞",
+      "chineseDesc": "传统和民间舞蹈传承",
+      "jazz": "爵士舞",
+      "jazzDesc": "商业和戏剧爵士技巧",
+      "hiphop": "嘻哈舞",
+      "hiphopDesc": "城市舞蹈风格和编舞",
+      "summer": "夏令营",
+      "summerDesc": "学校假期期间的强化课程"
+    },
+    "events": {
+      "title": "即将举行的活动",
+      "subtitle": "加入我们参加演出、工作坊和社区活动",
+      "viewAll": "查看全部活动"
+    },
+    "testimonials": {
+      "title": "学员评价",
+      "subtitle": "听听我们的舞蹈社区",
+      "viewAll": "阅读更多故事"
+    },
+    "news": {
+      "title": "最新资讯",
+      "subtitle": "学院动态",
+      "viewAll": "查看全部新闻"
+    },
+    "stats": {
+      "students": "学员",
+      "years": "年卓越历程",
+      "performances": "年度演出",
+      "faculty": "专业师资"
+    }
+  },
+  "about": {
+    "title": "关于我们",
+    "mission": {
+      "title": "我们的使命与价值观",
+      "mission": "通过舞蹈艺术激发和赋权个人，培养创造力、纪律和社区精神。",
+      "values": {
+        "excellence": "卓越",
+        "excellenceDesc": "我们在舞蹈教育和艺术表达方面坚持最高标准。",
+        "inclusivity": "包容性",
+        "inclusivityDesc": "舞蹈属于每个人。我们欢迎所有背景和能力的学员。",
+        "community": "社区",
+        "communityDesc": "我们通过共享的艺术体验建立持久的联系。",
+        "innovation": "创新",
+        "innovationDesc": "我们在尊重舞蹈传统的同时拥抱新方法。"
+      }
+    },
+    "history": {
+      "title": "我们的历史",
+      "founded": "成立于1985年",
+      "story": "优雅舞蹈学院始于一个小小的梦想。我们的创始人、首席舞者李伟设想了一个空间，让各个年龄段的舞者都能发现舞蹈的变革力量。从这些朴素的起步，我们已经发展成为该地区最受尊敬的舞蹈机构之一，每年 Across 所有舞蹈门类培训超过2000名学员。",
+      "expansion": "扩展到第二个工作室以满足不断增长的需求。",
+      "newStudio": "在艺术区开设了设施先进的总部工作室。",
+      "recognition": "获得区域艺术卓越奖，以表彰对舞蹈教育的杰出贡献。",
+      "expansion2": "推出成人教育项目和社区外展计划。",
+      "present": "以超过2200名学员的创纪录招生庆祝舞蹈教育39周年。"
+    },
+    "leadership": {
+      "title": "领导层",
+      "board": "董事会",
+      "artisticStaff": "艺术团队",
+      "faculty": "师资团队",
+      "founder": "李伟",
+      "founderDesc": "创始人兼艺术总监。前国家芭蕾舞团首席舞者，李伟于1985年创立优雅舞蹈学院，致力于让所有人获得世界级的舞蹈教育。",
+      "artisticDir": "陈莎拉",
+      "artisticDirRole": "艺术总监",
+      "artisticDirDesc": "负责所有艺术项目和课程开发。前现代舞团独舞演员，拥有20年教学经验。",
+      "opsDir": "威廉姆斯·马库斯",
+      "opsDirRole": "运营总监",
+      "opsDirDesc": "负责日常运营、设施管理和行政职能。拥有15年艺术管理经验。",
+      "eduDir": "田由纪博士",
+      "eduDirRole": "教育总监",
+      "eduDirDesc": "领导课程设计和教师培训。拥有舞蹈教育学博士学位，专攻包容性舞蹈教学法。"
+    },
+    "edi": {
+      "title": "公平、多元与包容",
+      "statement": "我们致力于创造一个让每位舞者都感到被重视、被尊重并有权发挥全部潜力的环境。"
+    },
+    "careers": {
+      "title": "职业机会",
+      "subtitle": "加入我们的团队",
+      "openPositions": "招聘职位",
+      "apply": "立即申请"
+    },
+    "annualReports": {
+      "title": "年度报告",
+      "subtitle": "在社区中的透明度和问责制"
+    },
+    "contact": {
+      "title": "联系我们",
+      "form": {
+        "name": "您的姓名",
+        "email": "邮箱地址",
+        "subject": "主题",
+        "message": "留言",
+        "submit": "发送消息",
+        "success": "感谢您的留言。我们将在2个工作日内回复。"
+      }
+    }
+  },
+  "programs": {
+    "title": "课程",
+    "subtitle": "为每个年龄和级别提供全面的舞蹈培训",
+    "levels": {
+      "children": "儿童（3-12岁）",
+      "teens": "青少年（13-17岁）",
+      "adults": "成人（18岁以上）",
+      "preProfessional": "准专业"
+    },
+    "ballet": {
+      "title": "芭蕾",
+      "description": "我们的芭蕾课程遵循英国皇家舞蹈学院教学大纲，提供从幼儿到准专业的结构化学习路径。",
+      "features": {
+        "radSyllabus": "RAD教学大纲",
+        "exams": "考试准备",
+        "performances": "年度展示",
+        "crossTraining": "包含交叉训练"
+      }
+    },
+    "contemporary": {
+      "title": "现代舞",
+      "description": "在我们的现代舞课程中探索现代舞步、即兴创作和编舞技巧。",
+      "features": {
+        "technique": "现代技巧",
+        "improvisation": "即兴创作",
+        "choreography": "编舞实验室",
+        "performances": "季节演出"
+      }
+    },
+    "chinese": {
+      "title": "中国舞",
+      "description": "通过传统和民间舞蹈培训，保护和弘扬中国舞蹈遗产。",
+      "features": {
+        "classical": "中国古典舞",
+        "folk": "民族民间舞",
+        "acrobatics": "舞蹈杂技",
+        "cultural": "文化背景"
+      }
+    },
+    "jazz": {
+      "title": "爵士舞",
+      "description": "我们的爵士舞课程将技术精确性与动态能量相结合，涵盖从百老汇到商业爵士的各种风格。",
+      "features": {
+        "broadway": "百老汇爵士",
+        "commercial": "商业爵士",
+        "lyrical": "抒情爵士",
+        "performances": "表演机会"
+      }
+    },
+    "hiphop": {
+      "title": "嘻哈舞",
+      "description": "我们的嘻哈课程将活力、创意和街头文化带入工作室，教授从基础动作到复杂编舞的所有内容。",
+      "features": {
+        "fundamentals": "基础动作",
+        "choreography": "编舞",
+        "freestyle": "自由发挥与即兴",
+        "styles": "涵盖风格"
+      }
+    },
+    "summer": {
+      "title": "夏令营",
+      "description": "学校假期期间的强化舞蹈课程，适合所有年龄和级别。",
+      "features": {
+        "youngDancers": "小小舞者营",
+        "intermediate": "中级营",
+        "intensive": "准专业强化营",
+        "adult": "成人沉浸营"
+      }
+    },
+    "pricing": {
+      "title": "收费标准",
+      "subtitle": "对您舞蹈旅程的投资",
+      "monthly": "每月",
+      "term": "每学期",
+      "annual": "每年",
+      "financialAid": "提供经济援助",
+      "siblingDiscount": "提供兄弟姐妹折扣",
+      "freeIntro": "免费体验课"
+    },
+    "register": {
+      "title": "报名",
+      "subtitle": "今天开始您的舞蹈旅程",
+      "form": {
+        "studentName": "学员姓名",
+        "dateOfBirth": "出生日期",
+        "parentEmail": "家长邮箱",
+        "phone": "电话号码",
+        "experience": "以往经验",
+        "program": "课程",
+        "schedule": "偏好时间",
+        "submit": "立即报名"
+      }
+    }
+  },
+  "performances": {
+    "title": "演出",
+    "currentSeason": "本季演出",
+    "archive": "演出档案",
+    "tickets": "门票",
+    "subscribe": "订阅",
+    "season": {
+      "title": "2025/2026演出季",
+      "subtitle": "五部制作，一个难忘的演出季",
+      "tickets": "获取门票",
+      "productions": {
+        "swanLake": "天鹅湖",
+        "swanLakeDesc": "柴可夫斯基不朽经典，全服装呈现",
+        "midsummer": "仲夏夜之梦",
+        "midsummerDesc": "通过舞蹈展现幻想与喜剧",
+        "contemporary": "现代视野",
+        "contemporaryDesc": "新兴编舞家的新作",
+        "nutcracker": "胡桃夹子",
+        "nutcrackerDesc": "我们深受喜爱的年度假日传统",
+        "galas": "春季展示",
+        "galasDesc": "所有课程的学员表演"
+      }
+    }
+  },
+  "events": {
+    "title": "活动",
+    "calendar": "活动日历",
+    "gala": "年度晚宴",
+    "workshops": "工作坊",
+    "type": {
+      "performance": "演出",
+      "workshop": "工作坊",
+      "gala": "晚宴",
+      "openHouse": "开放日",
+      "community": "社区活动"
+    }
+  },
+  "classes": {
+    "title": "课堂",
+    "schedule": "课程表",
+    "pricing": "收费标准",
+    "register": "报名",
+    "absencePolicy": "缺勤与补课政策",
+    "faqs": "常见问题",
+    "scheduleTable": {
+      "day": "星期",
+      "time": "时间",
+      "program": "课程",
+      "instructor": "教师",
+      "level": "级别",
+      "capacity": "名额"
+    }
+  },
+  "media": {
+    "title": "媒体",
+    "news": "新闻",
+    "gallery": "照片画廊",
+    "videoGallery": "视频画廊",
+    "press": "新闻稿与媒体资料",
+    "testimonials": "学员评价",
+    "newsletter": "通讯",
+    "search": {
+      "placeholder": "搜索新闻、活动、课程...",
+      "results": "搜索结果",
+      "noResults": "未找到结果",
+      "clear": "清除筛选"
+    }
+  },
+  "support": {
+    "title": "支持我们",
+    "donate": "捐款",
+    "membership": "会员",
+    "sponsorship": "赞助",
+    "legacy": "遗产捐赠",
+    "volunteer": "志愿者",
+    "partners": "合作伙伴",
+    "tiers": {
+      "supporter": "支持者",
+      "supporterDesc": "年度捐款50美元起",
+      "patron": "赞助人",
+      "patronDesc": "年度捐款250美元起",
+      "benefactor": "恩人",
+      "benefactorDesc": "年度捐款1000美元起",
+      "visionary": "远见者",
+      "visionaryDesc": "年度捐款5000美元起"
+    },
+    "donateForm": {
+      "amount": "捐款金额",
+      "frequency": "频率",
+      "oneTime": "一次性",
+      "monthly": "每月",
+      "custom": "自定义金额",
+      "dedicate": "捐赠纪念",
+      "submit": "立即捐款",
+      "secure": "通过Stripe安全支付"
+    }
+  },
+  "alumni": {
+    "title": "校友",
+    "directory": "校友名录",
+    "events": "校友活动",
+    "awards": "校友奖项",
+    "story": "分享您的故事",
+    "join": "加入校友网络",
+    "update": "更新您的信息"
+  },
+  "portal": {
+    "title": "学员门户",
+    "login": "登录",
+    "register": "注册",
+    "dashboard": "仪表板",
+    "schedule": "我的课程表",
+    "payments": "付款",
+    "records": "记录",
+    "messages": "消息",
+    "logout": "退出登录",
+    "email": "邮箱",
+    "password": "密码",
+    "forgotPassword": "忘记密码？",
+    "noAccount": "还没有账户？",
+    "haveAccount": "已有账户？",
+    "welcome": "欢迎回来",
+    "upcomingClasses": "即将开始的课程",
+    "paymentHistory": "付款记录",
+    "announcements": "公告"
+  },
+  "resources": {
+    "title": "资源",
+    "educators": "教育工作者",
+    "students": "学员",
+    "families": "家长",
+    "research": "研究"
+  }
+}

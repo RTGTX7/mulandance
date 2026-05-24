@@ -1,0 +1,437 @@
+{
+  "common": {
+    "appName": "Grace Dance Academy",
+    "nav": {
+      "about": "About",
+      "programs": "Programs",
+      "performances": "Performances",
+      "events": "Events",
+      "classes": "Classes",
+      "media": "Media",
+      "support": "Support",
+      "alumni": "Alumni",
+      "resources": "Resources",
+      "portal": "Portal",
+      "contact": "Contact"
+    },
+    "buttons": {
+      "learnMore": "Learn More",
+      "register": "Register Now",
+      "donate": "Donate",
+      "subscribe": "Subscribe",
+      "viewAll": "View All",
+      "apply": "Apply",
+      "download": "Download",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Next",
+      "close": "Close",
+      "openMenu": "Open Menu",
+      "closeMenu": "Close Menu"
+    },
+    "footer": {
+      "quickLinks": "Quick Links",
+      "programs": "Programs",
+      "performances": "Performances",
+      "events": "Events",
+      "support": "Support",
+      "contact": "Contact Us",
+      "address": "123 Dance Avenue, Arts District",
+      "phone": "+1 (555) 123-4567",
+      "email": "info@gracedanceacademy.org",
+      "followUs": "Follow Us",
+      "newsletter": "Newsletter",
+      "newsletterPlaceholder": "Enter your email",
+      "newsletterButton": "Subscribe",
+      "newsletterSuccess": "Thank you for subscribing!",
+      "copyright": "All rights reserved.",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "accessibility": "Accessibility"
+    },
+    "hero": {
+      "tagline": "Where Movement Becomes Art",
+      "subtitle": "Nurturing dancers from first steps to professional stages since 1985",
+      "cta1": "Explore Programs",
+      "cta2": "Watch Reel"
+    },
+    "sections": {
+      "ourPrograms": "Our Programs",
+      "upcomingEvents": "Upcoming Events",
+      "testimonials": "Testimonials",
+      "latestNews": "Latest News",
+      "whyChooseUs": "Why Choose Us",
+      "featuredPerformances": "Featured Performances"
+    },
+    "features": {
+      "worldClassFaculty": "World-Class Faculty",
+      "facultyDesc": "Learn from professional dancers with international experience",
+      "allLevels": "All Levels Welcome",
+      "levelsDesc": "From beginners to pre-professional training",
+      "performanceOpportunities": "Performance Opportunities",
+      "performanceDesc": "Regular showcases and stage productions",
+      "examPreparation": "Exam Preparation",
+      "examDesc": "RAD and graded examination preparation available"
+    },
+    "accessibility": {
+      "skipToContent": "Skip to main content",
+      "skipToNavigation": "Skip to navigation",
+      "mainContent": "Main content",
+      "navigation": "Navigation",
+      "search": "Search",
+      "language": "Language",
+      "menu": "Menu",
+      "close": "Close",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "previous": "Previous",
+      "next": "Next",
+      "loading": "Loading...",
+      "error": "An error occurred",
+      "required": "Required field",
+      "formSubmitted": "Form submitted successfully"
+    }
+  },
+  "home": {
+    "hero": {
+      "title": "Where Movement Becomes Art",
+      "subtitle": "Nurturing dancers from first steps to professional stages since 1985",
+      "cta1": "Explore Programs",
+      "cta2": "Watch Our Story"
+    },
+    "programs": {
+      "title": "Our Programs",
+      "subtitle": "Comprehensive dance training for every age and level",
+      "ballet": "Ballet",
+      "balletDesc": "Classical technique from early years to pre-professional",
+      "contemporary": "Contemporary",
+      "contemporaryDesc": "Modern movement and improvisation",
+      "chinese": "Chinese Dance",
+      "chineseDesc": "Traditional and folk dance heritage",
+      "jazz": "Jazz",
+      "jazzDesc": "Commercial and theatrical jazz technique",
+      "hiphop": "Hip-Hop",
+      "hiphopDesc": "Urban dance styles and choreography",
+      "summer": "Summer Camps",
+      "summerDesc": "Intensive programs during school holidays"
+    },
+    "events": {
+      "title": "Upcoming Events",
+      "subtitle": "Join us for performances, workshops, and community events",
+      "viewAll": "View All Events"
+    },
+    "testimonials": {
+      "title": "What Our Students Say",
+      "subtitle": "Hear from our dance community",
+      "viewAll": "Read More Stories"
+    },
+    "news": {
+      "title": "Latest News",
+      "subtitle": "Updates from the academy",
+      "viewAll": "View All News"
+    },
+    "stats": {
+      "students": "Students",
+      "years": "Years of Excellence",
+      "performances": "Annual Performances",
+      "faculty": "Professional Faculty"
+    }
+  },
+  "about": {
+    "title": "About Us",
+    "mission": {
+      "title": "Our Mission & Values",
+      "mission": "To inspire and empower individuals through the art of dance, fostering creativity, discipline, and community.",
+      "values": {
+        "excellence": "Excellence",
+        "excellenceDesc": "We uphold the highest standards in dance education and artistic expression.",
+        "inclusivity": "Inclusivity",
+        "inclusivityDesc": "Dance is for everyone. We welcome students of all backgrounds and abilities.",
+        "community": "Community",
+        "communityDesc": "We build lasting connections through shared artistic experiences.",
+        "innovation": "Innovation",
+        "innovationDesc": "We embrace new approaches while honoring dance traditions."
+      }
+    },
+    "history": {
+      "title": "Our History",
+      "founded": "Founded in 1985",
+      "story": "Grace Dance Academy began as a small studio with a big dream. Our founder, Principal Dancer Li Wei, envisioned a space where dancers of all ages could discover the transformative power of movement. From those humble beginnings, we have grown into one of the region's most respected dance institutions, training over 2,000 students annually across all dance disciplines.",
+      "expansion": "Expanded to a second studio location to accommodate growing demand.",
+      "newStudio": "Opened our state-of-the-art main studio in the Arts District.",
+      "recognition": "Received the Regional Arts Excellence Award for outstanding contribution to dance education.",
+      "expansion2": "Launched adult education programs and community outreach initiatives.",
+      "present": "Celebrated 39 years of dance education with a record enrollment of 2,200+ students."
+    },
+    "leadership": {
+      "title": "Leadership",
+      "board": "Board of Directors",
+      "artisticStaff": "Artistic Staff",
+      "faculty": "Faculty",
+      "founder": "Li Wei",
+      "founderDesc": "Founder and Artistic Director. Former principal dancer with the National Ballet, Li founded Grace Dance Academy in 1985 with a vision to make world-class dance education accessible to all.",
+      "artisticDir": "Sarah Chen",
+      "artisticDirRole": "Artistic Director",
+      "artisticDirDesc": "Oversees all artistic programming and curriculum development. Former soloist with the Contemporary Dance Company with 20 years of teaching experience.",
+      "opsDir": "Marcus Williams",
+      "opsDirRole": "Operations Director",
+      "opsDirDesc": "Manages daily operations, facilities, and administrative functions. Brings 15 years of arts management experience.",
+      "eduDir": "Dr. Yuki Tanaka",
+      "eduDirRole": "Education Director",
+      "eduDirDesc": "Leads curriculum design and teacher training. Holds a PhD in Dance Education and specializes in inclusive dance pedagogy."
+    },
+    "edi": {
+      "title": "Equity, Diversity & Inclusion",
+      "statement": "We are committed to creating an environment where every dancer feels valued, respected, and empowered to reach their full potential."
+    },
+    "careers": {
+      "title": "Careers",
+      "subtitle": "Join our team",
+      "openPositions": "Open Positions",
+      "apply": "Apply Now"
+    },
+    "annualReports": {
+      "title": "Annual Reports",
+      "subtitle": "Transparency and accountability in our community"
+    },
+    "contact": {
+      "title": "Contact Us",
+      "form": {
+        "name": "Your Name",
+        "email": "Email Address",
+        "subject": "Subject",
+        "message": "Message",
+        "submit": "Send Message",
+        "success": "Thank you for your message. We will respond within 2 business days."
+      }
+    }
+  },
+  "programs": {
+    "title": "Programs",
+    "subtitle": "Comprehensive dance training for every age and level",
+    "levels": {
+      "children": "Children (Ages 3-12)",
+      "teens": "Teens (Ages 13-17)",
+      "adults": "Adults (Ages 18+)",
+      "preProfessional": "Pre-Professional"
+    },
+    "ballet": {
+      "title": "Ballet",
+      "description": "Our ballet program follows the Royal Academy of Dance syllabus, providing a structured pathway from early years to pre-professional training.",
+      "features": {
+        "radSyllabus": "RAD Syllabus-Based",
+        "exams": "Examination Preparation",
+        "performances": "Annual Showcase",
+        "crossTraining": "Cross-Training Included"
+      }
+    },
+    "contemporary": {
+      "title": "Contemporary",
+      "description": "Explore modern movement, improvisation, and choreographic techniques in our contemporary dance program.",
+      "features": {
+        "technique": "Modern Technique",
+        "improvisation": "Improvisation",
+        "choreography": "Choreographic Lab",
+        "performances": "Season Performances"
+      }
+    },
+    "chinese": {
+      "title": "Chinese Dance",
+      "description": "Preserve and celebrate Chinese dance heritage through traditional and folk dance training.",
+      "features": {
+        "classical": "Classical Chinese Dance",
+        "folk": "Ethnic Folk Dance",
+        "acrobatics": "Dance Acrobatics",
+        "cultural": "Cultural Context"
+      }
+    },
+    "jazz": {
+      "title": "Jazz",
+      "description": "Our jazz program combines technical precision with dynamic energy, covering styles from Broadway to commercial jazz.",
+      "features": {
+        "broadway": "Broadway Jazz",
+        "commercial": "Commercial Jazz",
+        "lyrical": "Lyrical Jazz",
+        "performances": "Performance Opportunities"
+      }
+    },
+    "hiphop": {
+      "title": "Hip-Hop",
+      "description": "Our hip-hop program brings energy, creativity, and street culture into the studio, teaching everything from foundational moves to complex choreography.",
+      "features": {
+        "fundamentals": "Fundamentals",
+        "choreography": "Choreography",
+        "freestyle": "Freestyle & Improv",
+        "styles": "Styles Covered"
+      }
+    },
+    "summer": {
+      "title": "Summer Camps",
+      "description": "Intensive dance programs during school holidays for all ages and levels.",
+      "features": {
+        "youngDancers": "Young Dancers Camp",
+        "intermediate": "Intermediate Camp",
+        "intensive": "Pre-Professional Intensive",
+        "adult": "Adult Immersion"
+      }
+    },
+    "pricing": {
+      "title": "Pricing",
+      "subtitle": "Investment in your dance journey",
+      "monthly": "Monthly",
+      "term": "Per Term",
+      "annual": "Annual",
+      "financialAid": "Financial Aid Available",
+      "siblingDiscount": "Sibling Discount Available",
+      "freeIntro": "Free Introductory Class"
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Begin your dance journey today",
+      "form": {
+        "studentName": "Student Name",
+        "dateOfBirth": "Date of Birth",
+        "parentEmail": "Parent Email",
+        "phone": "Phone Number",
+        "experience": "Previous Experience",
+        "program": "Program",
+        "schedule": "Preferred Schedule",
+        "submit": "Register Now"
+      }
+    }
+  },
+  "performances": {
+    "title": "Performances",
+    "currentSeason": "Current Season",
+    "archive": "Archive",
+    "tickets": "Tickets",
+    "subscribe": "Subscribe",
+    "season": {
+      "title": "2025/2026 Season",
+      "subtitle": "Five productions, one unforgettable season",
+      "tickets": "Get Tickets",
+      "productions": {
+        "swanLake": "Swan Lake",
+        "swanLakeDesc": "Tchaikovsky's timeless masterpiece in full costume",
+        "midsummer": "A Midsummer Night's Dream",
+        "midsummerDesc": "Fantasy and comedy through dance",
+        "contemporary": "Contemporary Visions",
+        "contemporaryDesc": "New works by emerging choreographers",
+        "nutcracker": "The Nutcracker",
+        "nutcrackerDesc": "Our beloved annual holiday tradition",
+        "galas": "Spring Showcase",
+        "galasDesc": "Student performances across all programs"
+      }
+    }
+  },
+  "events": {
+    "title": "Events",
+    "calendar": "Event Calendar",
+    "gala": "Annual Gala",
+    "workshops": "Workshops",
+    "type": {
+      "performance": "Performance",
+      "workshop": "Workshop",
+      "gala": "Gala",
+      "openHouse": "Open House",
+      "community": "Community Event"
+    }
+  },
+  "classes": {
+    "title": "Classes",
+    "schedule": "Class Schedule",
+    "pricing": "Pricing",
+    "register": "Register",
+    "absencePolicy": "Absence & Makeup Policy",
+    "faqs": "Frequently Asked Questions",
+    "scheduleTable": {
+      "day": "Day",
+      "time": "Time",
+      "program": "Program",
+      "instructor": "Instructor",
+      "level": "Level",
+      "capacity": "Capacity"
+    }
+  },
+  "media": {
+    "title": "Media",
+    "news": "News",
+    "gallery": "Photo Gallery",
+    "videoGallery": "Video Gallery",
+    "press": "Press & Media Kit",
+    "testimonials": "Testimonials",
+    "newsletter": "Newsletter",
+    "search": {
+      "placeholder": "Search news, events, programs...",
+      "results": "Search Results",
+      "noResults": "No results found",
+      "clear": "Clear filters"
+    }
+  },
+  "support": {
+    "title": "Support Us",
+    "donate": "Donate",
+    "membership": "Membership",
+    "sponsorship": "Sponsorship",
+    "legacy": "Legacy Giving",
+    "volunteer": "Volunteer",
+    "partners": "Our Partners",
+    "tiers": {
+      "supporter": "Supporter",
+      "supporterDesc": "Annual donation from $50",
+      "patron": "Patron",
+      "patronDesc": "Annual donation from $250",
+      "benefactor": "Benefactor",
+      "benefactorDesc": "Annual donation from $1,000",
+      "visionary": "Visionary",
+      "visionaryDesc": "Annual donation from $5,000"
+    },
+    "donateForm": {
+      "amount": "Donation Amount",
+      "frequency": "Frequency",
+      "oneTime": "One-Time",
+      "monthly": "Monthly",
+      "custom": "Custom Amount",
+      "dedicate": "Dedicate This Gift",
+      "submit": "Donate Now",
+      "secure": "Secure payment via Stripe"
+    }
+  },
+  "alumni": {
+    "title": "Alumni",
+    "directory": "Alumni Directory",
+    "events": "Alumni Events",
+    "awards": "Alumni Awards",
+    "story": "Share Your Story",
+    "join": "Join the Alumni Network",
+    "update": "Update Your Information"
+  },
+  "portal": {
+    "title": "Student Portal",
+    "login": "Login",
+    "register": "Register",
+    "dashboard": "Dashboard",
+    "schedule": "My Schedule",
+    "payments": "Payments",
+    "records": "Records",
+    "messages": "Messages",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "welcome": "Welcome back",
+    "upcomingClasses": "Upcoming Classes",
+    "paymentHistory": "Payment History",
+    "announcements": "Announcements"
+  },
+  "resources": {
+    "title": "Resources",
+    "educators": "For Educators",
+    "students": "For Students",
+    "families": "For Families",
+    "research": "Research"
+  }
+}
