@@ -21,12 +21,13 @@ const navSections = [
     key: 'programs',
     labelKey: 'common.nav.programs',
     links: [
-      { labelKey: 'programs.ballet.title', href: '/programs#ballet' },
-      { labelKey: 'programs.contemporary.title', href: '/programs#contemporary' },
-      { labelKey: 'programs.chinese.title', href: '/programs#chinese' },
-      { labelKey: 'programs.jazz.title', href: '/programs#jazz' },
-      { labelKey: 'programs.hiphop.title', href: '/programs#hiphop' },
-      { labelKey: 'programs.summer.title', href: '/programs' },
+      { labelKey: 'home.programs.chinese', href: '/programs#chinese' },
+      { labelKey: 'home.programs.folk', href: '/programs#folk' },
+      { labelKey: 'home.programs.ballet', href: '/programs#ballet' },
+      { labelKey: 'home.programs.contemporary', href: '/programs#contemporary' },
+      { labelKey: 'home.programs.jazz', href: '/programs#jazz' },
+      { labelKey: 'home.programs.hiphop', href: '/programs#hiphop' },
+      { labelKey: 'programs.summer.title', href: '/programs/summer-camps' },
     ],
   },
   {
@@ -82,15 +83,21 @@ export function Header() {
                 <ChevronDown className={cn("h-3 w-3 transition-transform", activeDropdown === section.key && "rotate-180")} />
               </button>
               <div className="absolute top-full left-0 mt-1 w-56 rounded-md border bg-popover p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1">
-                {section.links.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={href(link.href)}
-                    className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {t(link.labelKey)}
-                  </Link>
-                ))}
+                {section.links.map((link) => {
+                  // Ensure href starts with locale prefix - handle fragment (#) in path
+                  const linkPath = link.href.split('#')[0];
+                  const fragment = link.href.includes('#') ? link.href.split('#')[1] : '';
+                  const fullPath = `/${locale}${linkPath}` + (fragment ? `#${fragment}` : '');
+                  return (
+                    <Link
+                      key={link.href}
+                      href={fullPath}
+                      className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      {t(link.labelKey)}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -124,16 +131,22 @@ export function Header() {
                 <span className="block px-3 py-2 text-sm font-semibold text-foreground">
                   {t(section.labelKey)}
                 </span>
-                {section.links.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={href(link.href)}
-                    className="block px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {t(link.labelKey)}
-                  </Link>
-                ))}
+                {section.links.map((link) => {
+                  // Ensure href starts with locale prefix - handle fragment (#) in path
+                  const linkPath = link.href.split('#')[0];
+                  const fragment = link.href.includes('#') ? link.href.split('#')[1] : '';
+                  const fullPath = `/${locale}${linkPath}` + (fragment ? `#${fragment}` : '');
+                  return (
+                    <Link
+                      key={link.href}
+                      href={fullPath}
+                      className="block px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {t(link.labelKey)}
+                    </Link>
+                  );
+                })}
               </div>
             ))}
             <div className="pt-4 border-t border-border mt-4">

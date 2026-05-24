@@ -1,12 +1,18 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function AboutPage() {
   const t = useTranslations();
+  const locale = useLocale();
+
+  const href = (path: string) => {
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return `/${locale}/${cleanPath}`;
+  };
 
   return (
     <div className="pt-16">
@@ -74,7 +80,7 @@ export default function AboutPage() {
 
           {/* CTA Section */}
           <div className="mt-12 text-center">
-            <Link href="/about/contact">
+            <Link href={href('about/contact')}>
               <Button size="lg">{t('about.contact.title')}</Button>
             </Link>
           </div>

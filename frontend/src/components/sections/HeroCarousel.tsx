@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,13 @@ import Link from 'next/link';
 
 export function HeroCarousel() {
   const t = useTranslations();
+  const locale = useLocale();
+
+  // Helper to add locale prefix to href
+  const href = (path: string) => {
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return `/${locale}/${cleanPath}`;
+  };
 
   const slides = [
     {
@@ -15,7 +22,7 @@ export function HeroCarousel() {
       subtitle: t('home.hero.slides.0.subtitle'),
       cta1: t('home.hero.slides.0.cta1'),
       cta2: t('home.hero.slides.0.cta2'),
-      cta1Href: '/programs',
+      cta1Href: href('programs'),
       cta2Href: 'https://www.youtube.com/@mulandancestudio21',
       bgGradient: 'from-primary/90 via-primary/70 to-primary/40',
     },
@@ -24,7 +31,7 @@ export function HeroCarousel() {
       subtitle: t('home.hero.slides.1.subtitle'),
       cta1: t('home.hero.slides.1.cta1'),
       cta2: t('home.hero.slides.1.cta2'),
-      cta1Href: '/performances/current-season',
+      cta1Href: href('performances/current-season'),
       cta2Href: 'https://www.youtube.com/@mulandancestudio21',
       bgGradient: 'from-primary/95 via-primary/80 to-purple-900/60',
     },
@@ -33,8 +40,8 @@ export function HeroCarousel() {
       subtitle: t('home.hero.slides.2.subtitle'),
       cta1: t('home.hero.slides.2.cta1'),
       cta2: t('home.hero.slides.2.cta2'),
-      cta1Href: '/classes/register',
-      cta2Href: '/programs/summer-camps',
+      cta1Href: href('classes/register'),
+      cta2Href: href('programs/summer-camps'),
       bgGradient: 'from-violet-800 via-purple-800 to-primary/80',
     },
   ];

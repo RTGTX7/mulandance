@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { ChevronRight, Home } from 'lucide-react';
+import { useLocale } from '@/components/ui/i18n-client';
 
 interface BreadcrumbItem {
   label: string;
@@ -11,12 +14,24 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
+  const locale = useLocale();
+
+  // Helper to add locale prefix to href if not already present
+  const getHref = (path: string) => {
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) {
+      const withoutLeadingSlash = path.substring(1);
+      return `/${locale}${withoutLeadingSlash}`;
+    }
+    return `/${locale}/${path}`;
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="mb-6">
       <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <li>
           <Link
-            href="/en"
+            href={getHref('/')}
             className="hover:text-foreground transition-colors"
           >
             <Home className="h-4 w-4" />
@@ -32,7 +47,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
               <span className="text-foreground font-medium">{item.label}</span>
             ) : (
               <Link
-                href={`/${item.href}`}
+                href={getHref(item.href)}
                 className="hover:text-foreground transition-colors"
               >
                 {item.label}

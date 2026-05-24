@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,12 @@ const haileyAchievements = [
 
 export default function LeadershipPage() {
   const t = useTranslations();
+  const locale = useLocale();
+
+  const href = (path: string) => {
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return `/${locale}/${cleanPath}`;
+  };
 
   return (
     <div className="pt-16">
@@ -113,7 +119,7 @@ export default function LeadershipPage() {
 
           {/* CTA Section */}
           <div className="mt-12 text-center">
-            <Link href="/about/contact">
+            <Link href={href('about/contact')}>
               <Button size="lg">{t('about.contact.title')}</Button>
             </Link>
           </div>
