@@ -93,7 +93,29 @@ export function Footer() {
                   {t('common.nav.contact')}
                 </Link>
               </li>
-            </ul>
+            
+              <li>
+
+                <Link
+
+                  href="/news"
+
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t('news.title')}
+                </Link>
+              </li>
+              <li>
+
+                <Link
+
+                  href="/admin/login"
+
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Admin Login
+                </Link>
+              </li></ul>
           </div>
 
           <div>

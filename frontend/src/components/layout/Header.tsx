@@ -68,6 +68,15 @@ export function Header() {
           >
             {t('common.nav.home')}
           </Link>
+          <Link
+            href={href('/news')}
+            className={cn(
+              'px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+              activeDropdown === null && 'text-foreground'
+            )}
+          >
+            {t('news.title')}
+          </Link>
            {navSections.map((section) => (
             <div
               key={section.key}
@@ -125,7 +134,16 @@ export function Header() {
               onClick={() => setMobileOpen(false)}
             >
               {t('common.nav.home')}
-            </Link>
+          </Link>
+          <Link
+            href={href('/news')}
+            className={cn(
+              'px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+              activeDropdown === null && 'text-foreground'
+            )}
+          >
+            {t('news.title')}
+          </Link>
             {navSections.map((section) => (
               <div key={section.key}>
                 <span className="block px-3 py-2 text-sm font-semibold text-foreground">
