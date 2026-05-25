@@ -9,6 +9,7 @@ from app.core.database import Base
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
     FACULTY = "faculty"
+    EDITOR = "editor"
     STUDENT = "student"
     PARENT = "parent"
     ALUMNI = "alumni"
@@ -155,6 +156,7 @@ class NewsArticle(Base):
     published_at = Column(DateTime(timezone=True))
     cover_image = Column(String(500))
     is_published = Column(Boolean, default=False)
+    locale = Column(String(10), default="en")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -259,3 +261,44 @@ class AuditLog(Base):
     entity_type = Column(String(100))
     entity_id = Column(String(36))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ============================================================
+# Blog/CMS Models
+# ============================================================
+
+class NewsCategory(Base):
+    __tablename__ = "news_categories"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    name_zh = Column(String(100))
+    description = Column(Text)
+    color = Column(String(7), default="#6366f1")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class NewsTag(Base):
+    __tablename__ = "news_tags"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    name_zh = Column(String(100))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class NewsArticleCategory(Base):
+    __tablename__ = "news_article_categories"
+
+    article_id = Column(String(36), ForeignKey("news_articles.id", ondelete="CASCADE"), primary_key=True)
+    category_id = Column(String(36), ForeignKey("news_categories.id", ondelete="CASCADE"), primary_key=True)
+
+
+class NewsArticleTag(Base):
+    __tablename__ = "news_article_tags"
+
+    article_id = Column(String(36), ForeignKey("news_articles.id", ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(String(36), ForeignKey("news_tags.id", ondelete="CASCADE"), primary_key=True)

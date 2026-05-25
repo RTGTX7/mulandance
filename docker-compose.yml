@@ -36,6 +36,10 @@ services:
       - DATABASE_URL=postgresql://dance_user:dance_pass@postgres:5432/dance_org
       - SECRET_KEY=change_me_in_production
       - ALLOWED_HOSTS=http://localhost:3000
+      - NEWS_FILES_DIR=/app/data/news
+      - USE_FILE_STORAGE=true
+    volumes:
+      - ./backend/data:/app/data
     depends_on:
       - postgres
     restart: unless-stopped

@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALLOWED_HOSTS: str = "http://localhost:3000"
     DEBUG: bool = True
+    NEWS_FILES_DIR: str = "./data/news"
+    USE_FILE_STORAGE: bool = True
 
     class Config:
         env_file = ".env"

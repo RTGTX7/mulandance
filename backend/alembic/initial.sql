@@ -233,3 +233,50 @@ CREATE INDEX idx_enrollments_schedule ON enrollments(class_schedule_id);
 CREATE INDEX idx_payments_user ON payments(user_id);
 CREATE INDEX idx_messages_receiver ON messages(receiver_id);
 CREATE INDEX idx_gallery_items_album ON gallery_items(album_id);
+
+
+-- News Categories & Tags
+CREATE TABLE news_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    name_zh VARCHAR(100),
+    description TEXT,
+    color VARCHAR(7) DEFAULT '#6366f1',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE news_tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    name_zh VARCHAR(100),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE news_article_categories (
+    article_id UUID NOT NULL REFERENCES news_articles(id) ON DELETE CASCADE,
+    category_id UUID NOT NULL REFERENCES news_categories(id) ON DELETE CASCADE,
+    PRIMARY KEY (article_id, category_id)
+);
+
+CREATE TABLE news_article_tags (
+    article_id UUID NOT NULL REFERENCES news_articles(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES news_tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (article_id, tag_id)
+);
+
+-- Blog indexes
+CREATE INDEX idx_news_categories_slug ON news_categories(slug);
+CREATE INDEX idx_news_tags_slug ON news_tags(slug);
+CREATE INDEX idx_news_locale ON news_articles(locale);
+CREATE INDEX idx_news_article_categories_article ON news_article_categories(article_id);
+CREATE INDEX idx_news_article_categories_category ON news_article_categories(category_id);
+CREATE INDEX idx_news_article_tags_article ON news_article_tags(article_id);
+CREATE INDEX idx_news_article_tags_tag ON news_article_tags(tag_id);
+
+-- Blog role extension
+ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(50) USING role::text;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'faculty', 'editor', 'student', 'parent', 'alumni', 'public'));

@@ -46,9 +46,40 @@ export const venueRentalSchema = z.object({
   notes: z.string().optional(),
 });
 
+// --- News Article schemas ---
+
+export const newsArticleSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(300),
+  slug: z.string().min(1, 'Slug is required'),
+  summary: z.string().optional(),
+  body: z.string().min(1, 'Content is required'),
+  cover_image: z.string().optional(),
+  category_slugs: z.array(z.string()).default([]),
+  tag_slugs: z.array(z.string()).default([]),
+  locale: z.enum(['en', 'zh']).default('en'),
+  is_published: z.boolean().default(false),
+});
+
+export const categorySchema = z.object({
+  slug: z.string().min(1, 'Slug is required'),
+  name: z.string().min(1, 'Name is required'),
+  name_zh: z.string().optional(),
+  description: z.string().optional(),
+  color: z.string().min(1, 'Color is required'),
+});
+
+export const tagSchema = z.object({
+  slug: z.string().min(1, 'Slug is required'),
+  name: z.string().min(1, 'Name is required'),
+  name_zh: z.string().optional(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
 export type EnrollmentInput = z.infer<typeof enrollmentSchema>;
 export type DonationInput = z.infer<typeof donationSchema>;
 export type VenueRentalInput = z.infer<typeof venueRentalSchema>;
+export type NewsArticleInput = z.infer<typeof newsArticleSchema>;
+export type CategoryInput = z.infer<typeof categorySchema>;
+export type TagInput = z.infer<typeof tagSchema>;
