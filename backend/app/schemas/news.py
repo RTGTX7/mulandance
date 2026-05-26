@@ -106,6 +106,7 @@ class ArticleWithRelations(BaseModel):
     slug: str
     title: str
     summary: Optional[str] = None
+    body: Optional[str] = None
     author_id: Optional[str] = None
     published_at: Optional[datetime] = None
     cover_image: Optional[str] = None

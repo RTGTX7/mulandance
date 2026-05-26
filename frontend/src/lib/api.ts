@@ -107,7 +107,7 @@ export const newsApi = {
     return api.get<unknown[]>(`/v1/news${qs ? '?' + qs : ''}`);
   },
 
-  get: (slug: string) => api.get<unknown>(`/v1/news/${slug}`),
+  get: (slug: string) => api.get<unknown>(`/v1/news/admin/${slug}`),
 
   create: (body: unknown) => api.post<unknown>('/v1/news', body),
 
@@ -119,4 +119,31 @@ export const newsApi = {
   categories: () => api.get<unknown[]>('/v1/news/categories'),
 
   tags: () => api.get<unknown[]>('/v1/news/tags'),
+};
+
+// ====================================================================
+// Upload API helpers
+// ====================================================================
+
+export const uploadApi = {
+  image: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/api/v1/upload/image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const errorMsg = error.detail || `Upload failed (HTTP ${response.status})`;
+      throw new Error(`${errorMsg} | URL: ${API_URL}/api/v1/upload/image | Status: ${response.status}`);
+    }
+
+    return response.json();
+  },
 };

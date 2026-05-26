@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { useTranslations, useLocale } from '@/components/ui/i18n-client';
-import { Menu, X, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, ChevronDown, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { isAuthenticated, clearAuthToken } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 const navSections = [
   {
@@ -42,11 +45,26 @@ const navSections = [
 export function Header() {
   const t = useTranslations();
   const locale = useLocale();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
 
   // Helper to add locale prefix to href
   const href = (path: string) => `/${locale}${path}`;
+
+  useEffect(() => {
+    const checkAuth = () => setAuthenticated(isAuthenticated());
+    checkAuth();
+    const interval = setInterval(checkAuth, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLogout = () => {
+    clearAuthToken();
+    setAuthenticated(false);
+    router.push(href('/admin/login'));
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -68,15 +86,6 @@ export function Header() {
           >
             {t('common.nav.home')}
           </Link>
-          <Link
-            href={href('/news')}
-            className={cn(
-              'px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
-              activeDropdown === null && 'text-foreground'
-            )}
-          >
-            {t('news.title')}
-          </Link>
            {navSections.map((section) => (
             <div
               key={section.key}
@@ -93,7 +102,6 @@ export function Header() {
               </button>
               <div className="absolute top-full left-0 mt-1 w-56 rounded-md border bg-popover p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1">
                 {section.links.map((link) => {
-                  // Ensure href starts with locale prefix - handle fragment (#) in path
                   const linkPath = link.href.split('#')[0];
                   const fragment = link.href.includes('#') ? link.href.split('#')[1] : '';
                   const fullPath = `/${locale}${linkPath}` + (fragment ? `#${fragment}` : '');
@@ -114,6 +122,27 @@ export function Header() {
 
         <div className="hidden lg:flex items-center gap-4">
           <LanguageSwitcher />
+          {authenticated ? (
+            <>
+              <Button variant="default" size="sm" asChild>
+                <Link href={href('/admin/dashboard')}>
+                  <LayoutDashboard className="h-4 w-4 mr-1" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-1" />
+                {t('admin.common.logout')}
+              </Button>
+            </>
+          ) : (
+            <Button variant="default" size="sm" asChild>
+              <Link href={href('/admin/login')}>
+                <LogIn className="h-4 w-4 mr-1" />
+                Login
+              </Link>
+            </Button>
+          )}
         </div>
 
         <button
@@ -134,23 +163,13 @@ export function Header() {
               onClick={() => setMobileOpen(false)}
             >
               {t('common.nav.home')}
-          </Link>
-          <Link
-            href={href('/news')}
-            className={cn(
-              'px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
-              activeDropdown === null && 'text-foreground'
-            )}
-          >
-            {t('news.title')}
-          </Link>
+            </Link>
             {navSections.map((section) => (
               <div key={section.key}>
                 <span className="block px-3 py-2 text-sm font-semibold text-foreground">
                   {t(section.labelKey)}
                 </span>
                 {section.links.map((link) => {
-                  // Ensure href starts with locale prefix - handle fragment (#) in path
                   const linkPath = link.href.split('#')[0];
                   const fragment = link.href.includes('#') ? link.href.split('#')[1] : '';
                   const fullPath = `/${locale}${linkPath}` + (fragment ? `#${fragment}` : '');
@@ -167,6 +186,25 @@ export function Header() {
                 })}
               </div>
             ))}
+            <div className="pt-4">
+              {authenticated ? (
+                <>
+                  <Link href={href('/admin/dashboard')} className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent rounded-md" onClick={() => setMobileOpen(false)}>
+                    <LayoutDashboard className="h-4 w-4" />
+                    {t('admin.dashboard.title')}
+                  </Link>
+                  <button className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent rounded-md" onClick={() => { handleLogout(); setMobileOpen(false); }}>
+                    <LogOut className="h-4 w-4" />
+                    {t('admin.common.logout')}
+                  </button>
+                </>
+              ) : (
+                <Link href={href('/admin/login')} className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent rounded-md" onClick={() => setMobileOpen(false)}>
+                  <LogIn className="h-4 w-4" />
+                  {t('admin.login.signIn')}
+                </Link>
+              )}
+            </div>
             <div className="pt-4 border-t border-border mt-4">
               <LanguageSwitcher />
             </div>

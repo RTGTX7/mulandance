@@ -56,8 +56,16 @@ def _read_markdown_file(filepath: Path) -> Optional[dict]:
 
 
 def _write_markdown_file(filepath: Path, content: str, metadata: dict) -> None:
-    with open(filepath, "w", encoding="utf-8") as f:
-        frontmatter.dump(frontmatter.Post(content, **metadata), f)
+    """Write a markdown file with YAML frontmatter using text mode.
+    
+    Uses frontmatter.dumps() to render the complete markdown string,
+    then writes it with UTF-8 encoding to avoid byte/string mismatch.
+    """
+    post = frontmatter.Post(content or "", **metadata)
+    rendered = frontmatter.dumps(post)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with open(filepath, "w", encoding="utf-8", newline="") as f:
+        f.write(rendered)
 
 
 def render_markdown(body: str) -> str:
@@ -122,9 +130,11 @@ def get_article(
     filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at)
     post = _read_markdown_file(filepath)
     if post:
+        # Read body from markdown file content
+        article.body = post.content or article.body
         article.summary = post.metadata.get("summary") or article.summary
         article.cover_image = post.metadata.get("cover_image") or article.cover_image
-        article.locale = post.metadata.get("locale") or "en"
+        article.locale = post.metadata.get("locale") or article.locale or "en"
 
     return _get_article_with_relations(db, article, include_html)
 
@@ -362,9 +372,10 @@ def _get_article_with_relations(
         "slug": article.slug,
         "title": article.title,
         "summary": article.summary,
+        "body": article.body or "",
         "author_id": str(article.author_id) if article.author_id else None,
         "published_at": str(article.published_at) if article.published_at else None,
-        "cover_image": article.cover_image,
+        "cover_image": article.cover_image or "",
         "is_published": article.is_published,
         "locale": article.locale,
         "created_at": str(article.created_at),

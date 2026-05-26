@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -5,6 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 from app.core.security import decode_token
 from app.schemas.news import (
     NewsArticleCreate,
@@ -106,6 +109,25 @@ def get_public_article(slug: str, db: Session = Depends(get_db)):
     return article
 
 
+# Admin endpoint: get any article (including drafts)
+@router.get("/admin/{slug}", response_model=ArticleWithHtml)
+def get_admin_article(slug: str, db: Session = Depends(get_db)):
+    article = news_files.get_article(db, slug, include_html=True)
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return article
+
+
+# Admin endpoint: get article by ID (no file dependency)
+@router.get("/admin/id/{article_id}", response_model=ArticleWithHtml)
+def get_admin_article_by_id(article_id: str, db: Session = Depends(get_db)):
+    article = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    result = news_files._get_article_with_relations(db, article, include_html=True)
+    return result
+
+
 @router.get("/categories", response_model=list[NewsCategoryResponse])
 def list_categories(db: Session = Depends(get_db)):
     return news_files.list_categories(db)
@@ -127,7 +149,14 @@ def create_article(
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
-    return news_files.create_article(db, article_data, author_id=str(user.id))
+    try:
+        return news_files.create_article(db, article_data, author_id=str(user.id))
+    except Exception as e:
+        logger.error(f"Error creating article: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create article: {str(e)}",
+        )
 
 
 @router.put("/{slug}", response_model=ArticleWithRelations)
@@ -137,10 +166,19 @@ def update_article(
     user: User = Depends(_require_admin_or_write),
     db: Session = Depends(get_db),
 ):
-    result = news_files.update_article(db, slug, article_data)
-    if not result:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return result
+    try:
+        result = news_files.update_article(db, slug, article_data)
+        if not result:
+            raise HTTPException(status_code=404, detail="Article not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating article {slug}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update article: {str(e)}",
+        )
 
 
 @router.delete("/{slug}")

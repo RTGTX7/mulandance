@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import users, programs, events, content, portal, news
+from app.api.v1 import users, programs, events, content, portal, news, upload
 
 api_router = APIRouter()
 
@@ -9,3 +9,4 @@ api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(portal.router, prefix="/portal", tags=["portal"])
 api_router.include_router(news.router, prefix="/news", tags=["news"])
+api_router.include_router(upload.router, prefix="/upload", tags=["upload"])

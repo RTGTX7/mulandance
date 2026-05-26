@@ -1,10 +1,7 @@
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { ArrowLeft, Search } from 'lucide-react';
 
 export default function NotFound() {
-  const t = useTranslations('error');
-
   return (
     <div className="min-h-[80vh] bg-gradient-to-br from-[#FAFAF8] via-[#F5F0FF] to-[#FAFAF8] flex items-center">
       <div className="container mx-auto px-4 py-16">
@@ -27,46 +24,46 @@ export default function NotFound() {
 
           {/* Title */}
           <h2 className="text-3xl md:text-4xl font-bold font-heading text-[#1F1A2D] mb-4">
-            {t('title')}
+            Page Not Found
           </h2>
 
           {/* Description */}
           <p className="text-lg text-[#7C7480] mb-8 max-w-md mx-auto leading-relaxed">
-            {t('description')}
+            Oops! The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </p>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
-              href="/en"
+              href="/"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-[#6B21A8] to-[#A855F7] text-white px-8 py-3 rounded-full font-semibold shadow-medium hover:shadow-strong hover:-translate-y-0.5 transition-all duration-300"
             >
               <ArrowLeft className="w-5 h-5" />
-              {t('returnHome')}
+              Return Home
             </Link>
             <Link
-              href="/en/programs"
+              href="/programs"
               className="inline-flex items-center gap-2 border-2 border-[#6B21A8] text-[#6B21A8] px-8 py-3 rounded-full font-semibold hover:bg-[#6B21A8] hover:text-white transition-all duration-300"
             >
-              {t('explorePrograms')}
+              Explore Programs
             </Link>
           </div>
 
           {/* Help Section */}
           <div className="mt-12 p-6 bg-white rounded-xl border border-[#E5E1E8] shadow-soft">
-            <h3 className="text-lg font-semibold text-[#1F1A2D] mb-3">{t('helpTitle')}</h3>
+            <h3 className="text-lg font-semibold text-[#1F1A2D] mb-3">How to Find What You&apos;re Looking For</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="p-4 bg-[#FAFAF8] rounded-lg">
-                <p className="font-medium text-[#6B21A8] mb-1">{t('checkUrl.label')}</p>
-                <p className="text-[#7C7480]">{t('checkUrl.desc')}</p>
+                <p className="font-medium text-[#6B21A8] mb-1">Check the URL</p>
+                <p className="text-[#7C7480]">Make sure you&apos;ve typed the address correctly</p>
               </div>
               <div className="p-4 bg-[#FAFAF8] rounded-lg">
-                <p className="font-medium text-[#6B21A8] mb-1">{t('useSearch.label')}</p>
-                <p className="text-[#7C7480]">{t('useSearch.desc')}</p>
+                <p className="font-medium text-[#6B21A8] mb-1">Use Search</p>
+                <p className="text-[#7C7480]">Try searching for the content you need</p>
               </div>
               <div className="p-4 bg-[#FAFAF8] rounded-lg">
-                <p className="font-medium text-[#6B21A8] mb-1">{t('contactUs.label')}</p>
-                <p className="text-[#7C7480]">{t('contactUs.desc')}</p>
+                <p className="font-medium text-[#6B21A8] mb-1">Contact Us</p>
+                <p className="text-[#7C7480]">Reach out and we&apos;ll help you find your way</p>
               </div>
             </div>
           </div>

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { setAuthToken } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const t = useTranslations();
@@ -15,11 +16,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [locale, setLocale] = useState('en');
+
+  useEffect(() => {
+    const pathLocale = new URL(window.location.href).pathname.split('/')[1] || 'en';
+    setLocale(pathLocale);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess(false);
 
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -36,7 +45,11 @@ export default function LoginPage() {
 
       const data = await res.json();
       setAuthToken(data.access_token);
-      router.push(`/${typeof window !== 'undefined' ? new URL(window.location.href).pathname.split('/')[1] : 'en'}/admin/dashboard`);
+      setSuccess(true);
+      
+      setTimeout(() => {
+        router.push(`/${locale}/admin/dashboard`);
+      }, 1000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -54,40 +67,50 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">
-                {t('admin.login.email')}
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
+          {success ? (
+            <div className="text-center py-6">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <p className="text-green-600 font-medium">{t('common.accessibility.formSubmitted')}</p>
+              <p className="text-sm text-muted-foreground mt-2">Redirecting to dashboard...</p>
             </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1">
-                {t('admin.login.password')}
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? t('common.loading') : t('admin.login.signIn')}
-            </Button>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium mb-1">
+                  {t('admin.login.email')}
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="admin@mulandance.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-1">
+                  {t('admin.login.password')}
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                />
+              </div>
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? t('common.loading') : t('admin.login.signIn')}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
