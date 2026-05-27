@@ -4,16 +4,48 @@ import sys
 import uuid
 from datetime import datetime
 
+from sqlalchemy import inspect
+
 from app.core.database import engine
-from app.models import Base, User, NewsCategory, NewsTag
+from app.models import (
+    Base,
+    User,
+    NewsCategory,
+    NewsTag,
+    ArticleGroup,
+    ArticleGroupCategory,
+    ArticleGroupTag,
+    ArticleTranslation,
+)
 from app.core.security import get_password_hash
 
 
 def init_db():
-    print("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created successfully!")
+    """Create all missing database tables (safe, idempotent)."""
+    print("Checking database tables...")
     print(f"Database URL: {engine.url}")
+    
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    
+    # Get all tables from metadata
+    metadata_tables = set(Base.metadata.tables.keys())
+    
+    # Find missing tables
+    missing_tables = metadata_tables - existing_tables
+    
+    if missing_tables:
+        print(f"Creating missing tables: {sorted(missing_tables)}")
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully!")
+    else:
+        print("All tables already exist.")
+    
+    # List all tables
+    all_tables = inspector.get_table_names()
+    print(f"\nTotal tables in database: {len(all_tables)}")
+    for t in sorted(all_tables):
+        print(f"  - {t}")
 
 
 def create_admin(email: str, password: str, first_name: str, last_name: str, role: str = "admin"):
@@ -153,6 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed-categories", action="store_true", help="Seed default categories")
     parser.add_argument("--seed-tags", action="store_true", help="Seed default tags")
     parser.add_argument("--admin-role", type=str, default="admin", help="Admin role (admin/editor/faculty)")
+    parser.add_argument("--migrate-articles", action="store_true", help="Migrate articles from legacy system")
 
     args = parser.parse_args()
 

@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.models import NewsArticle, NewsCategory, NewsTag
 
 logger = logging.getLogger(__name__)
 from app.core.security import decode_token
@@ -74,8 +75,31 @@ def _require_admin_or_write(user: User = Depends(get_current_user)) -> User:
 
 
 # ====================================================================
-# Public endpoints
+# Public endpoints (specific routes FIRST, then parameterized)
 # ====================================================================
+
+
+@router.get("/admin/list", response_model=list[ArticleWithRelations])
+def list_admin_news(
+    category: Optional[str] = None,
+    tag: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    user: User = Depends(_require_admin_or_write),
+    db: Session = Depends(get_db),
+):
+    """Admin-only list: returns ALL articles including drafts."""
+    articles = news_files.list_articles(
+        db,
+        published_only=False,
+        category_slug=category,
+        tag_slug=tag,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
+    return articles
 
 
 @router.get("", response_model=list[ArticleWithRelations])
@@ -87,6 +111,7 @@ def list_public_news(
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
+    """Public list: only published articles."""
     articles = news_files.list_articles(
         db,
         published_only=True,
@@ -99,35 +124,6 @@ def list_public_news(
     return articles
 
 
-@router.get("/{slug}", response_model=ArticleWithHtml)
-def get_public_article(slug: str, db: Session = Depends(get_db)):
-    article = news_files.get_article(db, slug, include_html=True)
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    if not article["is_published"]:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return article
-
-
-# Admin endpoint: get any article (including drafts)
-@router.get("/admin/{slug}", response_model=ArticleWithHtml)
-def get_admin_article(slug: str, db: Session = Depends(get_db)):
-    article = news_files.get_article(db, slug, include_html=True)
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return article
-
-
-# Admin endpoint: get article by ID (no file dependency)
-@router.get("/admin/id/{article_id}", response_model=ArticleWithHtml)
-def get_admin_article_by_id(article_id: str, db: Session = Depends(get_db)):
-    article = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    result = news_files._get_article_with_relations(db, article, include_html=True)
-    return result
-
-
 @router.get("/categories", response_model=list[NewsCategoryResponse])
 def list_categories(db: Session = Depends(get_db)):
     return news_files.list_categories(db)
@@ -138,11 +134,34 @@ def list_tags(db: Session = Depends(get_db)):
     return news_files.list_tags(db)
 
 
-# ====================================================================
+@router.get("/admin/{slug}", response_model=ArticleWithHtml)
+def get_admin_article(slug: str, db: Session = Depends(get_db)):
+    article = news_files.get_article(db, slug, include_html=True)
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return article
+
+
+@router.get("/admin/id/{article_id}", response_model=ArticleWithHtml)
+def get_admin_article_by_id(article_id: str, db: Session = Depends(get_db)):
+    article = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    result = news_files._get_article_with_relations(db, article, include_html=True)
+    return result
+
+
+@router.get("/{slug}", response_model=ArticleWithHtml)
+def get_public_article(slug: str, db: Session = Depends(get_db)):
+    article = news_files.get_article(db, slug, include_html=True)
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    if not article["is_published"]:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return article
+
+
 # Admin endpoints (auth required)
-# ====================================================================
-
-
 @router.post("", response_model=ArticleWithRelations)
 def create_article(
     article_data: NewsArticleCreate,
@@ -187,10 +206,43 @@ def delete_article(
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
-    deleted = news_files.delete_article(db, slug)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return {"detail": "Article deleted"}
+    try:
+        deleted = news_files.delete_article(db, slug)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Article not found")
+        return {"detail": "Article deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting article {slug}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete article: {str(e)}",
+        )
+
+
+@router.put("/{slug}/status", response_model=ArticleWithRelations)
+def toggle_article_status(
+    slug: str,
+    status_data: dict,
+    user: User = Depends(_require_admin_or_write),
+    db: Session = Depends(get_db),
+):
+    """Toggle article publish status. Expects JSON body: {"is_published": true/false}"""
+    try:
+        published = status_data.get("is_published", False)
+        result = news_files.toggle_publish(db, slug, published)
+        if not result:
+            raise HTTPException(status_code=404, detail="Article not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling status for {slug}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update status: {str(e)}",
+        )
 
 
 # ====================================================================
@@ -217,10 +269,19 @@ def update_category(
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
-    result = news_files.update_category(db, slug, data)
-    if not result:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return result
+    try:
+        result = news_files.update_category(db, slug, data)
+        if not result:
+            raise HTTPException(status_code=404, detail="Category not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating category {slug}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update category: {str(e)}",
+        )
 
 
 @router.delete("/categories/{slug}")
@@ -229,10 +290,19 @@ def delete_category(
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
-    deleted = news_files.delete_category(db, slug)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return {"detail": "Category deleted"}
+    try:
+        deleted = news_files.delete_category(db, slug)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Category not found")
+        return {"detail": "Category deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting category {slug}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete category: {str(e)}",
+        )
 
 
 # ====================================================================
@@ -258,26 +328,40 @@ def delete_tag(
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
-    # Check if tag is in use
-    from app.models import NewsArticleTag
-    in_use = (
-        db.query(NewsArticleTag)
-        .filter(NewsArticleTag.tag_id == slug)
-        .first()
-    )
-    if not in_use:
-        # slug here is the tag slug; need to resolve to ID
+    try:
+        # First resolve slug to tag object
         tag = db.query(NewsTag).filter(NewsTag.slug == slug).first()
         if not tag:
             raise HTTPException(status_code=404, detail="Tag not found")
+
+        # Check if tag is in use via article_groups
+        from app.models import ArticleGroupTag
         in_use = (
-            db.query(NewsArticleTag)
-            .filter(NewsArticleTag.tag_id == str(tag.id))
+            db.query(ArticleGroupTag)
+            .filter(ArticleGroupTag.tag_id == str(tag.id))
             .first()
         )
-    if in_use:
-        raise HTTPException(status_code=400, detail="Tag is in use by articles")
-    deleted = news_files.delete_tag(db, slug)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Tag not found")
-    return {"detail": "Tag deleted"}
+        if not in_use:
+            # Also check legacy association
+            from app.models import NewsArticleTag
+            in_use = (
+                db.query(NewsArticleTag)
+                .filter(NewsArticleTag.tag_id == str(tag.id))
+                .first()
+            )
+
+        if in_use:
+            raise HTTPException(status_code=400, detail="Tag is in use by articles")
+
+        deleted = news_files.delete_tag(db, slug)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        return {"detail": "Tag deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting tag {slug}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete tag: {str(e)}",
+        )

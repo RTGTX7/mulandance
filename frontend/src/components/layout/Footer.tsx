@@ -79,7 +79,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/performances/current-season"
+                  href="/performances"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {t('common.nav.performances')}

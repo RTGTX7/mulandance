@@ -6,12 +6,14 @@ import { clearAuthToken, isAuthenticated } from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link, LogOut, FileText, CheckCircle, FilePlus, Tag } from 'lucide-react';
+import { Link, LogOut, FileText, CheckCircle, FilePlus, Tag, Folder } from 'lucide-react';
 
 interface Stats {
   total: number;
   published: number;
   drafts: number;
+  categories: number;
+  tags: number;
 }
 
 export default function DashboardPage() {
@@ -19,7 +21,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1];
-  const [stats, setStats] = useState<Stats>({ total: 0, published: 0, drafts: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, published: 0, drafts: 0, categories: 0, tags: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,12 +33,20 @@ export default function DashboardPage() {
       .then((res) => res.json())
       .then((articles: unknown[]) => {
         const articleList = articles as Array<{ is_published: boolean }>;
-        setStats({
-          total: articleList.length,
-          published: articleList.filter((a) => a.is_published).length,
-          drafts: articleList.filter((a) => !a.is_published).length,
+        // Also fetch categories and tags count
+        Promise.all([
+          fetch('/api/v1/news/categories').then((r) => r.json()).catch(() => []),
+          fetch('/api/v1/news/tags').then((r) => r.json()).catch(() => []),
+        ]).then(([cats, tags]) => {
+          setStats({
+            total: articleList.length,
+            published: articleList.filter((a) => a.is_published).length,
+            drafts: articleList.filter((a) => !a.is_published).length,
+            categories: Array.isArray(cats) ? cats.length : 0,
+            tags: Array.isArray(tags) ? tags.length : 0,
+          });
+          setLoading(false);
         });
-        setLoading(false);
       })
       .catch(() => {
         setLoading(false);
@@ -50,20 +60,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Admin Header */}
+      {/* Page Header */}
       <header className="bg-card border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="heading-sm">{t('admin.dashboard.title')}</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}/admin/articles`)}>
-              <Link className="h-4 w-4 mr-1" />
-              {t('common.back')}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" />
-              {t('admin.common.logout')}
-            </Button>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('admin.dashboard.title')}</h1>
         </div>
       </header>
 
@@ -103,7 +103,18 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold">{loading ? '...' : stats.drafts}</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:border-secondary/50" onClick={() => router.push(`/${locale}/admin/categories`)}>
+          <Card className="cursor-pointer hover:border-primary/50" onClick={() => router.push(`/${locale}/admin/categories`)}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Folder className="h-4 w-4" />
+                {t('admin.dashboard.totalCategories')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-primary">{loading ? '...' : stats.categories}</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-secondary/50" onClick={() => router.push(`/${locale}/admin/tags`)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Tag className="h-4 w-4" />
@@ -111,7 +122,7 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-secondary">Manage</p>
+              <p className="text-3xl font-bold text-secondary">{loading ? '...' : stats.tags}</p>
             </CardContent>
           </Card>
         </div>
@@ -126,10 +137,10 @@ export default function DashboardPage() {
             {t('admin.dashboard.viewAll')}
           </Button>
           <Button variant="outline" onClick={() => router.push(`/${locale}/admin/categories`)}>
-            Manage Categories
+            {t('admin.categories.title')}
           </Button>
           <Button variant="outline" onClick={() => router.push(`/${locale}/admin/tags`)}>
-            Manage Tags
+            {t('admin.tags.title')}
           </Button>
         </div>
 
@@ -140,7 +151,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-muted-foreground">{t('common.loading')}</p>
+              <p className="text-muted-foreground">{t('admin.common.loading')}</p>
             ) : (
               <div className="space-y-2">
                 <p className="text-muted-foreground">

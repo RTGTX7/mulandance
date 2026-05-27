@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-// Simple vertical divider component (replaces Separator)
-const VDivider = () => <div className="w-px h-6 bg-border mx-1" />;
+import { BackButton } from "@/components/ui/back-button";
 import {
   Bold,
   Italic,
@@ -22,7 +21,6 @@ import {
   Quote,
   Save,
   Eye,
-  ArrowLeft,
   List,
   ListOrdered,
   Underline,
@@ -30,6 +28,9 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+
+// Simple vertical divider component (replaces Separator)
+const VDivider = () => <div className="w-px h-6 bg-border mx-1" />;
 
 export interface Category {
   id: string;
@@ -354,9 +355,27 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     }
     
     try {
+      // Ensure slug is always present (required by backend)
+      let slugValue = slugText?.trim();
+      if (!slugValue) {
+        // Generate slug from title if empty
+        slugValue = titleText
+          .toLowerCase()
+          .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        const hasLatin = /[a-z0-9]/.test(slugValue);
+        if (!hasLatin) {
+          slugValue = "article-" + Date.now().toString(36);
+        }
+      }
+      // Sync slug back to form if it was auto-generated (helps user see it)
+      if (!slugText && slugValue) {
+        setForm((f) => ({ ...f, slug: slugValue }));
+      }
+      
       const data = {
         title: titleText,
-        slug: slugText || undefined,
+        slug: slugValue,
         summary: summaryText || undefined,
         body: bodyText,
         cover_image: coverImageText || undefined,
@@ -366,12 +385,18 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         is_published: published || form.is_published,
       };
 
+      console.log("[Save] URL endpoint:", editSlug ? `/v1/news/${editSlug}` : `/v1/news`);
+      console.log("[Save] Method:", editSlug ? "PUT" : "POST");
+      console.log("[Save] Payload:", JSON.stringify(data, null, 2));
+
       let result;
       if (editSlug) {
-        result = await newsApi.update(editSlug, data);
+        result = await newsApi.updateArticle(editSlug, data);
       } else {
-        result = await newsApi.create(data);
+        result = await newsApi.createArticle(data);
       }
+
+      console.log("[Save] Success:", result);
 
       setSaveStatus("saved");
       setLastSaved(new Date().toLocaleTimeString());
@@ -387,9 +412,22 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       }
     } catch (err: unknown) {
       setSaveStatus("error");
-      const errorMsg = err instanceof Error ? err.message : "Save failed";
-      console.error("Save error:", err);
-      alert(`Save failed: ${errorMsg}\n\nMake sure the backend API is running at http://localhost:8000`);
+      
+      // Better error handling: show actual error without backend URL message
+      let errorMsg = "Save failed";
+      if (err instanceof Error) {
+        const msg = err.message;
+        // If it's a network error, show the full message
+        if (msg.includes("Network error")) {
+          errorMsg = msg;
+        } else {
+          // It's an HTTP error (400/401/422/500) - show the detail
+          errorMsg = msg;
+        }
+      }
+      
+      console.error("[Save] Error:", err);
+      alert(`Save failed: ${errorMsg}`);
     } finally {
       setSaving(false);
     }
@@ -452,7 +490,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     if (!editSlug || !(typeof window !== "undefined" && confirm("Are you sure you want to delete this article?"))) return;
     try {
       if (!editSlug) return;
-      await newsApi.remove(editSlug);
+      await newsApi.removeArticle(editSlug);
       router.push(`/${locale}/admin/articles`);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Delete failed");
@@ -473,24 +511,19 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
-      <header className="bg-card border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push(`/${locale}/admin/articles`)}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-sm font-semibold hidden sm:block">
-              {editSlug
-                ? t("admin.editor.editArticle")
-                : t("admin.editor.newArticle")}
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-2 flex-wrap">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <BackButton fallbackRoute={`/${locale}/admin/articles`} />
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {editSlug
+                  ? t("admin.editor.editArticle")
+                  : t("admin.editor.newArticle")}
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
             {saveStatus === "saving" && (
               <span className="text-xs text-muted-foreground animate-pulse">
                 {t("admin.editor.autoSaving")}
@@ -543,6 +576,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
+            </div>
           </div>
         </div>
       </header>

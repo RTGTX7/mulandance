@@ -79,10 +79,10 @@ export default function NewsPage() {
       <section className="bg-gradient-to-br from-primary/5 via-secondary/5 to-background border-b">
         <div className="max-w-7xl mx-auto px-4 py-12 text-center">
           <h1 className="heading-lg mb-3">
-            {t('admin.news.title', { defaultMessage: 'Latest News & Updates' })}
+            {t('news.title')}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {t('news.subtitle', { defaultMessage: 'Stay updated with the latest from Mulan Dance Studio' })}
+            {t('news.subtitle')}
           </p>
         </div>
       </section>
@@ -97,7 +97,7 @@ export default function NewsPage() {
             onClick={() => handleCategoryChange('all')}
             className="flex-shrink-0"
           >
-            {t('news.allCategories', { defaultMessage: 'All' })}
+            {t('news.allCategories')}
           </Button>
           {categories.map((cat) => (
             <Button
@@ -139,7 +139,7 @@ export default function NewsPage() {
         ) : filteredArticles.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-lg text-muted-foreground">
-              {t('news.noArticles', { defaultMessage: 'No articles found.' })}
+              {t('news.noArticles')}
             </p>
           </div>
         ) : (
@@ -201,7 +201,7 @@ export default function NewsPage() {
                           : formatDate(article.created_at, locale === 'zh' ? 'zh-CN' : 'en-US')}
                       </span>
                       <span className="text-sm font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
-                        {t('news.readMore', { defaultMessage: 'Read more' })}
+                        {t('news.readMore')}
                         <ArrowRight className="h-4 w-4" />
                       </span>
                     </div>

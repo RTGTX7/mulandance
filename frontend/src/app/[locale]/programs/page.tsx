@@ -6,70 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { BookOpen, Footprints, Sparkles, Music, Zap, Globe } from 'lucide-react';
-import { ChevronDown } from 'lucide-react';
-
-const programData = [
-  {
-    id: 'chinese',
-    key: 'chinese',
-    icon: BookOpen,
-    href: '/programs#chinese',
-    color: 'from-red-500 to-pink-500',
-    title: 'home.programs.chinese',
-    desc: 'home.programs.chineseDesc',
-    description: 'programs.chinese.description',
-  },
-  {
-    id: 'folk',
-    key: 'folk',
-    icon: Globe,
-    href: '/programs#folk',
-    color: 'from-emerald-500 to-teal-500',
-    title: 'home.programs.folk',
-    desc: 'home.programs.folkDesc',
-    description: 'programs.folkDesc',
-  },
-  {
-    id: 'ballet',
-    key: 'ballet',
-    icon: Footprints,
-    href: '/programs#ballet',
-    color: 'from-purple-500 to-violet-500',
-    title: 'home.programs.ballet',
-    desc: 'home.programs.balletDesc',
-    description: 'programs.ballet.description',
-  },
-  {
-    id: 'contemporary',
-    key: 'contemporary',
-    icon: Sparkles,
-    href: '/programs#contemporary',
-    color: 'from-blue-500 to-cyan-500',
-    title: 'home.programs.contemporary',
-    desc: 'home.programs.contemporaryDesc',
-    description: 'programs.contemporary.description',
-  },
-  {
-    id: 'jazz',
-    key: 'jazz',
-    icon: Music,
-    href: '/programs#jazz',
-    color: 'from-amber-500 to-orange-500',
-    title: 'home.programs.jazz',
-    desc: 'home.programs.jazzDesc',
-    description: 'programs.jazz.description',
-  },
-  {
-    id: 'hiphop',
-    key: 'hiphop',
-    icon: Zap,
-    href: '/programs#hiphop',
-    color: 'from-green-500 to-emerald-500',
-    title: 'home.programs.hiphop',
-    desc: 'home.programs.hiphopDesc',
-    description: 'programs.hiphop.description',
-  },
-];
 
 export default function ProgramsPage() {
   const t = useTranslations();
@@ -90,36 +26,6 @@ export default function ProgramsPage() {
             <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
               {t('home.programs.subtitle')}
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Program Cards Section */}
-      <section className="section-padding bg-background">
-        <div className="container">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            {programData.map((prog) => {
-              const Icon = prog.icon;
-              return (
-                <Link key={prog.id} href={`/${prog.id === 'chinese' || prog.id === 'folk' ? 'programs/chinese-dance' : prog.id === 'hiphop' ? 'programs/hip-hop' : `programs/${prog.id}`}`}>
-                  <Card className="card-hover h-full group cursor-pointer border-0 shadow-soft">
-                    <CardHeader className="pb-4">
-                      <div className={`mb-4 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${prog.color} text-white group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-lg`}>
-                        <Icon className="h-7 w-7" />
-                      </div>
-                      <CardTitle className="heading-sm text-foreground">{t(prog.title)}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-5 leading-relaxed">{t(prog.desc)}</p>
-                      <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:text-secondary transition-colors">
-                        {t('common.buttons.learnMore')}
-                        <span className="ml-2 group-hover:translate-x-1 transition-transform duration-300">→</span>
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
           </div>
         </div>
       </section>

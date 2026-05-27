@@ -68,12 +68,10 @@ Mulan舞蹈工作室以培养孩子们的全方位舞蹈素养，了解多种舞
 ### 1.3 暂不开发的功能（第二阶段）
 
 - ❌ 活动系统（Events）
-- ❌ 课程表（Classes Schedule）
+- ❌ 课程表（Classes Schedule）pending
 - ❌ 在线报名（Registration）
-- ❌ 学员门户（Portal）
 - ❌ 支付系统
-- ❌ 消息系统
-- ❌ 校友系统
+- ❌ 新闻系统
 - ❌ 资源中心
 
 ---

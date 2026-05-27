@@ -74,7 +74,19 @@
       "error": "发生错误",
       "required": "必填字段",
       "formSubmitted": "表单提交成功"
-    }
+    },
+    "cancel": "取消",
+    "delete": "删除",
+    "save": "保存",
+    "add": "添加",
+    "edit": "编辑",
+    "back": "返回",
+    "loading": "加载中...",
+    "logout": "退出登录",
+    "success": "成功",
+    "error": "错误",
+    "yes": "是",
+    "no": "否"
   },
   "home": {
     "hero": {
@@ -205,7 +217,7 @@
       "haileyDesc": "Hailey Smith 拥有认知科学学士学位，主修神经科学，辅修语言学。她为教学带来了扎实的技术基础和丰富的比赛经验。",
       "haileyAchievements": [
         "Youth America Grand Prix Top 24",
-        "2024年 Candance 最高分 acro  audition",
+        "2024年 Candance 最高分 acro audition",
         "2024年 jazz solo 总分 Top 5",
         "强项：Ballet、Jazz 和 Acro",
         "Acro 是她特别热爱的领域，拥有丰富的教学经验"
@@ -349,12 +361,21 @@
       "subtitle": "今天开始您的舞蹈旅程",
       "form": {
         "studentName": "学员姓名",
-        "dateOfBirth": "出生日期",
-        "parentEmail": "家长邮箱",
-        "phone": "电话号码",
-        "experience": "以往经验",
+        "studentNamePlaceholder": "请输入学员姓名",
+        "parentName": "家长/监护人姓名",
+        "parentNamePlaceholder": "请输入家长/监护人姓名（选填）",
+        "email": "邮箱",
+        "emailPlaceholder": "请输入邮箱地址",
+        "phone": "电话",
+        "phonePlaceholder": "请输入电话号码（选填）",
+        "age": "年龄",
+        "agePlaceholder": "请输入年龄（选填）",
         "program": "课程选择",
-        "schedule": "偏好的时间安排",
+        "selectProgram": "请选择课程",
+        "experience": "以往经验",
+        "experiencePlaceholder": "是否有舞蹈基础？（选填）",
+        "message": "留言",
+        "messagePlaceholder": "有什么问题或特殊需求？（选填）",
         "submit": "立即报名"
       }
     }
@@ -440,6 +461,9 @@
     }
   },
   "admin": {
+    "news": {
+      "title": "新闻"
+    },
     "login": {
       "title": "管理登录",
       "email": "邮箱",
@@ -491,15 +515,52 @@
     },
     "articles": {
       "title": "文章管理",
+      "subtitle": "管理新闻、公告和文章。",
       "edit": "编辑",
+      "view": "查看",
       "delete": "删除",
+      "hide": "隐藏",
+      "publish": "发布",
       "confirmDelete": "确定要删除这篇文章吗？",
+      "confirmHide": "确定要隐藏这篇文章吗？它将不再在公开网站上显示。",
+      "confirmPublish": "确定要发布这篇文章吗？它将出现在公开网站上。",
       "deleted": "文章已删除",
+      "hidden": "文章已隐藏",
+      "published": "文章已发布",
       "search": "搜索文章...",
+      "searchPlaceholder": "按标题搜索...",
       "status": "状态",
       "date": "日期",
       "categoriesFilter": "按分类筛选",
-      "noArticles": "未找到文章"
+      "allCategories": "全部分类",
+      "statusFilter": "状态",
+      "allStatus": "全部",
+      "publishedStatus": "已发布",
+      "unpublishedStatus": "未发布",
+      "draft": "草稿",
+      "hidden": "已隐藏",
+      "noArticles": "还没有文章",
+      "noArticlesDesc": "创建第一篇文章来发布新闻或公告。",
+      "newArticle": "新建文章",
+      "publishedBadge": "已发布",
+      "unpublishedBadge": "未发布",
+      "draftBadge": "草稿",
+      "switchPublish": "点击发布",
+      "switchToDraft": "点击设为草稿",
+      "locale": "语言",
+      "sort": "排序",
+      "newestFirst": "最新优先",
+      "oldestFirst": "最旧优先",
+      "excerpt": "摘要",
+      "tags": "标签",
+      "articleCount": "{count} 篇文章",
+      "actions": "操作",
+      "viewPublic": "查看发布页",
+      "viewDraftNotice": "草稿文章暂未公开",
+      "untitled": "未命名文章",
+      "switchPublish": "点击发布此文章",
+      "switchUnpublish": "点击隐藏此文章",
+      "statusTextFailed": "更新状态失败"
     },
     "categories": {
       "title": "分类管理",
@@ -539,10 +600,40 @@
       "back": "返回",
       "yes": "是",
       "no": "否"
+    },
+    "categories": {
+      "title": "管理分类",
+      "noCategories": "还没有分类。添加第一个分类吧！",
+      "addTitle": "添加新分类",
+      "addDescription": "创建一个新的新闻分类。",
+      "slug": "标识符",
+      "nameEn": "名称（英文）",
+      "nameZh": "名称（中文）",
+      "color": "颜色",
+      "confirmDelete": "删除分类",
+      "confirmDeleteDesc": "确定要删除 \"{slug}\" 吗？该分类下的文章不会被删除。此操作不可撤销。",
+      "add": "添加分类",
+      "edit": "编辑分类"
+    },
+    "tags": {
+      "title": "管理标签",
+      "noTags": "还没有标签。添加第一个标签吧！",
+      "addTitle": "添加新标签",
+      "addDescription": "创建一个新的新闻标签。",
+      "slug": "标识符",
+      "nameEn": "名称（英文）",
+      "nameZh": "名称（中文）",
+      "confirmDelete": "删除标签",
+      "confirmDeleteDesc": "确定要删除 \"{slug}\" 吗？此操作不可撤销。",
+      "add": "添加标签",
+      "edit": "编辑标签"
     }
   },
   "news": {
     "title": "最新资讯与动态",
+    "admin": {
+      "title": "新闻"
+    },
     "subtitle": "了解木兰舞蹈工作室的最新消息",
     "readMore": "阅读更多",
     "backToNews": "返回新闻",

@@ -302,3 +302,53 @@ class NewsArticleTag(Base):
 
     article_id = Column(String(36), ForeignKey("news_articles.id", ondelete="CASCADE"), primary_key=True)
     tag_id = Column(String(36), ForeignKey("news_tags.id", ondelete="CASCADE"), primary_key=True)
+
+
+# ============================================================
+# Article Group & Translation Models
+# ============================================================
+
+class ArticleGroup(Base):
+    """Shared container for article translations. Categories/tags belong here."""
+    __tablename__ = "article_groups"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    shared_slug = Column(String(200), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class ArticleGroupCategory(Base):
+    __tablename__ = "article_group_categories"
+
+    group_id = Column(String(36), ForeignKey("article_groups.id", ondelete="CASCADE"), primary_key=True)
+    category_id = Column(String(36), ForeignKey("news_categories.id", ondelete="CASCADE"), primary_key=True)
+
+
+class ArticleGroupTag(Base):
+    __tablename__ = "article_group_tags"
+
+    group_id = Column(String(36), ForeignKey("article_groups.id", ondelete="CASCADE"), primary_key=True)
+    tag_id = Column(String(36), ForeignKey("news_tags.id", ondelete="CASCADE"), primary_key=True)
+
+
+class ArticleTranslation(Base):
+    """Locale-specific article content. One ArticleGroup can have EN and ZH versions."""
+    __tablename__ = "article_translations"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    group_id = Column(String(36), ForeignKey("article_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    locale = Column(String(10), nullable=False, default="en")  # "en" or "zh"
+    slug = Column(String(200), nullable=False)  # locale-specific slug
+    title = Column(String(300), nullable=False)
+    summary = Column(Text)
+    body = Column(Text)
+    author_id = Column(String(36), ForeignKey("users.id"))
+    published_at = Column(DateTime(timezone=True))
+    cover_image = Column(String(500))
+    is_published = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    class Config:
+        pass
