@@ -31,7 +31,7 @@ export default function LoginPage() {
     setSuccess(false);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
       const res = await fetch(`${API_URL}/api/v1/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

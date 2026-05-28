@@ -3,7 +3,8 @@ import sqlite3
 import uuid
 from passlib.context import CryptContext
 
-DB_PATH = r"C:\Users\rtgtx\Desktop\mulandance\backend\dance_org.db"
+import os
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dance_org.db")
 
 def main():
     ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
