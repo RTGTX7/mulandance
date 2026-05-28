@@ -217,6 +217,28 @@ export interface NewsArticle {
   rendered_body?: string;
 }
 
+export interface ArticleTranslationSummary {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  summary?: string;
+  is_published: boolean;
+  published_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface NewsArticleGroup {
+  id: string;
+  shared_slug: string;
+  translations: ArticleTranslationSummary[];
+  categories: NewsCategory[];
+  tags: NewsTag[];
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ArticleCreateBody {
   title: string;
   slug: string;
@@ -275,6 +297,7 @@ export const newsApi = {
     category?: string;
     tag?: string;
     search?: string;
+    locale?: string;
     limit?: number;
     offset?: number;
   }) => {
@@ -282,6 +305,7 @@ export const newsApi = {
     if (params?.category) query.set('category', params.category);
     if (params?.tag) query.set('tag', params.tag);
     if (params?.search) query.set('search', params.search);
+    if (params?.locale) query.set('locale', params.locale);
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.offset) query.set('offset', String(params.offset));
     const qs = query.toString();
@@ -306,7 +330,28 @@ export const newsApi = {
     return api.get<NewsArticle[]>(`/v1/news/admin/list${qs ? '?' + qs : ''}`);
   },
 
-  get: (slug: string) => api.get<NewsArticle>(`/v1/news/admin/${slug}`),
+  adminGroups: (params?: {
+    category?: string;
+    tag?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.category) query.set('category', params.category);
+    if (params?.tag) query.set('tag', params.tag);
+    if (params?.search) query.set('search', params.search);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return api.get<NewsArticleGroup[]>(`/v1/news/admin/groups${qs ? '?' + qs : ''}`);
+  },
+
+  get: (slug: string, locale?: string) =>
+    api.get<NewsArticle>(`/v1/news/admin/${slug}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+
+  publicGet: (slug: string, locale?: string) =>
+    api.get<NewsArticle>(`/v1/news/${slug}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
 
   createArticle: (body: ArticleCreateBody) => api.post<NewsArticle>('/v1/news', body),
 
@@ -390,4 +435,250 @@ export const uploadApi = {
 
     return response.json();
   },
+  file: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/api/v1/upload/file`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const errorMsg = getErrorMessage(error);
+      console.error('[File Upload Error]', response.status, errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    return response.json();
+  },
+};
+
+// ====================================================================
+// Site settings API helpers
+// ====================================================================
+
+export interface RegistrationLinks {
+  registration_url: string;
+  summer_camp_registration_url: string;
+  summer_camp_enabled: boolean;
+}
+
+export const settingsApi = {
+  registrationLinks: () => api.get<RegistrationLinks>('/v1/settings/registration-links'),
+  updateRegistrationLinks: (body: RegistrationLinks) =>
+    api.put<RegistrationLinks>('/v1/settings/registration-links', body),
+  site: () => api.get<SystemSettings>('/v1/settings/site'),
+  updateSite: (body: SystemSettings) => api.put<SystemSettings>('/v1/settings/site', body),
+};
+
+export interface SystemSettings {
+  site_name: string;
+  logo_url: string;
+  header_cta_label: string;
+  header_cta_href: string;
+  show_admin_login: boolean;
+  announcement_enabled: boolean;
+  announcement_text: string;
+  announcement_href: string;
+  footer_description: string;
+  footer_newsletter_title: string;
+  footer_newsletter_text: string;
+  copyright_text: string;
+  privacy_href: string;
+  contact_email: string;
+  contact_phone: string;
+  contact_address: string;
+  youtube_url: string;
+  xiaohongshu_url: string;
+  instagram_url: string;
+  facebook_url: string;
+  tiktok_url: string;
+}
+
+// ====================================================================
+// Faculty API helpers
+// ====================================================================
+
+export interface FacultyMember {
+  id: string;
+  name: string;
+  role?: string;
+  bio?: string;
+  photo_url?: string;
+  specialties?: string;
+  achievements?: string;
+  is_active: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface FacultyMemberBody {
+  name: string;
+  role?: string;
+  bio?: string;
+  photo_url?: string;
+  specialties?: string;
+  achievements?: string;
+  is_active: boolean;
+  order_index: number;
+}
+
+export const facultyApi = {
+  list: () => api.get<FacultyMember[]>('/v1/faculty'),
+  adminList: () => api.get<FacultyMember[]>('/v1/faculty/admin/list'),
+  create: (body: FacultyMemberBody) => api.post<FacultyMember>('/v1/faculty', body),
+  update: (id: string, body: Partial<FacultyMemberBody>) =>
+    api.put<FacultyMember>(`/v1/faculty/${id}`, body),
+  remove: (id: string) => api.delete<Record<string, unknown>>(`/v1/faculty/${id}`),
+};
+
+// ====================================================================
+// Programs API helpers
+// ====================================================================
+
+export interface ProgramItem {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  category: string;
+  level?: string;
+  syllabus_ref?: string;
+  cover_image?: string;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ProgramBody {
+  slug: string;
+  name: string;
+  description?: string;
+  category: string;
+  level?: string;
+  syllabus_ref?: string;
+  cover_image?: string;
+  order_index: number;
+}
+
+export const programApi = {
+  list: () => api.get<ProgramItem[]>('/v1/programs/'),
+  adminList: () => api.get<ProgramItem[]>('/v1/programs/admin/list'),
+  create: (body: ProgramBody) => api.post<ProgramItem>('/v1/programs/', body),
+  update: (id: string, body: Partial<ProgramBody> & { is_active?: boolean }) =>
+    api.put<ProgramItem>(`/v1/programs/${id}`, body),
+  remove: (id: string) => api.delete<Record<string, unknown>>(`/v1/programs/${id}`),
+};
+
+// ====================================================================
+// Classroom timetable API helpers
+// ====================================================================
+
+export type ClassroomRoom = 'large' | 'small';
+export type ClassroomBookingType = 'internal' | 'external';
+export type ClassroomBookingStatus = 'pending' | 'confirmed' | 'rejected';
+
+export interface ClassroomBooking {
+  id: string;
+  room: ClassroomRoom;
+  booking_type: ClassroomBookingType;
+  status: ClassroomBookingStatus;
+  title: string;
+  teacher_name?: string;
+  applicant_name?: string;
+  applicant_contact?: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  notes?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ClassroomBookingBody {
+  room: ClassroomRoom;
+  booking_type: ClassroomBookingType;
+  status?: ClassroomBookingStatus;
+  title: string;
+  teacher_name?: string;
+  applicant_name?: string;
+  applicant_contact?: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  notes?: string;
+}
+
+export const classroomApi = {
+  list: (params?: { room?: ClassroomRoom; status?: ClassroomBookingStatus }) => {
+    const query = new URLSearchParams();
+    if (params?.room) query.set('room', params.room);
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return api.get<ClassroomBooking[]>(`/v1/classrooms/bookings${qs ? '?' + qs : ''}`);
+  },
+  create: (body: ClassroomBookingBody) =>
+    api.post<ClassroomBooking>('/v1/classrooms/bookings', body),
+  update: (id: string, body: Partial<ClassroomBookingBody>) =>
+    api.put<ClassroomBooking>(`/v1/classrooms/bookings/${id}`, body),
+  remove: (id: string) =>
+    api.delete<Record<string, unknown>>(`/v1/classrooms/bookings/${id}`),
+};
+
+// ====================================================================
+// Course schedule and school policy API helpers
+// ====================================================================
+
+export interface CourseScheduleItem {
+  id: string;
+  day_of_week: number;
+  title: string;
+  start_time: string;
+  end_time: string;
+  description?: string;
+  location: string;
+  is_active: boolean;
+  order_index: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CourseScheduleItemBody {
+  day_of_week: number;
+  title: string;
+  start_time: string;
+  end_time: string;
+  description?: string;
+  location: string;
+  is_active: boolean;
+  order_index: number;
+}
+
+export interface SchoolPolicy {
+  title: string;
+  body_markdown: string;
+  updated_at?: string;
+}
+
+export const scheduleApi = {
+  list: (params?: { includeInactive?: boolean }) => {
+    const query = new URLSearchParams();
+    if (params?.includeInactive) query.set('include_inactive', 'true');
+    const qs = query.toString();
+    return api.get<CourseScheduleItem[]>(`/v1/schedules/classes${qs ? '?' + qs : ''}`);
+  },
+  create: (body: CourseScheduleItemBody) =>
+    api.post<CourseScheduleItem>('/v1/schedules/classes', body),
+  update: (id: string, body: Partial<CourseScheduleItemBody>) =>
+    api.put<CourseScheduleItem>(`/v1/schedules/classes/${id}`, body),
+  remove: (id: string) =>
+    api.delete<Record<string, unknown>>(`/v1/schedules/classes/${id}`),
+  policy: () => api.get<SchoolPolicy>('/v1/schedules/policy'),
+  updatePolicy: (body: SchoolPolicy) => api.put<SchoolPolicy>('/v1/schedules/policy', body),
 };

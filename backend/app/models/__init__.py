@@ -53,6 +53,8 @@ class Program(Base):
     category = Column(String(100), nullable=False)
     level = Column(String(100))
     syllabus_ref = Column(String(200))
+    cover_image = Column(String(1000))
+    order_index = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -250,6 +252,106 @@ class VenueBooking(Base):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     status = Column(String(50), default="pending")
+
+
+class RegistrationSettings(Base):
+    __tablename__ = "registration_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    registration_url = Column(String(1000), default="")
+    summer_camp_registration_url = Column(String(1000), default="")
+    summer_camp_enabled = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class SystemSettings(Base):
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    site_name = Column(String(200), default="Mulan Dance Studio")
+    logo_url = Column(String(1000), default="/logo.png")
+    header_cta_label = Column(String(100), default="Register")
+    header_cta_href = Column(String(1000), default="/classes/register")
+    show_admin_login = Column(Boolean, default=True)
+    announcement_enabled = Column(Boolean, default=False)
+    announcement_text = Column(String(500), default="")
+    announcement_href = Column(String(1000), default="")
+    footer_description = Column(Text)
+    footer_newsletter_title = Column(String(200), default="Join Us")
+    footer_newsletter_text = Column(Text)
+    copyright_text = Column(String(500), default="All rights reserved.")
+    privacy_href = Column(String(1000), default="/privacy")
+    contact_email = Column(String(255), default="info@mulandance.com")
+    contact_phone = Column(String(100), default="3437771766")
+    contact_address = Column(Text)
+    youtube_url = Column(String(1000), default="https://www.youtube.com/@mulandancestudio21")
+    xiaohongshu_url = Column(String(1000), default="https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476")
+    instagram_url = Column(String(1000), default="")
+    facebook_url = Column(String(1000), default="")
+    tiktok_url = Column(String(1000), default="")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class FacultyMember(Base):
+    __tablename__ = "faculty_members"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False)
+    role = Column(String(200))
+    bio = Column(Text)
+    photo_url = Column(String(1000))
+    specialties = Column(Text)
+    achievements = Column(Text)
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class ClassroomBooking(Base):
+    __tablename__ = "classroom_bookings"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    room = Column(String(20), nullable=False)  # large or small
+    booking_type = Column(String(20), nullable=False, default="internal")  # internal or external
+    status = Column(String(20), nullable=False, default="confirmed")  # pending, confirmed, rejected
+    title = Column(String(200), nullable=False)
+    teacher_name = Column(String(100))
+    applicant_name = Column(String(100))
+    applicant_contact = Column(String(100))
+    day_of_week = Column(Integer, nullable=False)
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    notes = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class CourseScheduleItem(Base):
+    __tablename__ = "course_schedule_items"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    day_of_week = Column(Integer, nullable=False)
+    title = Column(String(200), nullable=False)
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    description = Column(Text)
+    location = Column(String(300), nullable=False)
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class SchoolPolicy(Base):
+    __tablename__ = "school_policies"
+
+    id = Column(Integer, primary_key=True, default=1)
+    title = Column(String(200), default="学校规章制度及退费规则")
+    body_markdown = Column(Text, default="")
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class AuditLog(Base):

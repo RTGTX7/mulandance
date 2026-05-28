@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { EditorContent } from "../EditorContent";
 
 export async function generateMetadata({
@@ -18,5 +19,9 @@ export default async function EditorSlugPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { slug } = await params;
-  return <EditorContent editSlug={slug} />;
+  return (
+    <Suspense fallback={null}>
+      <EditorContent editSlug={slug} />
+    </Suspense>
+  );
 }

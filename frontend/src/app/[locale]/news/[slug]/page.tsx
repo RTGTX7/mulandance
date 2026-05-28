@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CalendarDays, Tag, Folder } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { articleLocaleFor, dateLocaleFor, localizeText } from '@/lib/i18n';
 
 interface Article {
   id: string;
@@ -27,6 +28,24 @@ interface Article {
   tags?: Array<{ slug: string; name: string; name_zh?: string }>;
 }
 
+function localizeArticle(article: Article, locale: string): Article {
+  return {
+    ...article,
+    title: localizeText(article.title, locale) || article.title,
+    summary: localizeText(article.summary, locale) || article.summary,
+    body: localizeText(article.body, locale) || article.body,
+    rendered_body: localizeText(article.rendered_body, locale) || article.rendered_body,
+    categories: article.categories?.map((category) => ({
+      ...category,
+      name_zh: localizeText(category.name_zh, locale) || category.name_zh,
+    })),
+    tags: article.tags?.map((tag) => ({
+      ...tag,
+      name_zh: localizeText(tag.name_zh, locale) || tag.name_zh,
+    })),
+  };
+}
+
 export default function ArticleDetailPage() {
   const t = useTranslations();
   const router = useRouter();
@@ -42,8 +61,8 @@ export default function ArticleDetailPage() {
     if (!slug) return;
     const fetchArticle = async () => {
       try {
-        const data = await newsApi.get(slug);
-        setArticle(data as Article);
+        const data = await newsApi.publicGet(slug, articleLocaleFor(locale));
+        setArticle(localizeArticle(data as Article, locale));
       } catch {
         setError(true);
       } finally {
@@ -51,7 +70,7 @@ export default function ArticleDetailPage() {
       }
     };
     fetchArticle();
-  }, [slug]);
+  }, [slug, locale]);
 
   const categoryNames = article?.categories
     ?.map((c) => c.name_zh ? `${c.name} (${c.name_zh})` : c.name)
@@ -122,7 +141,7 @@ export default function ArticleDetailPage() {
               {article.published_at && (
                 <span className="flex items-center gap-1">
                   <CalendarDays className="h-4 w-4" />
-                  {formatDate(article.published_at, locale === 'zh' ? 'zh-CN' : 'en-US')}
+                  {formatDate(article.published_at, dateLocaleFor(locale))}
                 </span>
               )}
               {article.categories && article.categories.length > 0 && (
@@ -202,8 +221,8 @@ export default function ArticleDetailPage() {
                   <span>
                     {t('news.published', { defaultMessage: 'Published' })}:{' '}
                     {article.published_at
-                      ? formatDate(article.published_at, locale === 'zh' ? 'zh-CN' : 'en-US')
-                      : formatDate(article.created_at, locale === 'zh' ? 'zh-CN' : 'en-US')}
+                      ? formatDate(article.published_at, dateLocaleFor(locale))
+                      : formatDate(article.created_at, dateLocaleFor(locale))}
                   </span>
                   <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}/news`)}>
                     <ArrowLeft className="h-4 w-4 mr-1" />

@@ -1,124 +1,85 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslations } from '@/components/ui/i18n-client';
+import { settingsApi } from '@/lib/api';
+import { ExternalLink, Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const t = useTranslations();
-  const isZh = typeof window !== 'undefined' && window.location.pathname.startsWith('/zh');
-  const [submitted, setSubmitted] = useState(false);
+  const [targetUrl, setTargetUrl] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-  };
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRegistrationLink() {
+      try {
+        const links = await settingsApi.registrationLinks();
+        if (!mounted) return;
+
+        const params = new URLSearchParams(window.location.search);
+        const isSummerCamp = params.get('type') === 'summer-camp';
+        const summerUrl = links.summer_camp_enabled ? links.summer_camp_registration_url : '';
+        const nextUrl = (isSummerCamp && summerUrl ? summerUrl : links.registration_url).trim();
+
+        setTargetUrl(nextUrl);
+        if (nextUrl) {
+          window.location.assign(nextUrl);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : 'Unable to load registration link');
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadRegistrationLink();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="section-padding">
       <div className="container max-w-2xl">
         <Breadcrumbs items={[{ label: t('common.nav.classes'), href: 'classes' }]} />
         <h1 className="heading-xl mb-4">{t('programs.register.title')}</h1>
-        <p className="text-lead mb-12">{t('programs.register.subtitle')}</p>
+        <p className="text-lead mb-8">{t('programs.register.subtitle')}</p>
 
         <Card>
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    {t('programs.register.form.studentName')}
-                  </label>
-                  <Input required placeholder={isZh ? '学员姓名' : 'Full name'} />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    {t('programs.register.form.dateOfBirth')}
-                  </label>
-                  <Input type="date" required />
-                </div>
+          <CardContent className="space-y-5 pt-6">
+            {loading && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                正在打开报名链接...
               </div>
+            )}
 
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">
-                  {t('programs.register.form.program')}
-                </label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isZh ? '选择课程' : 'Select a program'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="chinese">{t('home.programs.chinese')}</SelectItem>
-                    <SelectItem value="folk">{t('home.programs.folk')}</SelectItem>
-                    <SelectItem value="ballet">{t('home.programs.ballet')}</SelectItem>
-                    <SelectItem value="contemporary">{t('home.programs.contemporary')}</SelectItem>
-                    <SelectItem value="jazz">{t('home.programs.jazz')}</SelectItem>
-                    <SelectItem value="hiphop">{t('home.programs.hiphop')}</SelectItem>
-                    <SelectItem value="summer">{t('programs.summer.title')}</SelectItem>
-                  </SelectContent>
-                </Select>
+            {!loading && targetUrl && (
+              <>
+                <p className="text-muted-foreground">如果页面没有自动打开，请点击下面的按钮继续报名。</p>
+                <Button asChild size="lg" className="w-full">
+                  <a href={targetUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    打开报名链接
+                  </a>
+                </Button>
+              </>
+            )}
+
+            {!loading && !targetUrl && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {error || '报名链接还没有配置，请稍后再试。'}
               </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">
-                  {t('programs.register.form.parentEmail')}
-                </label>
-                <Input type="email" required placeholder={isZh ? '家长邮箱' : 'parent@email.com'} />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">
-                  {t('programs.register.form.phone')}
-                </label>
-                <Input placeholder={isZh ? '电话号码' : '+1 (555) 000-0000'} />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">
-                  {t('programs.register.form.experience')}
-                </label>
-                <Textarea placeholder={isZh ? '请告诉我您孩子的舞蹈经验...' : 'Tell us about any previous dance experience...'} rows={3} />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1.5 block">
-                  {t('programs.register.form.schedule')}
-                </label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isZh ? '偏好时间' : 'Preferred schedule'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monday">{isZh ? '周一/三' : 'Monday/Wednesday'}</SelectItem>
-                    <SelectItem value="tuesday">{isZh ? '周二/四' : 'Tuesday/Thursday'}</SelectItem>
-                    <SelectItem value="saturday">{isZh ? '周六上午' : 'Saturday Morning'}</SelectItem>
-                    <SelectItem value="flexible">{isZh ? '灵活' : 'Flexible'}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button type="submit" size="lg" className="w-full">
-                {t('programs.register.form.submit')}
-              </Button>
-
-              {submitted && (
-                <p className="text-sm text-green-600 text-center">
-                  {isZh ? '报名成功！我们将在2个工作日内与您联系。' : 'Registration submitted successfully! We will contact you within 2 business days.'}
-                </p>
-              )}
-            </form>
+            )}
           </CardContent>
         </Card>
       </div>

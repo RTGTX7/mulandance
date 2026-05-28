@@ -1,80 +1,129 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useEffect, useMemo, useState } from 'react';
+import { marked } from 'marked';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { useTranslations } from '@/components/ui/i18n-client';
+import { CourseScheduleItem, SchoolPolicy, scheduleApi } from '@/lib/api';
+import { CalendarDays, MapPin } from 'lucide-react';
 
-const schedule = [
-  { day: 'Monday', classes: [
-    { time: '9:00 AM', program: 'Young Dancers Ballet', instructor: 'Ms. Chen', level: 'Ages 3-5' },
-    { time: '4:00 PM', program: 'Ballet Grade 1-2', instructor: 'Ms. Chen', level: 'Beginner' },
-    { time: '5:00 PM', program: 'Contemporary Intermediate', instructor: 'Mr. Park', level: 'Intermediate' },
-    { time: '6:30 PM', program: 'Adult Jazz', instructor: 'Ms. Williams', level: 'All Levels' },
-  ]},
-  { day: 'Tuesday', classes: [
-    { time: '9:00 AM', program: 'Chinese Dance Foundations', instructor: 'Ms. Li', level: 'Beginner' },
-    { time: '4:30 PM', program: 'Hip-Hop Beginners', instructor: 'Mr. Davis', level: 'Ages 6-12' },
-    { time: '6:00 PM', program: 'Ballet Advanced', instructor: 'Ms. Chen', level: 'Advanced' },
-  ]},
-  { day: 'Wednesday', classes: [
-    { time: '9:00 AM', program: 'Contemporary Foundations', instructor: 'Mr. Park', level: 'Beginner' },
-    { time: '4:00 PM', program: 'Jazz Intermediate', instructor: 'Ms. Williams', level: 'Intermediate' },
-    { time: '5:30 PM', program: 'Chinese Dance Advanced', instructor: 'Ms. Li', level: 'Advanced' },
-    { time: '7:00 PM', program: 'Adult Contemporary', instructor: 'Mr. Park', level: 'All Levels' },
-  ]},
-  { day: 'Thursday', classes: [
-    { time: '4:00 PM', program: 'Ballet Grade 3-4', instructor: 'Ms. Chen', level: 'Intermediate' },
-    { time: '5:00 PM', program: 'Hip-Hop Advanced', instructor: 'Mr. Davis', level: 'Advanced' },
-    { time: '6:30 PM', program: 'Pre-Professional Ballet', instructor: 'Ms. Chen', level: 'Pre-Prof' },
-  ]},
-  { day: 'Friday', classes: [
-    { time: '3:30 PM', program: 'Young Dancers Creative Movement', instructor: 'Ms. Li', level: 'Ages 4-6' },
-    { time: '4:30 PM', program: 'Contemporary Advanced', instructor: 'Mr. Park', level: 'Advanced' },
-    { time: '6:00 PM', program: 'Adult Ballet', instructor: 'Ms. Chen', level: 'All Levels' },
-  ]},
-  { day: 'Saturday', classes: [
-    { time: '9:00 AM', program: 'Ballet All Levels', instructor: 'Ms. Chen', level: 'Mixed' },
-    { time: '10:00 AM', program: 'Chinese Dance Folk', instructor: 'Ms. Li', level: 'Intermediate' },
-    { time: '11:00 AM', program: 'Jazz & Hip-Hop Combo', instructor: 'Mr. Davis', level: 'Ages 8-14' },
-    { time: '1:00 PM', program: 'Open Studio', instructor: 'Various', level: 'All' },
-  ]},
-];
+const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 
 export default function SchedulePage() {
   const t = useTranslations();
+  const [items, setItems] = useState<CourseScheduleItem[]>([]);
+  const [policy, setPolicy] = useState<SchoolPolicy | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    Promise.all([scheduleApi.list(), scheduleApi.policy()])
+      .then(([scheduleItems, policyData]) => {
+        setItems(scheduleItems);
+        setPolicy(policyData);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : '排课表加载失败'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const grouped = useMemo(() => {
+    return displayOrder.map((day) => ({
+      day,
+      label: weekdays[day],
+      items: items
+        .filter((item) => item.day_of_week === day)
+        .sort((a, b) =>
+          a.order_index - b.order_index ||
+          a.start_time.localeCompare(b.start_time) ||
+          a.end_time.localeCompare(b.end_time)
+        ),
+    }));
+  }, [items]);
+
+  const policyHtml = useMemo(() => {
+    if (!policy?.body_markdown) return '';
+    return String(marked.parse(policy.body_markdown));
+  }, [policy]);
 
   return (
-    <div className="section-padding">
-      <div className="container container-narrow">
-        <Breadcrumbs items={[{ label: t('common.nav.classes'), href: 'classes' }]} />
-        <h1 className="heading-xl mb-4">{t('classes.schedule')}</h1>
-        <p className="text-lead mb-12">
-          Find the perfect class time for you or your child.
-        </p>
-
-        <div className="space-y-8">
-          {schedule.map((day) => (
-            <Card key={day.day}>
-              <CardContent className="pt-6">
-                <h2 className="heading-sm mb-4 text-primary">{day.day}</h2>
-                <div className="space-y-3">
-                  {day.classes.map((cls) => (
-                    <div key={cls.time} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-2 border-b last:border-0">
-                      <span className="text-sm font-medium text-secondary w-20 shrink-0">{cls.time}</span>
-                      <div className="flex-1">
-                        <span className="font-medium text-sm">{cls.program}</span>
-                        <span className="text-sm text-muted-foreground ml-2">— {cls.instructor}</span>
-                      </div>
-                      <Badge variant="outline" className="shrink-0">{cls.level}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+    <main className="section-padding bg-slate-50">
+      <div className="container space-y-8">
+        <div className="max-w-3xl">
+          <Breadcrumbs items={[{ label: t('common.nav.classes'), href: 'classes' }]} />
+          <div className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-1 text-sm font-medium text-purple-700 shadow-sm">
+            <CalendarDays className="h-4 w-4" />
+            课程排课表
+          </div>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+            {t('classes.schedule')}
+          </h1>
+          <p className="mt-4 text-lg leading-8 text-slate-600">
+            查看各班级上课时间、适合年龄基础和上课地址。具体名额以报名确认结果为准。
+          </p>
         </div>
+
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <Card>
+            <CardContent className="p-8 text-sm text-slate-500">加载中...</CardContent>
+          </Card>
+        ) : (
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {grouped.map((day) => (
+              <Card key={day.day} className="rounded-lg">
+                <CardContent className="p-5">
+                  <h2 className="mb-4 text-xl font-semibold text-slate-950">{day.label}</h2>
+                  {day.items.length === 0 ? (
+                    <p className="text-sm text-slate-500">暂无课程安排。</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {day.items.map((item) => (
+                        <div key={item.id} className="rounded-md border border-slate-200 bg-white p-4">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <h3 className="font-semibold text-slate-950">{item.title}</h3>
+                              {item.description && (
+                                <p className="mt-1 text-sm leading-6 text-slate-600">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="shrink-0">
+                              {item.start_time} - {item.end_time}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
+                            <MapPin className="h-4 w-4" />
+                            {item.location}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+        )}
+
+        {policy && (
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-2xl font-semibold text-slate-950">{policy.title}</h2>
+            <div
+              className="prose prose-slate mt-5 max-w-none prose-headings:font-semibold prose-li:my-1 prose-p:leading-7"
+              dangerouslySetInnerHTML={{ __html: policyHtml }}
+            />
+          </section>
+        )}
       </div>
-    </div>
+    </main>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslations } from "@/components/ui/i18n-client";
-import { clearAuthToken, isAuthenticated, newsApi, api, uploadApi } from "@/lib/api";
-import { useRouter, usePathname } from "next/navigation";
+import { isAuthenticated, newsApi, uploadApi, NewsArticleGroup } from "@/lib/api";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,10 +27,41 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
+  Paperclip,
 } from "lucide-react";
 
 // Simple vertical divider component (replaces Separator)
 const VDivider = () => <div className="w-px h-6 bg-border mx-1" />;
+
+function PublishSwitch({
+  checked,
+  onCheckedChange,
+  publishedLabel = "Published",
+  draftLabel = "Draft",
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  publishedLabel?: string;
+  draftLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={checked}
+      onClick={() => onCheckedChange(!checked)}
+      className={`inline-flex h-8 min-w-[116px] items-center gap-2 rounded-full border px-2.5 text-sm font-medium transition-colors ${
+        checked
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+          : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+      }`}
+    >
+      <span className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? "bg-emerald-500" : "bg-slate-300"}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+      </span>
+      <span className="leading-none">{checked ? publishedLabel : draftLabel}</span>
+    </button>
+  );
+}
 
 export interface Category {
   id: string;
@@ -61,6 +92,12 @@ export interface ArticleData {
   published_at?: string;
 }
 
+const SUPPORTED_LOCALES = [
+  { code: "en", label: "EN", name: "English" },
+  { code: "zh", label: "简体", name: "简体中文" },
+  { code: "fr", label: "FR", name: "French" },
+];
+
 const DEFAULT_CATEGORIES: Category[] = [
   { id: "1", slug: "announcements", name: "Announcements", name_zh: "公告", color: "#6366f1" },
   { id: "2", slug: "performances", name: "Performances", name_zh: "演出", color: "#ec4899" },
@@ -73,6 +110,22 @@ const DEFAULT_TAGS: Tag[] = [
   { id: "1", slug: "summer-camp", name: "Summer Camp", name_zh: "暑期夏令营" },
   { id: "2", slug: "registration", name: "Registration", name_zh: "报名" },
   { id: "3", slug: "competition", name: "Competition", name_zh: "比赛" },
+  { id: "4", slug: "performance", name: "Performance", name_zh: "演出" },
+  { id: "5", slug: "schedule", name: "Schedule", name_zh: "课表" },
+  { id: "6", slug: "announcement", name: "Announcement", name_zh: "公告" },
+  { id: "7", slug: "chinese-dance", name: "Chinese Dance", name_zh: "中国舞" },
+  { id: "8", slug: "classical-dance", name: "Classical Dance", name_zh: "古典舞" },
+  { id: "9", slug: "folk-dance", name: "Folk Dance", name_zh: "民族民间舞" },
+  { id: "10", slug: "ballet", name: "Ballet", name_zh: "芭蕾舞" },
+  { id: "11", slug: "jazz", name: "Jazz", name_zh: "爵士舞" },
+  { id: "12", slug: "hip-hop", name: "Hip-Hop", name_zh: "街舞" },
+  { id: "13", slug: "contemporary", name: "Contemporary", name_zh: "现代舞" },
+  { id: "14", slug: "children", name: "Children", name_zh: "少儿" },
+  { id: "15", slug: "adult", name: "Adult", name_zh: "成人" },
+  { id: "16", slug: "workshop", name: "Workshop", name_zh: "工作坊" },
+  { id: "17", slug: "exam", name: "Exam", name_zh: "考级" },
+  { id: "18", slug: "notice", name: "Notice", name_zh: "通知" },
+  { id: "19", slug: "other", name: "Other", name_zh: "其他" },
 ];
 
 // Markdown toolbar button config
@@ -104,9 +157,13 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const locale = pathname.split("/")[1] || "en";
+  const requestedLocale = searchParams.get("locale") || "";
+  const baseSlug = searchParams.get("baseSlug") || "";
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   const [loading, setLoading] = useState(!editSlug);
   const [saving, setSaving] = useState(false);
@@ -117,6 +174,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [articleGroup, setArticleGroup] = useState<NewsArticleGroup | null>(null);
 
   const [form, setForm] = useState<ArticleData>({
     id: "",
@@ -133,6 +192,21 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
   // Defensive: ensure body is always a string (never undefined)
   const bodyText = form.body ?? "";
+  const isVersionedArticle = Boolean(articleGroup || baseSlug || editSlug);
+  const sharedArticleSlug = articleGroup?.shared_slug || baseSlug || editSlug || form.slug;
+
+  const loadTaxonomy = useCallback(async () => {
+    try {
+      const [categoryData, tagData] = await Promise.all([
+        newsApi.categories(),
+        newsApi.tags(),
+      ]);
+      if (categoryData.length > 0) setCategories(categoryData as Category[]);
+      if (tagData.length > 0) setTags(tagData as Tag[]);
+    } catch (err) {
+      console.warn("[Editor] Failed to load categories/tags, using defaults:", err);
+    }
+  }, []);
 
   // Handle image file selection
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,6 +258,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
   // Auto-load on mount
   useEffect(() => {
+    loadTaxonomy();
+
     if (!editSlug && !isAuthenticated()) {
       router.push(`/${locale}/admin/login`);
       return;
@@ -193,6 +269,14 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       loadArticle();
     } else {
       loadDraft();
+      if (baseSlug || requestedLocale) {
+        setForm((prev) => ({
+          ...prev,
+          slug: baseSlug || prev.slug,
+          locale: requestedLocale || prev.locale,
+        }));
+        if (baseSlug) loadArticleGroup(baseSlug);
+      }
       setLoading(false);
     }
 
@@ -203,13 +287,31 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       }
     }, 30000);
     return () => clearInterval(interval);
-  }, [editSlug, router, locale]);
+  }, [editSlug, router, locale, baseSlug, requestedLocale, loadTaxonomy]);
+
+  const loadArticleGroup = async (sharedSlug: string) => {
+    try {
+      const groups = await newsApi.adminGroups({ search: sharedSlug, limit: 20 });
+      const found = groups.find((group) => group.shared_slug === sharedSlug);
+      setArticleGroup(found || null);
+    } catch {
+      setArticleGroup(null);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleInsertFile(file);
+    }
+    e.target.value = "";
+  };
 
   const loadArticle = async () => {
     if (!editSlug) return;
     try {
       console.log("[Editor] Loading article with slug:", editSlug);
-      const data = await newsApi.get(editSlug);
+      const data = await newsApi.get(editSlug, requestedLocale || undefined);
       console.log("[Editor] Raw API response:", JSON.stringify(data, null, 2));
       
       if (data) {
@@ -248,6 +350,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           is_published: article.is_published ?? false,
           published_at: article.published_at,
         });
+        await loadArticleGroup(article.slug ?? editSlug);
         
         console.log("[Editor] Form state after setForm:", {
           bodyLength: (form as any)?.body?.length ?? 0,
@@ -350,7 +453,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     
     try {
       // Ensure slug is always present (required by backend)
-      let slugValue = slugText?.trim();
+      let slugValue = (articleGroup?.shared_slug || baseSlug || (editSlug ? editSlug : slugText))?.trim();
       if (!slugValue) {
         // Generate slug from title if empty
         slugValue = titleText
@@ -385,7 +488,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
       let result;
       if (editSlug) {
-        result = await newsApi.updateArticle(editSlug, data);
+        result = await newsApi.updateArticle(sharedArticleSlug || editSlug, data);
       } else {
         result = await newsApi.createArticle(data);
       }
@@ -399,9 +502,10 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       if (!editSlug && result && typeof result === "object" && "slug" in result) {
         const newSlug = (result as { slug: string }).slug;
         setTimeout(() => {
-          router.push(`/${locale}/admin/editor/${newSlug}`);
+          router.push(`/${locale}/admin/editor/${newSlug}?locale=${data.locale}`);
         }, 1000);
       } else {
+        await loadArticleGroup(slugValue);
         setTimeout(() => setSaveStatus("idle"), 3000);
       }
     } catch (err: unknown) {
@@ -488,6 +592,42 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       router.push(`/${locale}/admin/articles`);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Delete failed");
+    }
+  };
+
+  const handleInsertFile = async (file: File) => {
+    setUploadingFile(true);
+    try {
+      const result = await uploadApi.file(file);
+      const markdown = `[${file.name}](${result.url})`;
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const newBody = bodyText.substring(0, start) + markdown + bodyText.substring(start);
+        setForm((f) => ({ ...f, body: newBody }));
+      } else {
+        setForm((f) => ({ ...f, body: bodyText + "\n" + markdown }));
+      }
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "File upload failed");
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const currentVersions = articleGroup?.translations || [];
+  const missingVersions = SUPPORTED_LOCALES.filter(
+    (item) => !currentVersions.some((translation) => translation.locale === item.code)
+  );
+
+  const goToVersion = (localeCode: string) => {
+    const sharedSlug = sharedArticleSlug;
+    if (!sharedSlug) return;
+    const existing = currentVersions.find((item) => item.locale === localeCode);
+    if (existing) {
+      router.push(`/${locale}/admin/editor/${sharedSlug}?locale=${localeCode}`);
+    } else {
+      router.push(`/${locale}/admin/editor?baseSlug=${sharedSlug}&locale=${localeCode}`);
     }
   };
 
@@ -586,7 +726,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
             onChange={(e) => {
               const title = e.target.value;
               setForm((f) => ({ ...f, title }));
-              if (!editSlug) {
+              if (!editSlug && !baseSlug) {
                 // Generate slug: try to use pinyin/English, fallback to timestamp
                 let slug = (title ?? "")
                   .toLowerCase()
@@ -612,37 +752,81 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
             <input
               type="text"
               placeholder="slug"
-              value={form.slug}
+              value={baseSlug || form.slug}
               onChange={(e) =>
                 setForm((f) => ({ ...f, slug: e.target.value }))
               }
-              className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              disabled={Boolean(baseSlug)}
+              className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
             />
           </div>
           
-          <select
-            value={form.locale}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, locale: e.target.value }))
-            }
-            className="h-8 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="en">English</option>
-            <option value="zh">中文</option>
-          </select>
+          {!isVersionedArticle && (
+            <div className="inline-flex h-8 rounded-md border border-slate-200 bg-white p-0.5">
+              {SUPPORTED_LOCALES.map((item) => (
+                <button
+                  key={item.code}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, locale: item.code }))}
+                  className={`rounded px-3 text-sm font-medium transition-colors ${
+                    form.locale === item.code
+                      ? "bg-purple-700 text-white"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
           
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.is_published}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, is_published: e.target.checked }))
-              }
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            {t("admin.editor.published")}
-          </label>
+          <PublishSwitch
+            checked={form.is_published}
+            onCheckedChange={(checked) => setForm((f) => ({ ...f, is_published: checked }))}
+            publishedLabel={t("admin.editor.published")}
+            draftLabel={t("admin.editor.draft")}
+          />
         </div>
+
+        {(articleGroup || baseSlug || editSlug) && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-800">语言版本</p>
+                <p className="text-xs text-slate-500">
+                  {missingVersions.length > 0
+                    ? `Missing ${missingVersions.map((item) => item.label).join(", ")} version`
+                    : "所有主要语言版本已创建"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {SUPPORTED_LOCALES.map((item) => {
+                  const existing = currentVersions.find((version) => version.locale === item.code);
+                  const active = form.locale === item.code;
+                  return (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => goToVersion(item.code)}
+                      className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
+                        active
+                          ? "border-purple-700 bg-purple-700 text-white"
+                          : existing
+                            ? "border-slate-200 bg-white text-slate-700 hover:border-purple-200 hover:bg-purple-50"
+                            : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                      }`}
+                    >
+                      {item.label}
+                      <span className="ml-2 text-[10px] opacity-80">
+                        {existing ? (existing.is_published ? "已发布" : "草稿") : "Missing"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary & Cover Image */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -745,6 +929,27 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml"
               className="hidden"
               onChange={handleImageSelect}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-7 w-7 p-0"
+              title={uploadingFile ? "Uploading..." : "Insert File"}
+              disabled={uploadingFile}
+            >
+              {uploadingFile ? (
+                <div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Paperclip className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.txt,.md,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
+              className="hidden"
+              onChange={handleFileSelect}
             />
             <VDivider />
             <Button

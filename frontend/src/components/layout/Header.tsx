@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { isAuthenticated, clearAuthToken } from '@/lib/api';
+import { isAuthenticated, clearAuthToken, settingsApi, type SystemSettings } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 const navSections = [
@@ -38,10 +38,37 @@ const navSections = [
     labelKey: 'common.nav.performances',
     href: '/performances',
     links: [
-      { labelKey: 'performance.currentSeason', href: '/performances/current-season' },
+      { label: '演出与活动', href: '/performances' },
+      { labelKey: 'events.calendar', href: '/events/calendar' },
+      { labelKey: 'events.workshops', href: '/events/workshops' },
+      { labelKey: 'performances.archive', href: '/performances/archive' },
     ],
   },
 ];
+
+const defaultSettings: SystemSettings = {
+  site_name: 'Mulan Dance Studio',
+  logo_url: '/logo.png',
+  header_cta_label: 'Register',
+  header_cta_href: '/classes/register',
+  show_admin_login: true,
+  announcement_enabled: false,
+  announcement_text: '',
+  announcement_href: '',
+  footer_description: '',
+  footer_newsletter_title: 'Join Us',
+  footer_newsletter_text: '',
+  copyright_text: 'All rights reserved.',
+  privacy_href: '/privacy',
+  contact_email: 'info@mulandance.com',
+  contact_phone: '3437771766',
+  contact_address: '',
+  youtube_url: '',
+  xiaohongshu_url: '',
+  instagram_url: '',
+  facebook_url: '',
+  tiktok_url: '',
+};
 
 export function Header() {
   const t = useTranslations();
@@ -50,15 +77,32 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
 
   // Helper to add locale prefix to href
   const href = (path: string) => `/${locale}${path}`;
+  const configuredHref = (path: string) => {
+    if (!path) return href('/');
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('mailto:') || path.startsWith('tel:')) {
+      return path;
+    }
+    return href(path.startsWith('/') ? path : `/${path}`);
+  };
+  const ctaLabel =
+    settings.header_cta_label && settings.header_cta_label !== defaultSettings.header_cta_label
+      ? settings.header_cta_label
+      : t('common.buttons.register');
+  const ctaHref = settings.header_cta_href || defaultSettings.header_cta_href;
 
   useEffect(() => {
     const checkAuth = () => setAuthenticated(isAuthenticated());
     checkAuth();
     const interval = setInterval(checkAuth, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    settingsApi.site().then((data) => setSettings({ ...defaultSettings, ...data })).catch(() => {});
   }, []);
 
   const handleLogout = () => {
@@ -69,12 +113,24 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {settings.announcement_enabled && settings.announcement_text && (
+        <div className="bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground">
+          {settings.announcement_href ? (
+            <a href={configuredHref(settings.announcement_href)} className="underline-offset-4 hover:underline">
+              {settings.announcement_text}
+            </a>
+          ) : (
+            settings.announcement_text
+          )}
+        </div>
+      )}
       <div className="container flex h-16 items-center justify-between">
         <Link
           href={href('/')}
           className="flex items-center gap-2"
         >
-          <img src="/logo.png" alt="Mulan Dance Studio" className="h-10 w-10 rounded-full object-cover" />
+          <img src={settings.logo_url || '/logo.png'} alt={settings.site_name} className="h-10 w-10 rounded-full object-cover" />
+          <span className="hidden text-sm font-semibold text-foreground sm:inline">{settings.site_name}</span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1" aria-label={t('common.accessibility.navigation')}>
@@ -125,13 +181,19 @@ export function Header() {
                       href={fullPath}
                       className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
-                      {t(link.labelKey)}
+                      {'label' in link ? link.label : t(link.labelKey)}
                     </Link>
                   );
                 })}
               </div>
             </div>
           ))}
+          <Link
+            href={href('/classrooms')}
+            className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
+          >
+            {t('common.nav.classrooms', { defaultMessage: '教室使用' })}
+          </Link>
           <Link
             href={href('/news')}
             className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
@@ -142,9 +204,14 @@ export function Header() {
 
         <div className="hidden lg:flex items-center gap-4">
           <LanguageSwitcher />
+          <Button variant="default" size="sm" asChild>
+            <a href={configuredHref(ctaHref)}>
+              {ctaLabel}
+            </a>
+          </Button>
           {authenticated ? (
             <>
-              <Button variant="default" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild>
                 <Link href={href('/admin/dashboard')}>
                   <LayoutDashboard className="h-4 w-4 mr-1" />
                   Dashboard
@@ -155,14 +222,14 @@ export function Header() {
                 {t('admin.common.logout')}
               </Button>
             </>
-          ) : (
-            <Button variant="default" size="sm" asChild>
+          ) : settings.show_admin_login ? (
+            <Button variant="outline" size="sm" asChild>
               <Link href={href('/admin/login')}>
                 <LogIn className="h-4 w-4 mr-1" />
                 Login
               </Link>
             </Button>
-          )}
+          ) : null}
         </div>
 
         <button
@@ -200,7 +267,7 @@ export function Header() {
                       className="block px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
                       onClick={() => setMobileOpen(false)}
                     >
-                      {t(link.labelKey)}
+                      {'label' in link ? link.label : t(link.labelKey)}
                     </Link>
                   );
                 })}
@@ -213,7 +280,21 @@ export function Header() {
             >
               {t('common.nav.news')}
             </Link>
+            <Link
+              href={href('/classrooms')}
+              className="block px-3 py-2 text-sm font-semibold text-foreground"
+              onClick={() => setMobileOpen(false)}
+            >
+              {t('common.nav.classrooms', { defaultMessage: '教室使用' })}
+            </Link>
             <div className="pt-4">
+              <a
+                href={configuredHref(ctaHref)}
+                className="mb-2 flex w-full items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                {ctaLabel}
+              </a>
               {authenticated ? (
                 <>
                   <Link href={href('/admin/dashboard')} className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent rounded-md" onClick={() => setMobileOpen(false)}>
@@ -225,12 +306,12 @@ export function Header() {
                     {t('admin.common.logout')}
                   </button>
                 </>
-              ) : (
+              ) : settings.show_admin_login ? (
                 <Link href={href('/admin/login')} className="flex items-center gap-2 w-full px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent rounded-md" onClick={() => setMobileOpen(false)}>
                   <LogIn className="h-4 w-4" />
                   {t('admin.login.signIn')}
                 </Link>
-              )}
+              ) : null}
             </div>
             <div className="pt-4 border-t border-border mt-4">
               <LanguageSwitcher />

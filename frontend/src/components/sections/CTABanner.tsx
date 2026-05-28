@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Phone, MapPin, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ function XiaohongshuIcon() {
 
 export function CTABanner() {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <section className="py-20 bg-gradient-to-br from-primary via-purple-800 to-primary/90 text-white relative overflow-hidden">
@@ -33,7 +34,7 @@ export function CTABanner() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/classes/register">
+          <Link href={`/${locale}/classes/register`}>
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 !px-8 text-base font-semibold shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, ArrowRight, Filter } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { articleLocaleFor, dateLocaleFor, localizeText } from '@/lib/i18n';
 
 interface Article {
   id: string;
@@ -33,6 +34,30 @@ interface Category {
   color?: string;
 }
 
+function localizeArticle(article: Article, locale: string): Article {
+  return {
+    ...article,
+    title: localizeText(article.title, locale) || article.title,
+    summary: localizeText(article.summary, locale) || article.summary,
+    body: localizeText(article.body, locale) || article.body,
+    categories: article.categories?.map((category) => ({
+      ...category,
+      name_zh: localizeText(category.name_zh, locale) || category.name_zh,
+    })),
+    tags: article.tags?.map((tag) => ({
+      ...tag,
+      name_zh: localizeText(tag.name_zh, locale) || tag.name_zh,
+    })),
+  };
+}
+
+function localizeCategory(category: Category, locale: string): Category {
+  return {
+    ...category,
+    name_zh: localizeText(category.name_zh, locale) || category.name_zh,
+  };
+}
+
 export default function NewsPage() {
   const t = useTranslations();
   const router = useRouter();
@@ -47,19 +72,21 @@ export default function NewsPage() {
     setLoading(true);
     try {
       const [articlesData, categoriesData] = await Promise.all([
-        newsApi.list({ limit: 50 }).catch(() => []),
+        newsApi.list({ limit: 50, locale: articleLocaleFor(locale) }).catch(() => []),
         newsApi.categories().catch(() => []),
       ]);
-      const published = (articlesData as Article[]).filter((a) => a.is_published);
+      const published = (articlesData as Article[])
+        .filter((a) => a.is_published)
+        .map((article) => localizeArticle(article, locale));
       setArticles(published);
-      setCategories(categoriesData as Category[]);
+      setCategories((categoriesData as Category[]).map((category) => localizeCategory(category, locale)));
     } catch {
       setArticles([]);
       setCategories([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     fetchData();
@@ -180,7 +207,7 @@ export default function NewsPage() {
                       {article.published_at && (
                         <span className="flex items-center gap-1 text-xs text-muted-foreground">
                           <CalendarDays className="h-3 w-3" />
-                          {formatDate(article.published_at, locale === 'zh' ? 'zh-CN' : 'en-US')}
+                          {formatDate(article.published_at, dateLocaleFor(locale))}
                         </span>
                       )}
                     </div>
@@ -197,8 +224,8 @@ export default function NewsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
                         {article.published_at
-                          ? formatDate(article.published_at, locale === 'zh' ? 'zh-CN' : 'en-US')
-                          : formatDate(article.created_at, locale === 'zh' ? 'zh-CN' : 'en-US')}
+                          ? formatDate(article.published_at, dateLocaleFor(locale))
+                          : formatDate(article.created_at, dateLocaleFor(locale))}
                       </span>
                       <span className="text-sm font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
                         {t('news.readMore')}

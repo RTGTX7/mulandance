@@ -39,6 +39,35 @@ from app.schemas.news import (
 _mistune_renderer = mistune.create_markdown(renderer=mistune.HTMLRenderer())
 
 
+def _article_locale(locale: Optional[str]) -> Optional[str]:
+    if not locale:
+        return None
+    return "zh" if locale == "zh-Hant" else locale
+
+
+def _select_translation(
+    translations: List[ArticleTranslation],
+    locale: Optional[str] = None,
+    published_only: bool = False,
+) -> Optional[ArticleTranslation]:
+    candidates = [item for item in translations if not published_only or item.is_published]
+    if not candidates:
+        return None
+
+    target_locale = _article_locale(locale)
+    if target_locale:
+        for item in candidates:
+            if item.locale == target_locale:
+                return item
+
+    for fallback_locale in ("en", "zh", "fr"):
+        for item in candidates:
+            if item.locale == fallback_locale:
+                return item
+
+    return candidates[0]
+
+
 def _get_news_dir() -> Path:
     news_dir = Path(settings.NEWS_FILES_DIR)
     if not news_dir.exists():
@@ -47,6 +76,7 @@ def _get_news_dir() -> Path:
 
 
 def _generate_filename(slug: str, published_at: Optional[datetime] = None) -> str:
+    """Return the legacy flat filename used before year folders."""
     if published_at:
         date_str = published_at.strftime("%Y-%m-%d")
     else:
@@ -56,17 +86,35 @@ def _generate_filename(slug: str, published_at: Optional[datetime] = None) -> st
 
 
 def _clean_slug_for_file(slug: str) -> str:
-    return re.sub(r"[^a-z0-9\-]", "", slug.lower().replace(" ", "-"))
+    clean_slug = re.sub(r"[^a-z0-9\-]", "", slug.lower().replace(" ", "-"))
+    return clean_slug or "article"
+
+
+def _markdown_file_path(slug: str, published_at: Optional[datetime] = None) -> Path:
+    """New canonical markdown path: data/news/YYYY/slug.md."""
+    date_value = published_at or datetime.utcnow()
+    return _get_news_dir() / str(date_value.year) / f"{_clean_slug_for_file(slug)}.md"
 
 
 def _find_markdown_file(slug: str, preferred_date: Optional[datetime] = None) -> Optional[Path]:
     news_dir = _get_news_dir()
-    preferred = news_dir / _generate_filename(slug, preferred_date)
+    preferred = _markdown_file_path(slug, preferred_date)
     if preferred.exists():
         return preferred
 
+    legacy_preferred = news_dir / _generate_filename(slug, preferred_date)
+    if legacy_preferred.exists():
+        return legacy_preferred
+
     clean_slug = _clean_slug_for_file(slug)
-    matches = sorted(news_dir.glob(f"*-{clean_slug}.md"), key=lambda path: path.stat().st_mtime, reverse=True)
+    matches = sorted(
+        [
+            *news_dir.glob(f"*/{clean_slug}.md"),
+            *news_dir.glob(f"*-{clean_slug}.md"),
+        ],
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
     return matches[0] if matches else None
 
 
@@ -380,7 +428,7 @@ def create_article_translation(
             for field, value in update_fields.items():
                 setattr(existing_trans, field, value)
             if settings.USE_FILE_STORAGE and body_content is not None:
-                filepath = _get_news_dir() / _generate_filename(group_slug, existing_trans.published_at or datetime.utcnow())
+                filepath = _markdown_file_path(group_slug, existing_trans.published_at or datetime.utcnow())
                 metadata = {
                     "title": existing_trans.title,
                     "slug": group_slug,
@@ -428,8 +476,17 @@ def create_article_translation(
         for cat_slug in data.category_slugs:
             cat = db.query(NewsCategory).filter(NewsCategory.slug == cat_slug).first()
             if cat:
-                agc = ArticleGroupCategory(group_id=group_id, category_id=str(cat.id))
-                db.add(agc)
+                exists = (
+                    db.query(ArticleGroupCategory)
+                    .filter(
+                        ArticleGroupCategory.group_id == group_id,
+                        ArticleGroupCategory.category_id == str(cat.id),
+                    )
+                    .first()
+                )
+                if not exists:
+                    agc = ArticleGroupCategory(group_id=group_id, category_id=str(cat.id))
+                    db.add(agc)
 
     # Set tags
     if data.tag_slugs:
@@ -439,12 +496,21 @@ def create_article_translation(
                 tag = NewsTag(slug=tag_slug, name=tag_slug.replace("-", " ").title())
                 db.add(tag)
                 db.flush()
-            agt = ArticleGroupTag(group_id=group_id, tag_id=str(tag.id))
-            db.add(agt)
+            exists = (
+                db.query(ArticleGroupTag)
+                .filter(
+                    ArticleGroupTag.group_id == group_id,
+                    ArticleGroupTag.tag_id == str(tag.id),
+                )
+                .first()
+            )
+            if not exists:
+                agt = ArticleGroupTag(group_id=group_id, tag_id=str(tag.id))
+                db.add(agt)
 
     # Write markdown file
     if settings.USE_FILE_STORAGE:
-        filepath = _get_news_dir() / _generate_filename(group_slug, now if data.is_published else None)
+        filepath = _markdown_file_path(group_slug, now if data.is_published else None)
         metadata = {
             "title": data.title,
             "slug": group_slug,
@@ -524,7 +590,7 @@ def update_article_translation(
 
         # Update markdown file if body changed
         if settings.USE_FILE_STORAGE and ("body" in update_fields or "title" in update_fields):
-            filepath = _get_news_dir() / _generate_filename(group.shared_slug, translation.published_at or now)
+            filepath = _markdown_file_path(group.shared_slug, translation.published_at or now)
             metadata = {
                 "title": translation.title,
                 "slug": group.shared_slug,
@@ -580,13 +646,10 @@ def delete_article_group(db: Session, slug: str) -> bool:
 
     # Delete markdown file
     if settings.USE_FILE_STORAGE:
-        now = datetime.utcnow()
-        filepath = _get_news_dir() / _generate_filename(group.shared_slug, now)
-        if filepath.exists():
-            filepath.unlink()
-        date_path = _get_news_dir() / _generate_filename(slug, None)
-        if date_path.exists():
-            date_path.unlink()
+        for translation in db.query(ArticleTranslation).filter(ArticleTranslation.group_id == group.id).all():
+            filepath = _find_markdown_file(group.shared_slug, translation.published_at)
+            if filepath and filepath.exists():
+                filepath.unlink()
 
     # Delete relationships (CASCADE should handle translations, but let's be explicit)
     db.query(ArticleGroupCategory).filter(ArticleGroupCategory.group_id == group.id).delete()
@@ -608,6 +671,7 @@ def list_articles(
     category_slug: Optional[str] = None,
     tag_slug: Optional[str] = None,
     search: Optional[str] = None,
+    locale: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
 ) -> List[Dict[str, Any]]:
@@ -618,6 +682,26 @@ def list_articles(
     if settings.USE_FILE_STORAGE:
         # New group-based system
         groups = list_article_groups(db, published_only, category_slug, tag_slug, search, limit, offset)
+        if locale:
+            result = []
+            for group in groups:
+                translations = group.get("translations", [])
+                candidates = [
+                    item for item in translations
+                    if not published_only or item.get("is_published")
+                ]
+                selected = None
+                target_locale = _article_locale(locale)
+                if target_locale:
+                    selected = next((item for item in candidates if item.get("locale") == target_locale), None)
+                if not selected:
+                    selected = next((item for item in candidates if item.get("locale") == "en"), None)
+                if not selected and candidates:
+                    selected = candidates[0]
+                if selected:
+                    result.append(selected)
+            return result
+
         # Flatten: respect published_only flag
         # When published_only=True: return only published translations
         # When published_only=False (admin): return all translations regardless of status
@@ -682,14 +766,36 @@ def list_articles(
 
 
 def get_article(
-    db: Session, slug: str, include_html: bool = False
+    db: Session,
+    slug: str,
+    include_html: bool = False,
+    locale: Optional[str] = None,
+    published_only: bool = False,
 ) -> Optional[Dict[str, Any]]:
     """
     Get article by slug. Tries new system first, falls back to legacy.
     """
     if settings.USE_FILE_STORAGE:
         # Try new system
+        if locale:
+            group = db.query(ArticleGroup).filter(ArticleGroup.shared_slug == slug).first()
+            if not group:
+                translation = db.query(ArticleTranslation).filter(ArticleTranslation.slug == slug).first()
+                if translation:
+                    group = db.query(ArticleGroup).filter(ArticleGroup.id == translation.group_id).first()
+            if group:
+                translations = (
+                    db.query(ArticleTranslation)
+                    .filter(ArticleTranslation.group_id == group.id)
+                    .all()
+                )
+                selected = _select_translation(translations, locale=locale, published_only=published_only)
+                if selected:
+                    return _get_translation_with_relations(db, selected, include_html, True, True)
+
         result = get_article_translation(db, slug, include_html=include_html)
+        if result and published_only and not result.get("is_published"):
+            return None
         if result:
             return result
         # Try getting group and first translation
@@ -704,7 +810,7 @@ def get_article(
         if not settings.USE_FILE_STORAGE:
             return _get_article_with_relations(db, article, include_html)
 
-        filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at)
+        filepath = _find_markdown_file(article.slug, article.published_at)
         post = _read_markdown_file(filepath)
         if post:
             article.body = post.content or article.body
@@ -743,7 +849,7 @@ def create_article(
     db.flush()
 
     if settings.USE_FILE_STORAGE:
-        filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at or now)
+        filepath = _markdown_file_path(article.slug, article.published_at or now)
         metadata = {
             "title": article_data.title,
             "slug": article_data.slug,
@@ -826,7 +932,7 @@ def update_article(
         article.published_at = article.published_at or now
 
     if settings.USE_FILE_STORAGE and "body" in update_fields:
-        filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at or now)
+        filepath = _markdown_file_path(article.slug, article.published_at or now)
         metadata = {
             "title": article.title,
             "slug": article.slug,
@@ -871,13 +977,13 @@ def delete_article(db: Session, slug: str) -> bool:
 
     if settings.USE_FILE_STORAGE:
         now = datetime.utcnow()
-        filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at or now)
+        filepath = _markdown_file_path(article.slug, article.published_at or now)
         if filepath.exists():
             filepath.unlink()
 
-        date_path = _get_news_dir() / _generate_filename(slug, None)
-        if date_path.exists():
-            date_path.unlink()
+        legacy_path = _get_news_dir() / _generate_filename(slug, None)
+        if legacy_path.exists():
+            legacy_path.unlink()
 
     db.query(NewsArticleCategory).filter(
         NewsArticleCategory.article_id == article.id
@@ -1035,9 +1141,9 @@ def _get_article_with_relations(
 
     if include_html:
         now = datetime.utcnow()
-        filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at or now)
+        filepath = _markdown_file_path(article.slug, article.published_at or now)
         if not filepath.exists():
-            filepath = _get_news_dir() / _generate_filename(article.slug, None)
+            filepath = _markdown_file_path(article.slug, None)
         if filepath.exists():
             post = _read_markdown_file(filepath)
             if post:
@@ -1058,7 +1164,7 @@ def sync_all_from_db(db: Session) -> int:
     ).all()
     count = 0
     for article in articles:
-        filepath = _get_news_dir() / _generate_filename(article.slug, article.published_at)
+        filepath = _markdown_file_path(article.slug, article.published_at)
         metadata = {
             "title": article.title,
             "slug": article.slug,

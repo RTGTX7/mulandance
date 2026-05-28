@@ -7,6 +7,7 @@ import { useTranslations } from '@/components/ui/i18n-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Clock, MapPin, ArrowRight } from 'lucide-react';
+import { dateLocaleFor } from '@/lib/i18n';
 
 export default function PerformancesPage() {
   const t = useTranslations();
@@ -23,7 +24,7 @@ export default function PerformancesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const dateLocale = dateLocaleFor(locale);
 
   return (
     <div className="min-h-screen bg-background">

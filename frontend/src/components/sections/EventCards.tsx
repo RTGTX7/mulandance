@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import Link from 'next/link';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +55,7 @@ const fallbackEvents: Event[] = [
 
 export function EventCards() {
   const t = useTranslations();
+  const locale = useLocale();
   const [events, setEvents] = useState<Event[]>(fallbackEvents);
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export function EventCards() {
             <h2 className="heading-lg mb-2">{t('home.events.title')}</h2>
             <p className="text-lead">{t('home.events.subtitle')}</p>
           </div>
-          <Link href="/performances">
+          <Link href={`/${locale}/performances`}>
             <span className="text-sm font-medium text-secondary hover:underline">
               {t('home.events.viewAll')} &rarr;
             </span>
@@ -84,7 +85,7 @@ export function EventCards() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map((event) => (
-            <Link key={event.id} href={event.href} className="block h-full text-left">
+            <Link key={event.id} href={event.href.startsWith('/') ? `/${locale}${event.href}` : event.href} className="block h-full text-left">
               <Card className="card-hover h-full group cursor-pointer flex flex-col">
                 <div className="h-48 bg-gradient-to-br from-primary/20 to-purple-400/10 rounded-t-lg overflow-hidden relative">
                   {event.coverImage && (

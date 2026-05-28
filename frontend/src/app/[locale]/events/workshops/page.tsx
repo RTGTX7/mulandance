@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ const workshops = [
 
 export default function WorkshopsPage() {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <div className="section-padding">
@@ -41,7 +42,7 @@ export default function WorkshopsPage() {
                     {workshop.instructor} • {workshop.date} • {workshop.price}
                   </p>
                 </div>
-                <Link href="/classes/register">
+                <Link href={`/${locale}/classes/register`}>
                   <Button size="sm">Register</Button>
                 </Link>
               </CardContent>

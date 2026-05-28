@@ -56,7 +56,7 @@ export const newsArticleSchema = z.object({
   cover_image: z.string().optional(),
   category_slugs: z.array(z.string()).default([]),
   tag_slugs: z.array(z.string()).default([]),
-  locale: z.enum(['en', 'zh']).default('en'),
+  locale: z.enum(['en', 'zh', 'fr']).default('en'),
   is_published: z.boolean().default(false),
 });
 

@@ -1,50 +1,51 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { FacultyMember, facultyApi } from '@/lib/api';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-// Achievement arrays for Kayley and Hailey
-const kayleyAchievements = [
-  "2022 Shandong Children's Spring Gala Outstanding Choreography Director",
-  "China-Korea Street Dance Exchange Competition Third Prize",
-  "Invited Guest at China Dance Festival",
-  "Invited Guest at Beijing Yukou Cultural Festival",
-  "Invited Guest at Tangshan May Fourth Youth Day",
-  "Top 8 at 'Keep the Love' Freestyle Competition",
-  "Top 8 at Qingdao Battle of the Wings 2v2 Freestyle",
-  "Runner-up at Weifang Dance Out Miracles Group Competition",
-  "Personal resume included in China Youth Talent Database",
-  "Studied at Dance邦, HelloDance, Old Dog and other renowned dance studios",
-  "Collaborated with artists: Zhuo Hai Tun, Wang OK, Li Tianze, Li Peiling, Park Jae-jung, Zhou Shen, Zhang Yuzi Stage 2023 Finals"
-];
-
-const haileyAchievements = [
-  "Top 24 at Youth America Grand Prix",
-  "Highest-scoring acro audition at Candance 2024",
-  "Top 5 overall with jazz solo 2024",
-  "Strong styles: Ballet, Jazz, and Acro",
-  "Acro is a particular passion with extensive teaching experience"
-];
+function splitLines(value?: string) {
+  return (value || '')
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 export default function LeadershipPage() {
   const t = useTranslations();
   const locale = useLocale();
+  const [faculty, setFaculty] = useState<FacultyMember[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const href = (path: string) => {
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
     return `/${locale}/${cleanPath}`;
   };
 
+  useEffect(() => {
+    facultyApi
+      .list()
+      .then(setFaculty)
+      .catch(() => setFaculty([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const sortedFaculty = useMemo(
+    () => [...faculty].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
+    [faculty]
+  );
+
   return (
     <div className="pt-16">
-      {/* Hero Section */}
-      <section className="relative h-[300px] bg-gradient-to-r from-emerald-600 to-teal-600 overflow-hidden">
+      <section className="relative h-[300px] overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600">
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-white relative z-10 px-4">
+          <div className="relative z-10 px-4 text-center text-white">
             <Breadcrumbs
               items={[
                 { label: t('common.nav.about'), href: '/about' },
@@ -52,72 +53,77 @@ export default function LeadershipPage() {
               ]}
             />
             <h1 className="heading-xl mb-4 text-white">{t('about.leadership.title')}</h1>
-            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-lg text-white/90 md:text-xl">
               {t('about.leadership.founderRole')}
             </p>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
       <section className="section-padding">
         <div className="container">
-          {/* Faculty Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {/* Founder */}
-            <Card>
-              <CardHeader>
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 mx-auto mb-4" />
-                <CardTitle className="text-center">{t('about.leadership.founder')}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-sm text-primary font-semibold mb-2">{t('about.leadership.founderRole')}</p>
-                <p className="text-muted-foreground">{t('about.leadership.founderDesc')}</p>
-              </CardContent>
-            </Card>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Loading faculty...
+            </div>
+          ) : sortedFaculty.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
+              Faculty profiles are being updated.
+            </div>
+          ) : (
+            <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {sortedFaculty.map((member) => {
+                const specialties = splitLines(member.specialties);
+                const achievements = splitLines(member.achievements);
 
-            {/* Kayley */}
-            <Card>
-              <CardHeader>
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 mx-auto mb-4" />
-                <CardTitle className="text-center">{t('about.leadership.kayley')}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-sm text-primary font-semibold mb-2">{t('about.leadership.kayleyRole')}</p>
-                <p className="text-muted-foreground mb-4">{t('about.leadership.kayleyDesc')}</p>
-                <div className="text-left">
-                  <h4 className="font-semibold text-foreground mb-2">Achievements:</h4>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    {kayleyAchievements.map((achievement, index) => (
-                      <li key={index}>{achievement}</li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+                return (
+                  <Card key={member.id} className="overflow-hidden">
+                    <CardHeader className="items-center text-center">
+                      <div className="mb-4 h-28 w-28 overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-teal-500">
+                        {member.photo_url ? (
+                          <img src={member.photo_url} alt={member.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-white">
+                            {member.name.slice(0, 1)}
+                          </div>
+                        )}
+                      </div>
+                      <CardTitle>{member.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      {member.role && (
+                        <p className="mb-2 text-sm font-semibold text-primary">{member.role}</p>
+                      )}
+                      {member.bio && <p className="text-muted-foreground">{member.bio}</p>}
 
-            {/* Hailey Smith */}
-            <Card>
-              <CardHeader>
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-violet-500 mx-auto mb-4" />
-                <CardTitle className="text-center">{t('about.leadership.hailey')}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-sm text-primary font-semibold mb-2">{t('about.leadership.haileyRole')}</p>
-                <p className="text-muted-foreground mb-4">{t('about.leadership.haileyDesc')}</p>
-                <div className="text-left">
-                  <h4 className="font-semibold text-foreground mb-2">Achievements:</h4>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    {haileyAchievements.map((achievement, index) => (
-                      <li key={index}>{achievement}</li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      {specialties.length > 0 && (
+                        <div className="mt-4 flex flex-wrap justify-center gap-2">
+                          {specialties.map((item) => (
+                            <span key={item} className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-          {/* CTA Section */}
+                      {achievements.length > 0 && (
+                        <div className="mt-5 text-left">
+                          <h4 className="mb-2 font-semibold text-foreground">Achievements</h4>
+                          <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                            {achievements.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
           <div className="mt-12 text-center">
             <Link href={href('about/contact')}>
               <Button size="lg">{t('about.contact.title')}</Button>

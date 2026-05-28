@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { CheckCircle, Clock, Users, Award } from 'lucide-react';
 
 export default function JazzPage() {
   const t = useTranslations();
+  const locale = useLocale();
+  const registerHref = `/${locale}/classes/register`;
 
   const features = [
     { icon: CheckCircle, title: t('programs.jazz.features.broadway'), desc: t('programs.jazz.features.broadwayDesc') },
@@ -34,7 +36,7 @@ export default function JazzPage() {
             <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8">
               {t('programs.jazz.description')}
             </p>
-            <Link href="/classes/register">
+            <Link href={registerHref}>
               <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                 {t('common.buttons.register')}
               </Button>
@@ -114,7 +116,7 @@ export default function JazzPage() {
               {t('programs.register.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/classes/register">
+              <Link href={registerHref}>
                 <Button size="lg" className="bg-primary hover:bg-primary/90">
                   {t('programs.register.form.submit')}
                 </Button>

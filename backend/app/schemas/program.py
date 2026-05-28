@@ -11,6 +11,8 @@ class ProgramBase(BaseModel):
     category: str
     level: Optional[str] = None
     syllabus_ref: Optional[str] = None
+    cover_image: Optional[str] = None
+    order_index: int = 0
 
 
 class ProgramCreate(ProgramBase):
@@ -18,10 +20,14 @@ class ProgramCreate(ProgramBase):
 
 
 class ProgramUpdate(BaseModel):
+    slug: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
     category: Optional[str] = None
     level: Optional[str] = None
+    syllabus_ref: Optional[str] = None
+    cover_image: Optional[str] = None
+    order_index: Optional[int] = None
     is_active: Optional[bool] = None
 
 

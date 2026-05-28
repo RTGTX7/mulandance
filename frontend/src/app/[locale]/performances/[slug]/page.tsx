@@ -6,6 +6,7 @@ import { performanceApi, type PerformanceItem } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, CalendarDays, Clock, MapPin } from 'lucide-react';
+import { dateLocaleFor, isChineseLocale } from '@/lib/i18n';
 
 export default function PerformanceDetailPage() {
   const router = useRouter();
@@ -28,7 +29,8 @@ export default function PerformanceDetailPage() {
 
   const start = performance ? new Date(performance.start_date) : null;
   const end = performance ? new Date(performance.end_date) : null;
-  const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const chinese = isChineseLocale(locale);
+  const dateLocale = dateLocaleFor(locale);
   const dateText = start?.toLocaleDateString(dateLocale, {
     year: 'numeric',
     month: 'long',
@@ -51,7 +53,7 @@ export default function PerformanceDetailPage() {
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            {locale === 'zh' ? '返回首页' : 'Back to Home'}
+            {chinese ? '返回首页' : 'Back to Home'}
           </Button>
         </div>
       </header>
@@ -70,15 +72,15 @@ export default function PerformanceDetailPage() {
         ) : error || !performance ? (
           <div className="text-center py-16">
             <h2 className="text-2xl font-bold mb-2">
-              {locale === 'zh' ? '未找到演出' : 'Performance Not Found'}
+              {chinese ? '未找到演出' : 'Performance Not Found'}
             </h2>
             <p className="text-muted-foreground mb-4">
-              {locale === 'zh'
+              {chinese
                 ? '这个演出不存在或已被移除。'
                 : 'The performance you are looking for does not exist or has been removed.'}
             </p>
             <Button onClick={() => router.push(`/${locale}`)}>
-              {locale === 'zh' ? '返回首页' : 'Back to Home'}
+              {chinese ? '返回首页' : 'Back to Home'}
             </Button>
           </div>
         ) : (
@@ -124,17 +126,17 @@ export default function PerformanceDetailPage() {
               </div>
             ) : (
               <p className="text-muted-foreground italic mb-12">
-                {locale === 'zh' ? '更多内容即将更新。' : 'More details coming soon.'}
+                {chinese ? '更多内容即将更新。' : 'More details coming soon.'}
               </p>
             )}
 
             <Card className="bg-muted/30 border-dashed">
               <CardContent className="py-4 text-sm text-muted-foreground">
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <span>{locale === 'zh' ? '演出信息' : 'Performance details'}</span>
+                  <span>{chinese ? '演出信息' : 'Performance details'}</span>
                   <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}`)}>
                     <ArrowLeft className="h-4 w-4 mr-1" />
-                    {locale === 'zh' ? '返回首页' : 'Back to Home'}
+                    {chinese ? '返回首页' : 'Back to Home'}
                   </Button>
                 </div>
               </CardContent>

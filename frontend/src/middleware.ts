@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const nextIntlMiddleware = createMiddleware({
   // A list of all locales that are supported
-  locales: ['en', 'zh'],
+  locales: ['en', 'zh', 'zh-Hant', 'fr'],
 
   // Used when no locale matches
   defaultLocale: 'en',
@@ -14,7 +14,7 @@ export default function middleware(request: NextRequest) {
 
   // Extract the pathname without locale prefix and set it as header
   const pathname = request.nextUrl.pathname;
-  const localeMatch = pathname.match(/^\/(en|zh)(\/.*)?$/);
+  const localeMatch = pathname.match(/^\/(en|zh|zh-Hant|fr)(\/.*)?$/);
   const originalPathname = localeMatch ? localeMatch[2] || '/' : pathname;
 
   if (response) {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CalendarDays, Clock, Eye, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { dateLocaleFor } from '@/lib/i18n';
 
 type FilterMode = 'all' | 'homepage' | 'upcoming' | 'past';
 
@@ -192,7 +193,7 @@ export default function AdminPerformanceListPage() {
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3.5 w-3.5" />
-                        {new Date(item.start_date).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US')}
+                        {new Date(item.start_date).toLocaleDateString(dateLocaleFor(locale))}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />

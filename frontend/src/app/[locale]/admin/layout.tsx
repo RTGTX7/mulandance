@@ -1,5 +1,7 @@
+import { SUPPORTED_LOCALES } from '@/lib/i18n';
+
 export async function generateStaticParams() {
-  return [{ locale: 'en' }, { locale: 'zh' }];
+  return SUPPORTED_LOCALES.map((locale) => ({ locale }));
 }
 
 export default function AdminLayout({

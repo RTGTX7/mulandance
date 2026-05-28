@@ -1,617 +1,440 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useTranslations } from '@/components/ui/i18n-client';
-import { isAuthenticated, newsApi } from '@/lib/api';
-import { useRouter, usePathname } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { BackButton } from '@/components/ui/back-button';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { BackButton } from '@/components/ui/back-button';
+import { isAuthenticated, newsApi, NewsArticleGroup } from '@/lib/api';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
+  Calendar,
+  Edit,
+  Eye,
+  FileText,
+  Languages,
   Plus,
   Search,
-  Edit,
   Trash2,
-  Globe,
-  Calendar,
-  Eye,
-  Tag,
-  Folder,
 } from 'lucide-react';
+import { dateLocaleFor } from '@/lib/i18n';
 
-interface Article {
-  id: string;
-  slug: string;
-  title: string;
-  summary?: string;
-  is_published: boolean;
-  published_at?: string;
-  created_at: string;
-  locale: string;
-  categories: Array<{ slug: string; name: string; name_zh?: string }>;
-  tags: Array<{ slug: string; name: string; name_zh?: string }>;
-}
+const requiredLocales = [
+  { code: 'en', label: 'EN', name: 'English' },
+  { code: 'zh', label: '简体', name: '简体中文' },
+  { code: 'fr', label: 'FR', name: 'French' },
+];
 
-interface Category {
-  slug: string;
-  name: string;
-  name_zh?: string;
-  color?: string;
-}
+const showOptions = [5, 10, 20, 50, 100];
 
 type SortOrder = 'newest' | 'oldest';
+type StatusFilter = 'all' | 'published' | 'draft' | 'missing';
 
-// ── PublishSwitch Component ──
 function PublishSwitch({
-  articleSlug,
-  published,
-  loading,
-  onChange,
-  t,
+  checked,
+  onCheckedChange,
 }: {
-  articleSlug: string;
-  published: boolean;
-  loading: boolean;
-  onChange: (slug: string, newStatus: boolean) => void;
-  t: (key: string) => string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
 }) {
-  const [optimistic, setOptimistic] = useState(published);
-  const [wasPublished, setWasPublished] = useState(published);
-
-  // Reset when article data changes from outside
-  useEffect(() => {
-    setOptimistic(published);
-    setWasPublished(published);
-  }, [published]);
-
-  const handleToggle = async () => {
-    const newStatus = !optimistic;
-    setOptimistic(newStatus);
-    try {
-      await onChange(articleSlug, newStatus);
-      setWasPublished(newStatus);
-    } catch {
-      setOptimistic(wasPublished);
-    }
-  };
-
-  const isActive = optimistic;
-
   return (
     <button
       type="button"
-      disabled={loading}
-      onClick={handleToggle}
-      className={`
-        inline-flex h-8 min-w-[132px] items-center gap-2 rounded-full border px-2.5 text-xs font-medium transition-all duration-200
-        ${isActive
+      aria-pressed={checked}
+      onClick={() => onCheckedChange(!checked)}
+      className={`inline-flex h-7 min-w-[88px] items-center gap-1.5 rounded-full border px-2 text-xs font-medium transition-colors ${
+        checked
           ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-          : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
-        }
-        ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-      `}
-      aria-pressed={isActive}
-      title={isActive ? t('admin.articles.switchUnpublish') : t('admin.articles.switchPublish')}
+          : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+      }`}
     >
-      <span className={`
-        relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200
-        ${isActive ? 'bg-emerald-500' : 'bg-gray-300'}
-      `}>
-        <span className={`
-          absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200
-          ${isActive ? 'translate-x-[18px]' : 'translate-x-0.5'}
-        `} />
+      <span className={`relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors ${checked ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+        <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-[14px]' : 'translate-x-0.5'}`} />
       </span>
-      <span className="leading-none">
-        {isActive ? t('admin.articles.publishedBadge') : t('admin.articles.unpublishedBadge')}
-      </span>
+      <span>{checked ? '已发布' : '草稿'}</span>
     </button>
   );
 }
 
+function formatDate(value?: string, locale = 'en') {
+  if (!value) return '-';
+  try {
+    return new Date(value).toLocaleDateString(dateLocaleFor(locale), {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return value;
+  }
+}
+
+function latestDate(group: NewsArticleGroup) {
+  const dates = group.translations
+    .map((item) => item.published_at || item.updated_at || item.created_at)
+    .filter(Boolean)
+    .map((item) => new Date(item as string).getTime());
+  return dates.length ? Math.max(...dates) : 0;
+}
+
+function createdDate(group: NewsArticleGroup) {
+  const dates = [group.created_at, ...group.translations.map((item) => item.created_at)]
+    .filter(Boolean)
+    .map((item) => new Date(item as string).getTime())
+    .filter(Number.isFinite);
+
+  return dates.length ? Math.min(...dates) : latestDate(group);
+}
+
+function createdYear(group: NewsArticleGroup) {
+  const date = createdDate(group);
+  return date ? String(new Date(date).getFullYear()) : '未分类';
+}
+
+function primaryTranslation(group: NewsArticleGroup, uiLocale: string) {
+  return (
+    group.translations.find((item) => item.locale === uiLocale) ||
+    group.translations.find((item) => item.locale === 'en') ||
+    group.translations[0]
+  );
+}
+
 export default function ArticlesPage() {
-  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
-  const locale = pathname.split('/')[1];
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const locale = pathname.split('/')[1] || 'en';
+
+  const [groups, setGroups] = useState<NewsArticleGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
-  const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
-  const [switchLoading, setSwitchLoading] = useState<string | null>(null);
+  const [year, setYear] = useState('all');
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [sort, setSort] = useState<SortOrder>('newest');
+  const [showCount, setShowCount] = useState(10);
   const [error, setError] = useState('');
 
-  const fetchData = useCallback(async () => {
+  const loadGroups = useCallback(async () => {
     if (!isAuthenticated()) {
       router.push(`/${locale}/admin/login`);
       return;
     }
+
+    setLoading(true);
+    setError('');
     try {
-      const [articlesData, categoriesData] = await Promise.all([
-        newsApi.adminList({ limit: 100 }).catch(() => []),
-        newsApi.categories().catch(() => []),
-      ]);
-      setArticles(articlesData as Article[]);
-      setCategories(categoriesData as Category[]);
-    } catch {
-      setArticles([]);
-      setCategories([]);
+      const data = await newsApi.adminGroups({ limit: 200 });
+      setGroups(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '文章加载失败');
+      setGroups([]);
     } finally {
       setLoading(false);
     }
   }, [router, locale]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    loadGroups();
+  }, [loadGroups]);
 
-  useEffect(() => {
-    const status = new URLSearchParams(window.location.search).get('status');
-    if (status === 'published' || status === 'draft' || status === 'all') {
-      setFilterStatus(status);
-    }
-  }, []);
+  const years = useMemo(() => {
+    return Array.from(new Set(groups.map((group) => createdYear(group)))).sort((a, b) => {
+      if (a === '未分类') return 1;
+      if (b === '未分类') return -1;
+      return Number(b) - Number(a);
+    });
+  }, [groups]);
 
-  const handleDelete = async (slug: string) => {
-    try {
-      await newsApi.removeArticle(slug);
-      setArticles((prev) => prev.filter((a) => a.slug !== slug));
-      setDeleteDialog(null);
-    } catch {}
-  };
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return groups
+      .filter((group) => {
+        const translations = group.translations;
+        const missingLocales = requiredLocales.filter(
+          (item) => !translations.some((translation) => translation.locale === item.code)
+        );
 
-  // Toggle publish status via switch
-  const handleSwitchToggle = async (slug: string, newStatus: boolean) => {
-    setSwitchLoading(slug);
+        if (query) {
+          const haystack = [
+            group.shared_slug,
+            ...translations.map((item) => item.title),
+            ...translations.map((item) => item.summary || ''),
+          ].join(' ').toLowerCase();
+          if (!haystack.includes(query)) return false;
+        }
+
+        if (year !== 'all' && createdYear(group) !== year) return false;
+        if (status === 'published' && !translations.some((item) => item.is_published)) return false;
+        if (status === 'draft' && !translations.some((item) => !item.is_published)) return false;
+        if (status === 'missing' && missingLocales.length === 0) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const diff = latestDate(a) - latestDate(b);
+        return sort === 'newest' ? -diff : diff;
+      });
+  }, [groups, search, year, status, sort]);
+
+  const visibleGroups = useMemo(() => filtered.slice(0, showCount), [filtered, showCount]);
+
+  const groupedByYear = useMemo(() => {
+    const byYear = new Map<string, NewsArticleGroup[]>();
+    visibleGroups.forEach((group) => {
+      const key = createdYear(group);
+      const list = byYear.get(key) || [];
+      list.push(group);
+      byYear.set(key, list);
+    });
+
+    return Array.from(byYear.entries()).sort(([a], [b]) => {
+      if (a === '未分类') return 1;
+      if (b === '未分类') return -1;
+      return Number(b) - Number(a);
+    });
+  }, [visibleGroups]);
+
+  async function updatePublished(group: NewsArticleGroup, published: boolean) {
     setError('');
     try {
-      await newsApi.togglePublish(slug, newStatus);
-      setArticles((prev) =>
-        prev.map((a) => (a.slug === slug ? { ...a, is_published: newStatus } : a))
-      );
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : t('admin.articles.statusTextFailed');
-      setError(errorMsg);
-      // Revert: articles will re-fetch, but set optimistically wrong
-      const current = articles.find((a) => a.slug === slug);
-      if (current) {
-        setArticles((prev) =>
-          prev.map((a) => (a.slug === slug ? { ...a, is_published: !newStatus } : a))
-        );
-      }
-    } finally {
-      setSwitchLoading(null);
+      await newsApi.togglePublish(group.shared_slug, published);
+      await loadGroups();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '状态更新失败');
     }
-  };
+  }
 
-  // Apply filters
-  const filteredArticles = articles.filter((a) => {
-    if (search && !a.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterCategory !== 'all' && !a.categories.some((c) => c.slug === filterCategory)) return false;
-    if (filterStatus === 'published' && !a.is_published) return false;
-    if (filterStatus === 'draft' && a.is_published) return false;
-    return true;
-  });
-
-  // Apply sorting
-  const sortedArticles = [...filteredArticles].sort((a, b) => {
-    const dateA = new Date(a.published_at || a.created_at).getTime();
-    const dateB = new Date(b.published_at || b.created_at).getTime();
-    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-  });
-
-  const formatDate = (dateStr: string) => {
+  async function deleteArticle(group: NewsArticleGroup) {
+    const title = primaryTranslation(group, locale)?.title || group.shared_slug;
+    if (!window.confirm(`删除「${title}」以及所有语言版本吗？`)) return;
+    setError('');
     try {
-      return new Date(dateStr).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return dateStr;
+      await newsApi.removeArticle(group.shared_slug);
+      setGroups((prev) => prev.filter((item) => item.id !== group.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '删除失败');
     }
-  };
+  }
 
-  const getLocaleLabel = (localeCode: string) => {
-    if (localeCode === 'zh') return '中文';
-    return 'EN';
-  };
+  function editVersion(group: NewsArticleGroup, localeCode: string) {
+    const translation = group.translations.find((item) => item.locale === localeCode);
+    if (translation) {
+      router.push(`/${locale}/admin/editor/${group.shared_slug}?locale=${localeCode}`);
+      return;
+    }
+    router.push(`/${locale}/admin/editor?baseSlug=${group.shared_slug}&locale=${localeCode}`);
+  }
 
-  // Get localized name
-  const getName = (item: { name: string; name_zh?: string }) => {
-    return locale === 'zh' ? (item.name_zh || item.name) : item.name;
-  };
-
-  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
+          <p className="text-sm text-muted-foreground">加载文章...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Error toast */}
-      {error && (
-        <div className="fixed top-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg shadow-lg text-sm flex items-center gap-2">
-          <span>{error}</span>
-          <button onClick={() => setError('')} className="ml-2 text-red-400 hover:text-red-600">×</button>
-        </div>
-      )}
-
-      {/* ── Header ── */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <h1 className="text-xl font-bold text-gray-900">{t('admin.articles.title')}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">{t('admin.articles.subtitle')}</p>
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-5 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">文章管理</h1>
+              <p className="text-sm text-slate-500 mt-1">管理新闻、公告、文章和多语言版本。</p>
             </div>
             <div className="flex items-center gap-2">
-              <BackButton
-                fallbackRoute={`/${locale}/admin/dashboard`}
-                className="shrink-0 px-2"
-              />
-              <Button
-                className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                size="sm"
-                onClick={() => router.push(`/${locale}/admin/editor`)}
-              >
-                <Plus className="h-4 w-4 mr-1.5" />
-                {t('admin.articles.newArticle')}
+              <BackButton fallbackRoute={`/${locale}/admin/dashboard`} className="shrink-0" />
+              <Button onClick={() => router.push(`/${locale}/admin/editor`)}>
+                <Plus className="h-4 w-4 mr-2" />
+                新建文章
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-5 space-y-4">
-        {/* ── Toolbar ── */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3">
-          <div className="flex flex-col sm:flex-row gap-2.5">
-            {/* Search */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <main className="max-w-7xl mx-auto px-5 py-6 space-y-5">
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <section className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_140px_160px_160px_120px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder={t('admin.articles.searchPlaceholder')}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-9 bg-gray-50 border-gray-200 focus:bg-white"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="按标题、摘要或 slug 搜索..."
+                className="pl-9 bg-slate-50"
               />
             </div>
-
-            {/* Category Filter */}
             <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 text-sm appearance-none cursor-pointer min-w-[140px] focus:bg-white focus:ring-1 focus:ring-purple-300"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 10px center',
-                paddingRight: '30px',
-              }}
+              value={year}
+              onChange={(event) => setYear(event.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="all">{t('admin.articles.allCategories')}</option>
-              {categories.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {getName(c)}
+              <option value="all">全部年份</option>
+              {years.map((item) => (
+                <option key={item} value={item}>
+                  {item}
                 </option>
               ))}
             </select>
-
-            {/* Status Filter */}
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 text-sm appearance-none cursor-pointer min-w-[130px] focus:bg-white focus:ring-1 focus:ring-purple-300"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 10px center',
-                paddingRight: '30px',
-              }}
+              value={status}
+              onChange={(event) => setStatus(event.target.value as StatusFilter)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="all">{t('admin.articles.allStatus')}</option>
-              <option value="published">{t('admin.articles.publishedBadge')}</option>
-              <option value="draft">{t('admin.articles.draftBadge')}</option>
+              <option value="all">全部状态</option>
+              <option value="published">有已发布版本</option>
+              <option value="draft">有草稿版本</option>
+              <option value="missing">缺少语言版本</option>
             </select>
-
-            {/* Sort */}
             <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-              className="h-9 px-3 rounded-md border border-gray-200 bg-gray-50 text-sm appearance-none cursor-pointer min-w-[130px] focus:bg-white focus:ring-1 focus:ring-purple-300"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 10px center',
-                paddingRight: '30px',
-              }}
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortOrder)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="newest">{t('admin.articles.newestFirst')}</option>
-              <option value="oldest">{t('admin.articles.oldestFirst')}</option>
+              <option value="newest">最新优先</option>
+              <option value="oldest">最旧优先</option>
+            </select>
+            <select
+              value={showCount}
+              onChange={(event) => setShowCount(Number(event.target.value))}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {showOptions.map((item) => (
+                <option key={item} value={item}>
+                  Show {item}
+                </option>
+              ))}
             </select>
           </div>
+        </section>
+
+        <div className="flex items-center justify-between text-sm text-slate-500">
+          <span>显示 {visibleGroups.length} / 共 {filtered.length} 篇文章</span>
+          <span className="inline-flex items-center gap-1">
+            <Languages className="h-4 w-4" />
+            EN / 中文 / FR 版本状态
+          </span>
         </div>
 
-        {/* ── Results count ── */}
-        {sortedArticles.length > 0 && (
-          <p className="text-xs text-muted-foreground px-1">
-            {t('admin.articles.articleCount').replace('{count}', String(sortedArticles.length))}
-          </p>
-        )}
-
-        {/* ── Empty State ── */}
-        {sortedArticles.length === 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
-            <div className="max-w-md mx-auto space-y-4">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-                <Search className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-gray-700">{t('admin.articles.noArticles')}</h3>
-                <p className="text-sm text-muted-foreground">{t('admin.articles.noArticlesDesc')}</p>
-              </div>
-              <Button
-                size="lg"
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-                onClick={() => router.push(`/${locale}/admin/editor`)}
-              >
-                <Plus className="h-4 w-4 mr-1.5" />
-                {t('admin.articles.newArticle')}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Desktop Cards ── */}
-        {sortedArticles.length > 0 && (
-          <div className="hidden md:block space-y-2">
-            {sortedArticles.map((article) => (
-              <article
-                key={article.id}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-150 group"
-              >
-                <div className="flex items-center gap-4 px-5 py-4">
-                  {/* Left: Article info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${article.is_published ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                      <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-purple-700 transition-colors">
-                        {article.title || t('admin.articles.untitled')}
-                      </h3>
-                    </div>
-                    {article.summary && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 mb-1.5">
-                        {article.summary}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                      <span>/{article.slug}</span>
-                    </div>
-                  </div>
-
-                  {/* Middle: Metadata */}
-                  <div className="flex items-center gap-4 shrink-0">
-                    {/* Date */}
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-[80px]">
-                      <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                      <span>{formatDate(article.published_at || article.created_at)}</span>
-                    </div>
-
-                    {/* Locale */}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Globe className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="font-medium">{getLocaleLabel(article.locale)}</span>
-                    </div>
-
-                    {/* Categories */}
-                    {article.categories.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Folder className="h-3 w-3 text-gray-400" />
-                        <div className="flex flex-wrap gap-1">
-                          {article.categories.slice(0, 2).map((c) => (
-                            <Badge key={c.slug} variant="outline" className="text-[10px] px-1.5 py-0 h-4.5 border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100">
-                              {getName(c)}
-                            </Badge>
-                          ))}
-                          {article.categories.length > 2 && (
-                            <span className="text-[10px] text-gray-400">+{article.categories.length - 2}</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    {article.tags.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Tag className="h-3 w-3 text-gray-400" />
-                        <div className="flex flex-wrap gap-1">
-                          {article.tags.slice(0, 2).map((tag) => (
-                            <Badge key={tag.slug} variant="outline" className="text-[10px] px-1.5 py-0 h-4.5 border-gray-200 text-gray-500 bg-gray-50/50">
-                              {getName(tag)}
-                            </Badge>
-                          ))}
-                          {article.tags.length > 2 && (
-                            <span className="text-[10px] text-gray-400">+{article.tags.length - 2}</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right: Publish Switch + Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Publish Switch */}
-                    <PublishSwitch
-                      articleSlug={article.slug}
-                      published={article.is_published}
-                      loading={switchLoading === article.slug}
-                      onChange={handleSwitchToggle}
-                      t={t}
-                    />
-
-                    {/* Edit */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs text-gray-600 hover:bg-purple-50 hover:text-purple-700"
-                      onClick={() => router.push(`/${locale}/admin/editor/${article.slug}`)}
-                      title={t('admin.articles.edit')}
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-
-                    {/* View */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs text-gray-600 hover:bg-blue-50 hover:text-blue-700"
-                      onClick={() => window.open(`/${locale}/news/${article.slug}`, '_blank')}
-                      title={t('admin.articles.view')}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-
-                    {/* Delete */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs text-gray-500 hover:bg-red-50 hover:text-red-700"
-                      onClick={() => setDeleteDialog(article.slug)}
-                      title={t('admin.articles.delete')}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-
-        {/* ── Mobile Cards ── */}
-        {sortedArticles.length > 0 && (
-          <div className="md:hidden space-y-3">
-            {sortedArticles.map((article) => (
-              <div key={article.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
-                {/* Top row: title + publish switch */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${article.is_published ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-semibold text-gray-900">
-                        {article.title || t('admin.articles.untitled')}
-                      </h3>
-                      {article.summary && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{article.summary}</p>
-                      )}
-                      <p className="text-[10px] text-gray-400 mt-0.5">/{article.slug}</p>
-                    </div>
-                  </div>
-                  <PublishSwitch
-                    articleSlug={article.slug}
-                    published={article.is_published}
-                    loading={switchLoading === article.slug}
-                    onChange={handleSwitchToggle}
-                    t={t}
-                  />
-                </div>
-
-                {/* Meta info */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-gray-400" />
-                    {formatDate(article.published_at || article.created_at)}
+        {filtered.length === 0 ? (
+          <section className="bg-white border border-slate-200 rounded-lg p-12 text-center">
+            <FileText className="h-10 w-10 mx-auto text-slate-300" />
+            <h2 className="mt-4 text-lg font-semibold text-slate-800">没有找到文章</h2>
+            <p className="mt-1 text-sm text-slate-500">调整筛选条件，或新建第一篇文章。</p>
+          </section>
+        ) : (
+          <section className="space-y-4">
+            {groupedByYear.map(([yearLabel, yearGroups]) => (
+              <div key={yearLabel} className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                  <span>{yearLabel}</span>
+                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-500">
+                    {yearGroups.length} 篇
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Globe className="h-3 w-3 text-gray-400" />
-                    {getLocaleLabel(article.locale)}
-                  </span>
-                  {article.categories.length > 0 && (
-                    <div className="flex flex-wrap gap-1 ml-auto">
-                      {article.categories.map((c) => (
-                        <Badge key={c.slug} variant="outline" className="text-[10px] px-1.5 py-0 h-4.5 border-gray-200 text-gray-600 bg-gray-50">
-                          {getName(c)}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
+                {yearGroups.map((group) => {
+              const primary = primaryTranslation(group, locale);
+              const missing = requiredLocales.filter(
+                (item) => !group.translations.some((translation) => translation.locale === item.code)
+              );
+              const hasPublished = group.translations.some((item) => item.is_published);
+              const latest = formatDate(
+                group.translations
+                  .map((item) => item.published_at || item.updated_at || item.created_at)
+                  .filter(Boolean)
+                  .sort()
+                  .at(-1),
+                locale
+              );
 
-                {/* Actions */}
-                <div className="flex items-center gap-1.5 pt-2 border-t border-gray-100">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3 text-xs flex-1 justify-center border-gray-200"
-                    onClick={() => router.push(`/${locale}/admin/editor/${article.slug}`)}
-                  >
-                    <Edit className="h-3.5 w-3.5 mr-1" />
-                    {t('admin.articles.edit')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3 text-xs flex-1 justify-center border-gray-200"
-                    onClick={() => window.open(`/${locale}/news/${article.slug}`, '_blank')}
-                  >
-                    <Eye className="h-3.5 w-3.5 mr-1" />
-                    {t('admin.articles.view')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3 text-xs flex-1 justify-center border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => setDeleteDialog(article.slug)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />
-                    {t('admin.articles.delete')}
-                  </Button>
-                </div>
+              return (
+                <article
+                  key={group.id}
+                  className="bg-white border border-slate-200 rounded-md shadow-sm hover:border-slate-300 transition-colors"
+                >
+                  <div className="grid grid-cols-1 gap-2 p-3 lg:grid-cols-[minmax(260px,1fr)_minmax(260px,360px)_170px] lg:items-center">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${hasPublished ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                        <h2 className="truncate text-sm font-semibold text-slate-950">
+                          {primary?.title || group.shared_slug}
+                        </h2>
+                        {missing.length > 0 && (
+                          <Badge variant="outline" className="h-5 shrink-0 border-amber-200 bg-amber-50 px-2 text-[11px] leading-none text-amber-700">
+                            Missing {missing.map((item) => item.label).join(', ')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {latest}
+                        </span>
+                        <span className="truncate">/ {group.shared_slug}</span>
+                        {primary?.summary && <span className="hidden max-w-[260px] truncate text-slate-400 xl:inline">{primary.summary}</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {requiredLocales.map((item) => {
+                        const translation = group.translations.find((version) => version.locale === item.code);
+                        return (
+                          <button
+                            key={item.code}
+                            type="button"
+                            onClick={() => editVersion(group, item.code)}
+                            className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs transition-colors ${
+                              translation
+                                ? 'border-slate-200 bg-white text-slate-700 hover:border-purple-200 hover:bg-purple-50'
+                                : 'border-dashed border-amber-300 bg-amber-50/60 text-amber-700 hover:bg-amber-50'
+                            }`}
+                          >
+                            <span className="font-semibold">{item.label}</span>
+                            {translation ? (
+                              <span className={`h-1.5 w-1.5 rounded-full ${translation.is_published ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                            ) : (
+                              <Plus className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-1 lg:justify-end">
+                      <PublishSwitch checked={hasPublished} onCheckedChange={(checked) => updatePublished(group, checked)} />
+                      <Button variant="ghost" size="sm" onClick={() => editVersion(group, primary?.locale || 'en')} title="编辑" className="h-7 w-7 p-0">
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(`/${locale}/news/${primary?.slug || group.shared_slug}`, '_blank')}
+                        title="预览"
+                        className="h-7 w-7 p-0"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => deleteArticle(group)} title="删除" className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </article>
+              );
+                })}
               </div>
             ))}
-          </div>
+          </section>
         )}
       </main>
-
-      {/* ── Delete Confirmation Dialog ── */}
-      <Dialog open={!!deleteDialog} onOpenChange={() => setDeleteDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">{t('admin.articles.confirmDelete')}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {t('admin.articles.confirmDelete')}
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={() => deleteDialog && handleDelete(deleteDialog)}>
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

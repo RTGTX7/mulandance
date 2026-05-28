@@ -5,10 +5,14 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { CheckCircle, Clock, Users, Award } from 'lucide-react';
 
 export default function SummerCampsPage() {
   const t = useTranslations();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
+  const registerHref = `/${locale}/classes/register?type=summer-camp`;
 
   const features = [
     { icon: CheckCircle, title: t('programs.summer.features.youngDancers'), desc: t('programs.summer.features.youngDancersDesc') },
@@ -34,7 +38,7 @@ export default function SummerCampsPage() {
             <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8">
               {t('programs.summer.description')}
             </p>
-            <Link href="/classes/register">
+            <Link href={registerHref}>
               <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                 {t('common.buttons.register')}
               </Button>
@@ -114,7 +118,7 @@ export default function SummerCampsPage() {
               {t('programs.register.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/classes/register">
+              <Link href={registerHref}>
                 <Button size="lg" className="bg-primary hover:bg-primary/90">
                   {t('programs.register.form.submit')}
                 </Button>

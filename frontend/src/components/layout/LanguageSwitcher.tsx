@@ -4,43 +4,37 @@ import { useLocale } from '@/components/ui/i18n-client';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { Languages } from 'lucide-react';
-
-const locales = [
-  { code: 'en', label: 'EN' },
-  { code: 'zh', label: '中文' },
-];
+import { LANGUAGE_OPTIONS, stripLocaleFromPathname } from '@/lib/i18n';
 
 export function LanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLocaleChange = () => {
-    const newLocale = locale === 'en' ? 'zh' : 'en';
-    // Split pathname into segments, remove locale if present, add new locale
-    const segments = pathname.split('/').filter(Boolean);
-    const localeSegment = segments[0];
-    
-    let pathWithoutLocale: string;
-    if (localeSegment === 'en' || localeSegment === 'zh') {
-      pathWithoutLocale = '/' + segments.slice(1).join('/');
-    } else {
-      pathWithoutLocale = pathname;
-    }
-    
-    // Ensure pathWithoutLocale doesn't have double locale
-    const cleanPath = pathWithoutLocale.replace(/^\/(en|zh)/, '');
-    router.push(`/${newLocale}${cleanPath || ''}`);
+  const handleLocaleChange = (newLocale: string) => {
+    const cleanPath = stripLocaleFromPathname(pathname);
+    router.push(`/${newLocale}${cleanPath === '/' ? '' : cleanPath}`);
     router.refresh();
   };
 
+  const active = LANGUAGE_OPTIONS.find((item) => item.code === locale) || LANGUAGE_OPTIONS[0];
+
   return (
-    <button
-      onClick={handleLocaleChange}
-      className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border/50"
-    >
+    <label className="flex items-center gap-1.5 rounded-md border border-border/50 px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
       <Languages className="h-4 w-4" />
-      <span>{locale === 'en' ? 'EN' : '中文'}</span>
-    </button>
+      <span className="sr-only">Language</span>
+      <select
+        value={active.code}
+        onChange={(event) => handleLocaleChange(event.target.value)}
+        className="bg-transparent text-sm font-medium outline-none"
+        aria-label="Language"
+      >
+        {LANGUAGE_OPTIONS.map((item) => (
+          <option key={item.code} value={item.code}>
+            {item.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

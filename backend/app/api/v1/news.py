@@ -102,11 +102,34 @@ def list_admin_news(
     return articles
 
 
+@router.get("/admin/groups")
+def list_admin_article_groups(
+    category: Optional[str] = None,
+    tag: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    user: User = Depends(_require_admin_or_write),
+    db: Session = Depends(get_db),
+):
+    """Admin-only grouped list: one row per article with all locale versions."""
+    return news_files.list_article_groups(
+        db,
+        published_only=False,
+        category_slug=category,
+        tag_slug=tag,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
+
+
 @router.get("", response_model=list[ArticleWithRelations])
 def list_public_news(
     category: Optional[str] = None,
     tag: Optional[str] = None,
     search: Optional[str] = None,
+    locale: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -118,6 +141,7 @@ def list_public_news(
         category_slug=category,
         tag_slug=tag,
         search=search,
+        locale=locale,
         limit=limit,
         offset=offset,
     )
@@ -135,8 +159,15 @@ def list_tags(db: Session = Depends(get_db)):
 
 
 @router.get("/admin/{slug}", response_model=ArticleWithHtml)
-def get_admin_article(slug: str, db: Session = Depends(get_db)):
-    article = news_files.get_article(db, slug, include_html=True)
+def get_admin_article(
+    slug: str,
+    locale: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    if locale:
+        article = news_files.get_article_translation(db, slug, locale=locale, include_html=True)
+    else:
+        article = news_files.get_article(db, slug, include_html=True)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     return article
@@ -152,11 +183,13 @@ def get_admin_article_by_id(article_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{slug}", response_model=ArticleWithHtml)
-def get_public_article(slug: str, db: Session = Depends(get_db)):
-    article = news_files.get_article(db, slug, include_html=True)
+def get_public_article(
+    slug: str,
+    locale: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    article = news_files.get_article(db, slug, include_html=True, locale=locale, published_only=True)
     if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    if not article["is_published"]:
         raise HTTPException(status_code=404, detail="Article not found")
     return article
 

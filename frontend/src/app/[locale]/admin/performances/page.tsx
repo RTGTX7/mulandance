@@ -8,6 +8,7 @@ import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, CheckCircle, ChevronLeft, ChevronRight, Clock, ListChecks, Plus } from 'lucide-react';
+import { dateLocaleFor } from '@/lib/i18n';
 
 type ListMode = 'date' | 'recent';
 
@@ -46,7 +47,7 @@ export default function AdminPerformancesPage() {
   });
   const recent = performances.slice(0, 5);
   const displayedPerformances = listMode === 'date' ? selectedPerformances : recent;
-  const selectedDateLabel = selectedDate.toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', {
+  const selectedDateLabel = selectedDate.toLocaleDateString(dateLocaleFor(locale), {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -142,7 +143,7 @@ export default function AdminPerformancesPage() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="min-w-[150px] text-center text-sm font-medium">
-                {month.toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', { month: 'long', year: 'numeric' })}
+                {month.toLocaleDateString(dateLocaleFor(locale), { month: 'long', year: 'numeric' })}
               </span>
               <Button variant="outline" size="sm" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>
                 <ChevronRight className="h-4 w-4" />
@@ -250,7 +251,7 @@ export default function AdminPerformancesPage() {
                   >
                     <span className="font-medium">{item.title}</span>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(item.start_date).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US')}
+                      {new Date(item.start_date).toLocaleDateString(dateLocaleFor(locale))}
                     </span>
                   </button>
                 ))}

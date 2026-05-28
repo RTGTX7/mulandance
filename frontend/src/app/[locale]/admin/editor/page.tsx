@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import { EditorContent } from './EditorContent';
 
 export default function EditorPage() {
-  return <EditorContent editSlug={null} />;
+  return (
+    <Suspense fallback={null}>
+      <EditorContent editSlug={null} />
+    </Suspense>
+  );
 }
