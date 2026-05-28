@@ -13,8 +13,10 @@ export default function ProgramsPage() {
   return (
     <div className="pt-16">
       {/* Hero Section */}
-      <section className="relative h-[300px] bg-gradient-to-r from-primary to-purple-700 overflow-hidden">
+      <section className="relative h-[300px] bg-gradient-to-r from-primary to-purple-700 overflow-visible">
         <div className="absolute inset-0 bg-black/30" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 translate-y-[38%] bg-gradient-to-b from-purple-900/70 via-purple-700/45 to-accent/20 backdrop-blur-xl" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-14 translate-y-[24%] bg-gradient-to-b from-purple-800/55 via-purple-700/20 to-transparent blur-2xl" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white relative z-10 px-4">
             <Breadcrumbs

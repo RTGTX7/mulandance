@@ -38,8 +38,12 @@ export function BackButton({ fallbackRoute, label, className }: BackButtonProps)
   const resolvedFallback = fallbackRoute || defaultFallback;
 
   const handleClick = () => {
-    // Attempt browser back first
-    router.back();
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push(resolvedFallback);
   };
 
   return (

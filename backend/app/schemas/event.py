@@ -44,6 +44,8 @@ class PerformanceBase(BaseModel):
     start_date: datetime
     end_date: datetime
     venue: Optional[str] = None
+    cover_image: Optional[str] = None
+    is_current: bool = True
 
 
 class PerformanceCreate(PerformanceBase):
@@ -52,10 +54,12 @@ class PerformanceCreate(PerformanceBase):
 
 class PerformanceUpdate(BaseModel):
     title: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     venue: Optional[str] = None
+    cover_image: Optional[str] = None
     is_current: Optional[bool] = None
 
 

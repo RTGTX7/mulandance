@@ -7,22 +7,22 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/ui/back-button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Plus,
   Search,
   Edit,
   Trash2,
-  MoreHorizontal,
   Globe,
   Calendar,
-  ExternalLink,
+  Eye,
   Tag,
   Folder,
 } from 'lucide-react';
@@ -91,28 +91,28 @@ function PublishSwitch({
       disabled={loading}
       onClick={handleToggle}
       className={`
-        flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium border transition-all duration-200
+        inline-flex h-8 min-w-[132px] items-center gap-2 rounded-full border px-2.5 text-xs font-medium transition-all duration-200
         ${isActive
-          ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
-          : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
         }
         ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
+      aria-pressed={isActive}
       title={isActive ? t('admin.articles.switchUnpublish') : t('admin.articles.switchPublish')}
     >
       <span className={`
-        inline-flex h-4 w-4 items-center justify-center rounded-full transition-all
-        ${isActive ? 'bg-purple-600' : 'bg-amber-500'}
+        relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200
+        ${isActive ? 'bg-emerald-500' : 'bg-gray-300'}
       `}>
-        {isActive ? (
-          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          <span className="text-white text-[8px] font-bold">!</span>
-        )}
+        <span className={`
+          absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200
+          ${isActive ? 'translate-x-[18px]' : 'translate-x-0.5'}
+        `} />
       </span>
-      <span>{isActive ? t('admin.articles.publishedBadge') : t('admin.articles.unpublishedBadge')}</span>
+      <span className="leading-none">
+        {isActive ? t('admin.articles.publishedBadge') : t('admin.articles.unpublishedBadge')}
+      </span>
     </button>
   );
 }
@@ -156,6 +156,13 @@ export default function ArticlesPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get('status');
+    if (status === 'published' || status === 'draft' || status === 'all') {
+      setFilterStatus(status);
+    }
+  }, []);
 
   const handleDelete = async (slug: string) => {
     try {
@@ -253,18 +260,24 @@ export default function ArticlesPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="min-w-0">
               <h1 className="text-xl font-bold text-gray-900">{t('admin.articles.title')}</h1>
               <p className="text-xs text-muted-foreground mt-0.5">{t('admin.articles.subtitle')}</p>
             </div>
-            <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-              size="sm"
-              onClick={() => router.push(`/${locale}/admin/editor`)}
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('admin.articles.newArticle')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <BackButton
+                fallbackRoute={`/${locale}/admin/dashboard`}
+                className="shrink-0 px-2"
+              />
+              <Button
+                className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                size="sm"
+                onClick={() => router.push(`/${locale}/admin/editor`)}
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t('admin.articles.newArticle')}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -475,7 +488,18 @@ export default function ArticlesPage() {
                       onClick={() => window.open(`/${locale}/news/${article.slug}`, '_blank')}
                       title={t('admin.articles.view')}
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Delete */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs text-gray-500 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => setDeleteDialog(article.slug)}
+                      title={t('admin.articles.delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -550,8 +574,17 @@ export default function ArticlesPage() {
                     className="h-8 px-3 text-xs flex-1 justify-center border-gray-200"
                     onClick={() => window.open(`/${locale}/news/${article.slug}`, '_blank')}
                   >
-                    <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                    <Eye className="h-3.5 w-3.5 mr-1" />
                     {t('admin.articles.view')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs flex-1 justify-center border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => setDeleteDialog(article.slug)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    {t('admin.articles.delete')}
                   </Button>
                 </div>
               </div>

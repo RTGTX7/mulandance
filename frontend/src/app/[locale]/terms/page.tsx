@@ -1,4 +1,6 @@
-import { useTranslations } from 'next-intl';
+'use client';
+
+import { useTranslations } from '@/components/ui/i18n-client';
 
 export default function TermsPage() {
   const t = useTranslations();

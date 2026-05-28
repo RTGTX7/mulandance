@@ -1,5 +1,49 @@
 # Development Log - Alpha 1.1.0
 
+**Version:** alpha 1.1.1  
+**Date:** 2026-05-27  
+**Repository:** github.com/RTGTX7/mulandance  
+
+---
+
+## Summary
+
+This release fixes a critical database path bug that caused the backend to use the wrong SQLite database file depending on the server's working directory.
+
+---
+
+## Bug Fixes
+
+### 1. Wrong Database File (Admin Articles List Shows Only 1 Article)
+
+**Root Cause:** The database path in `backend/app/core/config.py` was configured as a relative path (`sqlite:///./dance_org.db`). When the backend server was started from the workspace root (`c:\Workspace`) instead of the backend directory (`c:\Workspace\dance-organization\backend`), SQLite resolved the path relative to the wrong working directory, creating/using a different database file.
+
+| File Location | Articles | Status |
+|---------------|----------|--------|
+| `c:\Workspace\dance-organization\backend\dance_org.db` | 8 | Correct (original) |
+| `c:\Workspace\dance_org.db` | 1 | Wrong (accidental duplicate) |
+
+**Fix:** Changed `backend/app/core/config.py` to compute the absolute database path relative to the config file's own location, ensuring the correct database is always used regardless of the working directory.
+
+```python
+# Before (broken - relative path)
+DATABASE_URL: str = "sqlite:///./dance_org.db"
+
+# After (fixed - absolute path from config file location)
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_DB_PATH = os.path.join(_BACKEND_DIR, "dance_org.db")
+_DATABASE_URL = f"sqlite:///{_DB_PATH.replace(chr(92), '/')}"
+```
+
+**Files Changed:**
+- `backend/app/core/config.py` - Absolute database path resolution
+
+**No Data Loss:** Both database files remain intact with their respective data. The fix ensures the server always connects to the correct database (the one with 8 articles).
+
+---
+
+# Development Log - Alpha 1.1.0
+
 **Version:** alpha 1.1.0  
 **Date:** 2026-05-26  
 **Repository:** github.com/[username]/dance-organization

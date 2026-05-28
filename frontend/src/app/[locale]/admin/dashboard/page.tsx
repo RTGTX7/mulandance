@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from '@/components/ui/i18n-client';
-import { clearAuthToken, isAuthenticated } from '@/lib/api';
+import { isAuthenticated, newsApi } from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/components/ui/i18n-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link, LogOut, FileText, CheckCircle, FilePlus, Tag, Folder } from 'lucide-react';
+import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
+import { CheckCircle, FileText, Tag, Folder } from 'lucide-react';
 
 interface Stats {
   total: number;
@@ -29,14 +29,12 @@ export default function DashboardPage() {
       router.push(`/${locale}/admin/login`);
       return;
     }
-    fetch('/api/v1/news?limit=100')
-      .then((res) => res.json())
+    newsApi.adminList({ limit: 100 })
       .then((articles: unknown[]) => {
         const articleList = articles as Array<{ is_published: boolean }>;
-        // Also fetch categories and tags count
         Promise.all([
-          fetch('/api/v1/news/categories').then((r) => r.json()).catch(() => []),
-          fetch('/api/v1/news/tags').then((r) => r.json()).catch(() => []),
+          newsApi.categories().catch(() => []),
+          newsApi.tags().catch(() => []),
         ]).then(([cats, tags]) => {
           setStats({
             total: articleList.length,
@@ -53,24 +51,19 @@ export default function DashboardPage() {
       });
   }, [router, locale]);
 
-  const handleLogout = () => {
-    clearAuthToken();
-    router.push(`/${locale}/admin/login`);
-  };
-
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Page Header */}
       <header className="bg-card border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('admin.dashboard.title')}</h1>
+          <AdminSectionTabs />
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-5 gap-4">
+          <Card className="min-w-0 min-h-[112px] cursor-pointer hover:border-primary/50" onClick={() => router.push(`/${locale}/admin/articles`)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -81,7 +74,7 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold">{loading ? '...' : stats.total}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="min-w-0 min-h-[112px] cursor-pointer hover:border-emerald-400" onClick={() => router.push(`/${locale}/admin/articles?status=published`)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
@@ -92,7 +85,7 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold">{loading ? '...' : stats.published}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="min-w-0 min-h-[112px] cursor-pointer hover:border-amber-400" onClick={() => router.push(`/${locale}/admin/articles?status=draft`)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -103,7 +96,7 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold">{loading ? '...' : stats.drafts}</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:border-primary/50" onClick={() => router.push(`/${locale}/admin/categories`)}>
+          <Card className="min-w-0 min-h-[112px] cursor-pointer hover:border-primary/50" onClick={() => router.push(`/${locale}/admin/categories`)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Folder className="h-4 w-4" />
@@ -114,7 +107,7 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold text-primary">{loading ? '...' : stats.categories}</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:border-secondary/50" onClick={() => router.push(`/${locale}/admin/tags`)}>
+          <Card className="min-w-0 min-h-[112px] cursor-pointer hover:border-secondary/50" onClick={() => router.push(`/${locale}/admin/tags`)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Tag className="h-4 w-4" />
@@ -125,23 +118,6 @@ export default function DashboardPage() {
               <p className="text-3xl font-bold text-secondary">{loading ? '...' : stats.tags}</p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => router.push(`/${locale}/admin/editor`)}>
-            <FilePlus className="h-4 w-4 mr-2" />
-            {t('admin.dashboard.newArticle')}
-          </Button>
-          <Button variant="outline" onClick={() => router.push(`/${locale}/admin/articles`)}>
-            {t('admin.dashboard.viewAll')}
-          </Button>
-          <Button variant="outline" onClick={() => router.push(`/${locale}/admin/categories`)}>
-            {t('admin.categories.title')}
-          </Button>
-          <Button variant="outline" onClick={() => router.push(`/${locale}/admin/tags`)}>
-            {t('admin.tags.title')}
-          </Button>
         </div>
 
         {/* Recent Articles */}
@@ -155,7 +131,9 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-2">
                 <p className="text-muted-foreground">
-                  {stats.total === 0 ? 'No articles yet. Create your first article!' : `${stats.total} articles total`}
+                  {stats.total === 0
+                    ? t('admin.dashboard.noArticles')
+                    : t('admin.dashboard.articleTotal').replace('{count}', String(stats.total))}
                 </p>
               </div>
             )}

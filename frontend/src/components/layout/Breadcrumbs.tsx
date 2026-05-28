@@ -28,11 +28,11 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
 
   return (
     <nav aria-label="Breadcrumb" className="mb-6">
-      <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <ol className="flex items-center justify-center gap-1.5 text-sm text-white/65">
         <li>
           <Link
             href={getHref('/')}
-            className="hover:text-foreground transition-colors"
+            className="hover:text-white transition-colors"
           >
             <Home className="h-4 w-4" />
           </Link>
@@ -44,11 +44,11 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           >
             <ChevronRight className="h-3.5 w-3.5 shrink-0" />
             {index === items.length - 1 ? (
-              <span className="text-foreground font-medium">{item.label}</span>
+              <span className="text-white/80 font-medium">{item.label}</span>
             ) : (
               <Link
                 href={getHref(item.href)}
-                className="hover:text-foreground transition-colors"
+                className="hover:text-white transition-colors"
               >
                 {item.label}
               </Link>

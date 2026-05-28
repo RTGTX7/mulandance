@@ -6,6 +6,7 @@ import { clearAuthToken, isAuthenticated, newsApi, getErrorMessage } from '@/lib
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BackButton } from '@/components/ui/back-button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -193,10 +194,13 @@ export default function CategoriesPage() {
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('admin.categories.title')}</h1>
               <p className="text-sm text-muted-foreground mt-1">{t('admin.categories.addDescription')}</p>
             </div>
-            <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm" onClick={() => { setShowAdd(true); setError(null); }}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t('admin.common.add')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <BackButton fallbackRoute={`/${locale}/admin/dashboard`} className="shrink-0 px-2" />
+              <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm" onClick={() => { setShowAdd(true); setError(null); }}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                {t('admin.common.add')}
+              </Button>
+            </div>
           </div>
         </div>
       </header>

@@ -469,7 +469,7 @@
       "invalid": "Invalid email or password"
     },
     "dashboard": {
-      "title": "Dashboard",
+      "title": "News Articles",
       "totalArticles": "Total Articles",
       "published": "Published",
       "drafts": "Drafts",
@@ -479,7 +479,9 @@
       "totalPublished": "Published",
       "totalDrafts": "Drafts",
       "totalCategories": "Categories",
-      "totalTags": "Tags"
+      "totalTags": "Tags",
+      "noArticles": "No articles yet. Create your first article!",
+      "articleTotal": "{count} articles total"
     },
     "editor": {
       "title": "Editor",
@@ -629,6 +631,54 @@
       "confirmDeleteDesc": "Are you sure you want to delete \"{slug}\"? This action cannot be undone.",
       "add": "Add Tag",
       "edit": "Edit Tag"
+    },
+    "tabs": {
+      "newsArticles": "News Articles",
+      "performance": "Performance",
+      "registration": "Registration"
+    },
+    "performances": {
+      "calendarTitle": "Performance Calendar",
+      "addTitle": "Add Performance",
+      "editTitle": "Edit Performance",
+      "allTitle": "All Performances",
+      "selectedDate": "Selected Date",
+      "all": "All",
+      "create": "Create",
+      "save": "Save",
+      "clear": "Clear",
+      "loadFailed": "Failed to load performances",
+      "saveFailed": "Failed to save performance",
+      "deleteFailed": "Failed to delete performance",
+      "deleteConfirm": "Delete \"{title}\"?",
+      "emptyAll": "No performances yet.",
+      "emptySelected": "No performances on this date.",
+      "totalCount": "{count} performances total",
+      "selectedCount": "{count} performances on selected date",
+      "moreCount": "+{count} more",
+      "weekdays": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "fields": {
+        "title": "Title",
+        "slug": "Slug",
+        "description": "Description",
+        "start": "Start",
+        "end": "End",
+        "venue": "Venue",
+        "coverImage": "Cover Image URL",
+        "showOnHomepage": "Show on homepage"
+      }
+    },
+    "registrations": {
+      "title": "Registration Management",
+      "underConstruction": "This feature is under construction."
     }
   },
   "news": {

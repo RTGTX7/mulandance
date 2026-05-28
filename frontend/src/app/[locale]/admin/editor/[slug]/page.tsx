@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { EditorContent } from "../page";
+import { EditorContent } from "../EditorContent";
 
 export async function generateMetadata({
   params,

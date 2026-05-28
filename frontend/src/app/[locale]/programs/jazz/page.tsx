@@ -1,3 +1,5 @@
+'use client';
+
 import { useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

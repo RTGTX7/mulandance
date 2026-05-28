@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { LocaleProvider } from '@/components/ui/i18n-client';
+import { LocaleProvider, type TranslationMessages } from '@/components/ui/i18n-client';
 import { cn } from '@/lib/utils';
 import '../globals.css';
 import en from '../../lib/locales/en.json';
 import zh from '../../lib/locales/zh.json';
 
 const locales = ['en', 'zh'] as const;
-const messagesByLocale: Record<string, typeof en> = { en, zh };
+const messagesByLocale: Record<string, TranslationMessages> = { en, zh };
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));

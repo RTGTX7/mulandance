@@ -240,6 +240,30 @@ export interface ArticleUpdateBody {
   is_published?: boolean;
 }
 
+export interface PerformanceItem {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  venue?: string;
+  cover_image?: string;
+  is_current: boolean;
+  created_at?: string;
+}
+
+export interface PerformanceBody {
+  slug: string;
+  title: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  venue?: string;
+  cover_image?: string;
+  is_current: boolean;
+}
+
 // ====================================================================
 // News API helpers
 // ====================================================================
@@ -314,6 +338,24 @@ export const newsApi = {
   // Toggle publish status (hide/unpublish or publish)
   togglePublish: (slug: string, published: boolean) =>
     api.put<NewsArticle>(`/v1/news/${slug}/status`, { is_published: published }),
+};
+
+export const performanceApi = {
+  list: (params?: { current?: boolean }) => {
+    const query = new URLSearchParams();
+    if (params?.current) query.set('current', 'true');
+    const qs = query.toString();
+    return api.get<PerformanceItem[]>(`/v1/events/performances${qs ? '?' + qs : ''}`);
+  },
+
+  create: (body: PerformanceBody) =>
+    api.post<PerformanceItem>('/v1/events/performances', body),
+
+  update: (id: string, body: Partial<PerformanceBody>) =>
+    api.put<PerformanceItem>(`/v1/events/performances/${id}`, body),
+
+  remove: (id: string) =>
+    api.delete<Record<string, unknown>>(`/v1/events/performances/${id}`),
 };
 
 // ====================================================================

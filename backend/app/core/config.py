@@ -1,9 +1,10 @@
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
-# Resolve absolute DB path relative to this config file's directory
-_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Resolve absolute DB path relative to the backend directory.
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _DB_PATH = os.path.join(_BACKEND_DIR, "dance_org.db")
 # Convert to forward slashes for SQLAlchemy SQLite URL
 _DB_PATH_FWSLASH = _DB_PATH.replace("\\", "/")
@@ -21,6 +22,19 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     NEWS_FILES_DIR: str = "./data/news"
     USE_FILE_STORAGE: bool = True
+
+    @field_validator("DEBUG", "USE_FILE_STORAGE", mode="before")
+    @classmethod
+    def parse_bool_like_env(cls, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on", "debug", "development", "dev"}:
+                return True
+            if normalized in {"0", "false", "no", "off", "release", "production", "prod"}:
+                return False
+        return value
 
     class Config:
         env_file = ".env"

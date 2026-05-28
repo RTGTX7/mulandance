@@ -473,7 +473,7 @@
       "invalid": "邮箱或密码错误"
     },
     "dashboard": {
-      "title": "仪表板",
+      "title": "新闻文章",
       "totalArticles": "文章总数",
       "published": "已发布",
       "drafts": "草稿",
@@ -483,7 +483,9 @@
       "totalPublished": "已发布",
       "totalDrafts": "草稿",
       "totalCategories": "分类",
-      "totalTags": "标签"
+      "totalTags": "标签",
+      "noArticles": "还没有文章。创建第一篇文章吧！",
+      "articleTotal": "共 {count} 篇文章"
     },
     "editor": {
       "title": "编辑器",
@@ -627,6 +629,54 @@
       "confirmDeleteDesc": "确定要删除 \"{slug}\" 吗？此操作不可撤销。",
       "add": "添加标签",
       "edit": "编辑标签"
+    },
+    "tabs": {
+      "newsArticles": "新闻文章",
+      "performance": "演出",
+      "registration": "报名"
+    },
+    "performances": {
+      "calendarTitle": "演出日历",
+      "addTitle": "添加演出",
+      "editTitle": "编辑演出",
+      "allTitle": "全部演出",
+      "selectedDate": "选中日期",
+      "all": "全部",
+      "create": "创建",
+      "save": "保存",
+      "clear": "清空",
+      "loadFailed": "加载演出失败",
+      "saveFailed": "保存演出失败",
+      "deleteFailed": "删除演出失败",
+      "deleteConfirm": "确定删除“{title}”吗？",
+      "emptyAll": "还没有演出。",
+      "emptySelected": "这一天没有演出。",
+      "totalCount": "共 {count} 个演出",
+      "selectedCount": "选中日期有 {count} 个演出",
+      "moreCount": "还有 {count} 个",
+      "weekdays": {
+        "sun": "周日",
+        "mon": "周一",
+        "tue": "周二",
+        "wed": "周三",
+        "thu": "周四",
+        "fri": "周五",
+        "sat": "周六"
+      },
+      "fields": {
+        "title": "标题",
+        "slug": "标识符",
+        "description": "描述",
+        "start": "开始",
+        "end": "结束",
+        "venue": "地点",
+        "coverImage": "封面图片 URL",
+        "showOnHomepage": "显示在首页"
+      }
+    },
+    "registrations": {
+      "title": "报名管理",
+      "underConstruction": "这个功能正在施工中。"
     }
   },
   "news": {
