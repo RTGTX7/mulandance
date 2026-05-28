@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 console.log('[API Config] NEXT_PUBLIC_API_URL =', process.env.NEXT_PUBLIC_API_URL, '=> API_URL =', API_URL);
 
 const TOKEN_KEY = 'dance_org_token';
@@ -370,7 +370,7 @@ export const performanceApi = {
 
 export const uploadApi = {
   image: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);

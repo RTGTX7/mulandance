@@ -1,41 +1,61 @@
 @echo off
+setlocal
+cd /d "%~dp0"
+
 echo ========================================
-echo MuDance Alpha 1.1.0 - Start Frontend & Backend
+echo MuDance Alpha 1.1.0 - Install and Start
+echo Frontend ^& Backend
 echo ========================================
 echo.
 
-REM Check if venv exists, create if not
-if not exist venv\Scripts\python.exe (
-    echo [0/3] Creating Python virtual environment...
-    python -m venv venv >nul 2>&1
-    echo Python virtual environment created.
-)
-
-echo [1/3] Installing Python dependencies...
-call venv\Scripts\activate.bat
-pip install -r requirements_backend.txt >nul 2>&1
+where npm >nul 2>&1
 if errorlevel 1 (
-    echo Warning: Some Python dependencies could not be installed.
-) else (
-    echo Python dependencies installed.
+    echo Error: npm was not found. Install Node.js 18+ and try again.
+    pause
+    exit /b 1
 )
-echo.
 
-echo [2/3] Starting Backend (FastAPI) on http://localhost:8001...
-start "Backend" cmd /c "cd /d %cd%\backend && call ..\venv\Scripts\activate.bat && set PYTHONPATH=%cd%\.. && python -m uvicorn app.main:app --host 0.0.0.0 --port 8001"
-timeout /t 3 /nobreak >nul
-echo.
+where python >nul 2>&1
+if errorlevel 1 (
+    echo Error: python was not found. Install Python 3.11+ and try again.
+    pause
+    exit /b 1
+)
 
-echo [3/3] Starting Frontend (Next.js) on http://localhost:3000...
-start "Frontend" cmd /c "cd /d %cd%\frontend && npm run dev"
-echo.
+if not exist "venv\Scripts\python.exe" (
+    echo [1/5] Creating Python virtual environment...
+    python -m venv venv
+    if errorlevel 1 exit /b 1
+) else (
+    echo [1/5] Python virtual environment already exists.
+)
 
-echo ========================================
-echo Services starting...
-echo Backend:  http://localhost:8001
+echo [2/5] Installing backend dependencies...
+call "venv\Scripts\activate.bat"
+python -m pip install -r requirements_backend.txt
+if errorlevel 1 exit /b 1
+
+echo [3/5] Installing root npm dependencies...
+call npm install
+if errorlevel 1 exit /b 1
+
+echo [4/5] Installing frontend npm dependencies...
+pushd frontend
+call npm install
+if errorlevel 1 exit /b 1
+popd
+
+echo [5/5] Starting services...
+echo Backend:  http://localhost:8000
 echo Frontend: http://localhost:3000
-echo API Docs: http://localhost:8001/docs
-echo ========================================
+echo API Docs: http://localhost:8000/docs
+echo Database: backend\dance_org.db
 echo.
-echo Press any key to close this window...
+
+start "MuDance Backend" cmd /k "cd /d ""%~dp0backend"" && call ..\venv\Scripts\activate.bat && set PYTHONPATH=%~dp0backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+timeout /t 3 /nobreak >nul
+start "MuDance Frontend" cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
+
+echo Services are starting in separate windows.
+echo Press any key to close this launcher window...
 pause >nul
