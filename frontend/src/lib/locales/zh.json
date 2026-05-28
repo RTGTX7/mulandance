@@ -1,0 +1,697 @@
+{
+  "common": {
+    "appName": "木兰舞蹈工作室",
+    "nav": {
+      "home": "首页",
+      "about": "关于我们",
+      "programs": "课程",
+      "performances": "演出",
+      "classes": "课堂",
+      "contact": "联系我们"
+    },
+    "buttons": {
+      "learnMore": "了解更多",
+      "register": "立即报名",
+      "subscribe": "订阅",
+      "viewAll": "查看全部",
+      "submit": "提交",
+      "back": "返回",
+      "close": "关闭",
+      "openMenu": "打开菜单",
+      "closeMenu": "关闭菜单"
+    },
+    "footer": {
+      "quickLinks": "快速链接",
+      "programs": "课程",
+      "performances": "演出",
+      "events": "活动",
+      "contact": "联系我们",
+      "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
+      "phone": "343-777-1766",
+      "email": "info@mulandance.com",
+      "followUs": "关注我们",
+      "newsletter": "通讯订阅",
+      "newsletterPlaceholder": "输入您的邮箱",
+      "newsletterButton": "订阅",
+      "newsletterSuccess": "感谢您的订阅！",
+      "copyright": "版权所有。",
+      "privacyPolicy": "隐私政策",
+      "termsOfService": "服务条款",
+      "accessibility": "无障碍"
+    },
+    "hero": {
+      "tagline": "让舞动成为艺术",
+      "subtitle": "学中乐、学中思、学中悟 — 渥太华语舞蹈学校"
+    },
+    "sections": {
+      "ourPrograms": "我们的课程",
+      "upcomingEvents": "演出活动",
+      "testimonials": "学员评价",
+      "latestNews": "最新资讯",
+      "whyChooseUs": "为什么选择我们",
+      "featuredPerformances": "精选演出"
+    },
+    "features": {
+      "worldClassFaculty": "专业师资",
+      "allLevels": "欢迎所有级别",
+      "performanceOpportunities": "表演机会",
+      "examPreparation": "考试准备"
+    },
+    "accessibility": {
+      "skipToContent": "跳转到主要内容",
+      "skipToNavigation": "跳转到导航",
+      "mainContent": "主要内容",
+      "navigation": "导航",
+      "search": "搜索",
+      "language": "语言",
+      "menu": "菜单",
+      "close": "关闭",
+      "expand": "展开",
+      "collapse": "收起",
+      "previous": "上一个",
+      "next": "下一个",
+      "loading": "加载中...",
+      "error": "发生错误",
+      "required": "必填字段",
+      "formSubmitted": "表单提交成功"
+    },
+    "cancel": "取消",
+    "delete": "删除",
+    "save": "保存",
+    "add": "添加",
+    "edit": "编辑",
+    "back": "返回",
+    "loading": "加载中...",
+    "logout": "退出登录",
+    "success": "成功",
+    "error": "错误",
+    "yes": "是",
+    "no": "否"
+  },
+  "home": {
+    "hero": {
+      "slides": [
+        {
+          "title": "让舞动成为艺术",
+          "subtitle": "学中乐、学中思、学中悟 — 木兰舞蹈工作室",
+          "cta1": "探索课程",
+          "cta2": "观看宣传片"
+        },
+        {
+          "title": "2025/2026 演出季",
+          "subtitle": "年度学员专场秀 + 小荷风采少儿舞蹈大赛",
+          "cta1": "了解演出",
+          "cta2": "观看YouTube"
+        },
+        {
+          "title": "2026 暑期舞蹈夏令营",
+          "subtitle": "适合5-17岁学员的舞蹈夏令营，一周沉浸式舞蹈体验",
+          "cta1": "立即报名",
+          "cta2": "了解详情"
+        }
+      ]
+    },
+    "programs": {
+      "title": "我们的课程",
+      "subtitle": "为每个年龄和级别提供全面的舞蹈培训",
+      "chinese": "中国古典舞",
+      "chineseDesc": "富含华夏文化遗产的经典舞蹈，传承中华传统文化",
+      "folk": "中国少数民族民间舞",
+      "folkDesc": "地方风情浓郁的多民族舞蹈风格，涵盖中国各地区的传统舞蹈",
+      "ballet": "芭蕾舞",
+      "balletDesc": "扎实的芭蕾舞基本功训练，系统化合一教学",
+      "contemporary": "现代舞",
+      "contemporaryDesc": "善于思考的中国风现代创作舞蹈",
+      "jazz": "爵士舞",
+      "jazzDesc": "时尚的爵士舞蹈表演，商业与表演方向的中国风爵士",
+      "hiphop": "街舞",
+      "hiphopDesc": "潮流街舞训练，由渥太华最受欢迎的宝熊老师授课"
+    },
+    "stats": {
+      "students": "学员",
+      "years": "年教学经验",
+      "performances": "演出次数",
+      "teachers": "专业教师"
+    },
+    "events": {
+      "title": "演出与赛事",
+      "subtitle": "参加我们的年度学员专场秀、小舞王评选和各类活动",
+      "viewAll": "了解所有演出"
+    },
+    "testimonials": {
+      "title": "学员风采",
+      "subtitle": "听听我们的舞蹈社区",
+      "viewAll": "了解所有演出",
+      "tangtang": "糖糖",
+      "tangtangQuote": "我喜欢音乐，舞蹈能让我更好地感受音乐、表现音乐，也让我更加自信。在鲍老师的课堂上，老师会一直激励我克服困难，掌握舞蹈的基本功。这里还有我喜欢的中国流行乐，我在下课的时候都会唱着歌去跳老师教给我的舞蹈动作。我很喜欢鲍老师，相信你们也会喜欢她的舞蹈课，快来跟我一起学习吧！",
+      "tangtangAff": "木兰学员，5-8岁",
+      "tangtang2": "糖糖",
+      "tangtang2Quote": "大家好，我叫糖糖，我喜爱美食、音乐、舞蹈、美术、读书。我喜欢音乐，舞蹈能让我更好地感受音乐、表现音乐，也让我更加自信。",
+      "tangtang2Aff": "小小舞者，木兰舞蹈工作室",
+      "gege": "格格",
+      "gegeQuote": "爱舞蹈、爱Mulan、更爱鲍老师。跟着鲍老师学舞多年，非常喜欢这样以芭蕾为基础，教授各个舞种的舞蹈。特别喜欢中国风style的现代舞、爵士舞，让我更多了解舞蹈这一门类的艺术。",
+      "gegeAff": "老学员，木兰舞蹈工作室",
+      "gege2": "格格",
+      "gege2Quote": "加油我的小妹妹们，你们一定也会爱上舞蹈，爱上Mulan，爱上鲍老师的。",
+      "gege2Aff": "木兰舞蹈工作室学员"
+    },
+    "news": {
+      "title": "最新资讯",
+      "subtitle": "木兰舞蹈工作室动态",
+      "viewAll": "查看全部新闻"
+    },
+    "cta": {
+      "title": "加入木兰舞蹈大家庭",
+      "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
+      "register": "立即报名",
+      "contact": "联系我们"
+    }
+  },
+  "about": {
+    "title": "关于我们",
+    "intro_intro": "木兰舞蹈工作室由鲍俊伟老师于2021年在加拿大渥太华创办，是一所专门针对幼儿启蒙和青少年专业培训舞蹈的学校。",
+    "intro_created": "2021年由鲍俊伟老师在加拿大渥太华创办。",
+    "intro_experience": "依托鲍老师多年来在少儿舞蹈教育领域的丰富经验，以及带领学员参加全国最高级别舞蹈赛事的实战经验，形成了一套独具特色的教学模式和教学理念。",
+    "philosophy": {
+      "title": "教学理念",
+      "heading": "学中乐、学中思、学中悟",
+      "desc": "在这套教学理念的指导下，学员不仅能够学会扎实的舞蹈基本功，更能体会到舞蹈带来的快乐。通过舞蹈这一艺术形式，让学员了解和感受中国五千年文化的魅力，在舞蹈艺术的世界里自由翱翔。"
+    },
+    "goals": {
+      "title": "培养目标",
+      "items": [
+        "培养学员的全方位舞蹈素养",
+        "了解多种舞蹈风格和表演模式",
+        "通过系统化教学，让学员亲身体验艺术与身体的完美融合",
+        "激发学员的学习兴趣和自信心",
+        "培养团队协作精神和舞台表现力"
+      ]
+    },
+    "history": {
+      "title": "发展历程",
+      "founded": "2021年由鲍俊伟老师创办"
+    },
+    "leadership": {
+      "title": "师资力量",
+      "founder": "鲍俊伟老师",
+      "founderRole": "创始人兼主讲教师",
+      "founderDesc": "木兰舞蹈工作室创始人，多年少儿舞蹈教育经验。擅长中国古典舞、中国少数民族民间舞、芭蕾舞、现代舞。形成了独具特色的教学模式，\"学中乐、学中思、学中悟\"教学理念创始人。善于激励学员克服困难，建立自信心，将中国传统文化融入舞蹈教学。",
+      "kayley": "宝熊老师 - Kayley",
+      "kayleyRole": "编舞 / Jazz / K-Pop / Hip-Hop 教师",
+      "kayleyDesc": "渥太华最具活力的舞蹈教师之一，拥有丰富的比赛和演出经验。",
+      "kayleyAchievements": [
+        "2022年山东少儿春晚优秀编导老师",
+        "中韩街舞交流赛季军",
+        "中国舞蹈节受邀嘉宾",
+        "北京峪口文化节受邀嘉宾",
+        "唐山五四青年节受邀嘉宾",
+        "keep the love freestyle 8强",
+        "青岛战舞林2v2 freestyle 8强",
+        "潍坊舞出奇迹齐舞大赛亚军",
+        "个人简历纳入中国青少年人才库",
+        "曾多次进修于舞邦 hellodance old dog等知名舞房",
+        "合作艺人：灼海豚、王OK、李天责、李佩玲、朴宰范、周深、张郁梓舞台2023总决赛"
+      ],
+      "hailey": "Hailey Smith",
+      "haileyRole": "Ballet / Jazz / Acro 教师",
+      "haileyDesc": "Hailey Smith 拥有认知科学学士学位，主修神经科学，辅修语言学。她为教学带来了扎实的技术基础和丰富的比赛经验。",
+      "haileyAchievements": [
+        "Youth America Grand Prix Top 24",
+        "2024年 Candance 最高分 acro audition",
+        "2024年 jazz solo 总分 Top 5",
+        "强项：Ballet、Jazz 和 Acro",
+        "Acro 是她特别热爱的领域，拥有丰富的教学经验"
+      ]
+    },
+    "vision": {
+      "title": "机构愿景",
+      "items": [
+        "成为渥太华语舞蹈教育领域的标杆",
+        "让华语家庭的孩子在海外也能接受系统专业的舞蹈教育",
+        "通过舞蹈艺术传承和弘扬中国传统文化",
+        "培养更多优秀的年轻舞者",
+        "打造温暖有爱的舞蹈学习社区"
+      ]
+    },
+    "contact": {
+      "title": "联系我们",
+      "form": {
+        "name": "您的姓名",
+        "namePlaceholder": "请输入您的姓名",
+        "email": "邮箱地址",
+        "emailPlaceholder": "your@email.com",
+        "subject": "主题",
+        "message": "留言内容",
+        "messagePlaceholder": "您想了解什么？",
+        "submit": "发送消息",
+        "success": "感谢您的留言。我们将在2个工作日内回复您。"
+      }
+    },
+    "joinUs": {
+      "title": "加入我们",
+      "subtitle": "工作室期待你加入这个温暖的大家庭！无论你是零基础的小白，还是已经有舞蹈基础的学员，木兰舞蹈工作室都有适合你的课程和舞台。"
+    }
+  },
+  "performance": {
+    "title": "演出与赛事",
+    "currentSeason": "本季演出",
+    "seasonSubtle": "年度学员专场秀 + 小荷风采少儿舞蹈大赛",
+    "seasonDesc": "木兰舞蹈工作室举办年度学员专场秀，每位学员都有机会在专属舞台上展示自己，同时参加国内最高级别的少儿舞蹈赛事。",
+    "showcase": {
+      "title": "年度学员专场秀",
+      "desc": "每年年中/年底举办，每位学员都有机会在专属舞台上展示自己。通过相互学习，激发孩子们的学习兴趣，评选出木兰舞蹈工作室的\"小舞王\"。",
+      "date": "每年6月/12月",
+      "venue": "渥太华美仑华顿酒店"
+    },
+    "xiaohe": {
+      "title": "小荷风采少儿舞蹈大赛",
+      "desc": "国内最高级别的舞蹈赛事。木兰舞蹈工作室学员屡获优异成绩，为学员提供高水平的竞技和展示平台。",
+      "date": "时间不定",
+      "venue": "全国各地"
+    },
+    "summer": {
+      "title": "暑期营汇报演出",
+      "desc": "暑期营结业展示，一周学习成果汇报，让家长和学员共同见证成长的足迹。",
+      "date": "8月",
+      "venue": "木兰舞蹈工作室"
+    }
+  },
+  "programs": {
+    "title": "课程",
+    "subtitle": "为每个年龄和级别提供全面的舞蹈培训",
+    "levels": {
+      "children": "儿童（3-12岁）",
+      "teens": "青少年（13-17岁）",
+      "parents": "成人（18岁以上）",
+      "summer": "暑期夏令营（5-17岁）",
+      "title": "课程级别 / Levels"
+    },
+    "ballet": {
+      "title": "芭蕾舞",
+      "description": "我们的芭蕾课程提供扎实的芭蕾舞基本功训练，以芭蕾为基础，系统化合一教学，为所有其他舞蹈门类打下坚实基础。",
+      "features": {
+        "radSyllabus": "扎实的芭蕾基本功",
+        "exams": "系统化训练",
+        "performances": "年度展示",
+        "crossTraining": "所有舞种的基础"
+      }
+    },
+    "contemporary": {
+      "title": "现代舞",
+      "description": "善于思考的中国风现代创作舞蹈，将中国传统文化元素融入现代舞创作中，让学员深入了解舞蹈这一门类的艺术。",
+      "features": {
+        "technique": "现代舞技巧",
+        "improvisation": "中国风创作",
+        "choreography": "编舞实验室",
+        "performances": "季度演出"
+      }
+    },
+    "chinese": {
+      "title": "中国古典舞",
+      "description": "富含华夏文化遗产的经典舞蹈，通过系统化训练传承和弘扬中华传统舞蹈艺术，让学员了解和感受中国五千年文化的魅力。",
+      "features": {
+        "classical": "中国古典舞",
+        "folk": "少数民族民间舞",
+        "acrobatics": "舞蹈杂技（软开度）",
+        "cultural": "文化背景教学"
+      }
+    },
+    "jazz": {
+      "title": "爵士舞",
+      "description": "时尚的爵士舞蹈表演，商业与表演方向的中国风爵士舞。让学员深入了解舞蹈这一门类的艺术，亲身体验感悟到艺术与身体的完美融合。",
+      "features": {
+        "broadway": "百老汇爵士",
+        "commercial": "商业爵士",
+        "lyrical": "中国风爵士",
+        "performances": "表演机会"
+      }
+    },
+    "hiphop": {
+      "title": "街舞",
+      "description": "潮流街舞训练课程，由我们最受欢迎的宝熊老师授课。宝熊老师是渥太华最受欢迎的舞蹈老师之一，教授从基础动作到复杂编舞的各种内容。",
+      "features": {
+        "fundamentals": "基础动作",
+        "choreography": "编舞",
+        "freestyle": "自由发挥与即兴",
+        "styles": "多种风格"
+      }
+    },
+    "summer": {
+      "title": "暑期夏令营",
+      "description": "学校假期期间的强化舞蹈课程，适合5-17岁学员。一周沉浸式舞蹈体验，涵盖芭蕾、中国舞、现代舞、爵士舞等。",
+      "features": {
+        "youngDancers": "小小舞者营",
+        "intermediate": "中级学员营",
+        "intensive": "舞蹈强化营",
+        "adult": "亲子活动"
+      }
+    },
+    "pricing": {
+      "title": "收费标准",
+      "subtitle": "对您舞蹈旅程的投资",
+      "monthly": "每月",
+      "term": "每学期",
+      "annual": "每年",
+      "financialAid": "提供经济援助",
+      "siblingDiscount": "提供兄弟姐妹折扣",
+      "freeIntro": "免费体验课"
+    },
+    "register": {
+      "title": "报名",
+      "subtitle": "今天开始您的舞蹈旅程",
+      "form": {
+        "studentName": "学员姓名",
+        "studentNamePlaceholder": "请输入学员姓名",
+        "parentName": "家长/监护人姓名",
+        "parentNamePlaceholder": "请输入家长/监护人姓名（选填）",
+        "email": "邮箱",
+        "emailPlaceholder": "请输入邮箱地址",
+        "phone": "电话",
+        "phonePlaceholder": "请输入电话号码（选填）",
+        "age": "年龄",
+        "agePlaceholder": "请输入年龄（选填）",
+        "program": "课程选择",
+        "selectProgram": "请选择课程",
+        "experience": "以往经验",
+        "experiencePlaceholder": "是否有舞蹈基础？（选填）",
+        "message": "留言",
+        "messagePlaceholder": "有什么问题或特殊需求？（选填）",
+        "submit": "立即报名"
+      }
+    }
+  },
+  "performances": {
+    "title": "演出",
+    "currentSeason": "本季演出",
+    "archive": "演出档案",
+    "tickets": "门票",
+    "subscribe": "订阅",
+    "season": {
+      "title": "2025/2026演出季",
+      "subtitle": "学员展示和特别活动",
+      "tickets": "获取门票",
+      "productions": {
+        "showcase": {
+          "title": "年度学员专场秀",
+          "desc": "每位学员都有机会在专属舞台上展示自己"
+        },
+        "xiaohe": {
+          "title": "小荷风采舞蹈大赛",
+          "desc": "国内最高级别的少儿舞蹈赛事"
+        },
+        "summer": {
+          "title": "暑期营汇报演出",
+          "desc": "暑期营结业展示和学习成果汇报"
+        }
+      }
+    }
+  },
+  "classes": {
+    "title": "课堂",
+    "schedule": "课程表",
+    "pricing": "收费标准",
+    "register": "报名",
+    "absencePolicy": "缺勤与补课政策",
+    "faqs": "常见问题",
+    "scheduleTable": {
+      "day": "星期",
+      "time": "时间",
+      "program": "课程",
+      "instructor": "教师",
+      "level": "级别",
+      "capacity": "名额"
+    }
+  },
+  "portal": {
+    "title": "学员门户",
+    "login": "登录",
+    "register": "注册",
+    "dashboard": "仪表板",
+    "email": "邮箱",
+    "password": "密码"
+  },
+  "footer": {
+    "quickLinks": "快速链接",
+    "programs": "课程",
+    "performances": "演出",
+    "events": "活动",
+    "contact": "联系我们",
+    "address": "Ottawa, 2527 Baseline Rd, ON K2C 0E3",
+    "phone": "343-777-1766",
+    "email": "info@mulandance.com",
+    "followUs": "关注我们"
+  },
+  "error": {
+    "title": "页面未找到",
+    "description": "抱歉！您查找的页面不存在或已迁移。",
+    "returnHome": "返回首页",
+    "explorePrograms": "探索课程",
+    "helpTitle": "如何找到您想要的内容",
+    "checkUrl": {
+      "label": "检查网址",
+      "desc": "确保您输入的地址正确无误"
+    },
+    "useSearch": {
+      "label": "使用搜索",
+      "desc": "尝试搜索您需要的内容"
+    },
+    "contactUs": {
+      "label": "联系我们",
+      "desc": "联系我们，我们将帮您找到正确的方向"
+    }
+  },
+  "admin": {
+    "news": {
+      "title": "新闻"
+    },
+    "login": {
+      "title": "管理登录",
+      "email": "邮箱",
+      "password": "密码",
+      "signIn": "登录",
+      "noAccount": "没有管理权限？请联系管理员。",
+      "invalid": "邮箱或密码错误"
+    },
+    "dashboard": {
+      "title": "新闻文章",
+      "totalArticles": "文章总数",
+      "published": "已发布",
+      "drafts": "草稿",
+      "recentArticles": "最近文章",
+      "newArticle": "新文章",
+      "viewAll": "查看全部",
+      "totalPublished": "已发布",
+      "totalDrafts": "草稿",
+      "totalCategories": "分类",
+      "totalTags": "标签",
+      "noArticles": "还没有文章。创建第一篇文章吧！",
+      "articleTotal": "共 {count} 篇文章"
+    },
+    "editor": {
+      "title": "编辑器",
+      "newArticle": "新文章",
+      "editArticle": "编辑文章",
+      "articleTitle": "标题",
+      "summary": "摘要",
+      "coverImage": "封面图片URL",
+      "body": "内容（Markdown）",
+      "category": "分类",
+      "categories": "分类",
+      "tags": "标签",
+      "locale": "语言",
+      "status": "状态",
+      "published": "已发布",
+      "draft": "草稿",
+      "save": "保存",
+      "publish": "发布",
+      "preview": "预览",
+      "source": "源码",
+      "saveDraft": "保存为草稿",
+      "wordCount": "字",
+      "charCount": "字符",
+      "lastSaved": "最后保存",
+      "autoSaving": "自动保存中...",
+      "created": "文章已创建",
+      "updated": "文章已更新",
+      "deleteConfirm": "确定要删除这篇文章吗？"
+    },
+    "articles": {
+      "title": "文章管理",
+      "subtitle": "管理新闻、公告和文章。",
+      "edit": "编辑",
+      "view": "查看",
+      "delete": "删除",
+      "hide": "隐藏",
+      "publish": "发布",
+      "confirmDelete": "确定要删除这篇文章吗？",
+      "confirmHide": "确定要隐藏这篇文章吗？它将不再在公开网站上显示。",
+      "confirmPublish": "确定要发布这篇文章吗？它将出现在公开网站上。",
+      "deleted": "文章已删除",
+      "hidden": "文章已隐藏",
+      "published": "文章已发布",
+      "search": "搜索文章...",
+      "searchPlaceholder": "按标题搜索...",
+      "status": "状态",
+      "date": "日期",
+      "categoriesFilter": "按分类筛选",
+      "allCategories": "全部分类",
+      "statusFilter": "状态",
+      "allStatus": "全部",
+      "publishedStatus": "已发布",
+      "unpublishedStatus": "未发布",
+      "draft": "草稿",
+      "hidden": "已隐藏",
+      "noArticles": "还没有文章",
+      "noArticlesDesc": "创建第一篇文章来发布新闻或公告。",
+      "newArticle": "新建文章",
+      "publishedBadge": "已发布",
+      "unpublishedBadge": "未发布",
+      "draftBadge": "草稿",
+      "switchPublish": "点击发布",
+      "switchToDraft": "点击设为草稿",
+      "locale": "语言",
+      "sort": "排序",
+      "newestFirst": "最新优先",
+      "oldestFirst": "最旧优先",
+      "excerpt": "摘要",
+      "tags": "标签",
+      "articleCount": "{count} 篇文章",
+      "actions": "操作",
+      "viewPublic": "查看发布页",
+      "viewDraftNotice": "草稿文章暂未公开",
+      "untitled": "未命名文章",
+      "switchPublish": "点击发布此文章",
+      "switchUnpublish": "点击隐藏此文章",
+      "statusTextFailed": "更新状态失败"
+    },
+    "categories": {
+      "title": "分类管理",
+      "name": "名称（英文）",
+      "nameZh": "名称（中文）",
+      "color": "颜色",
+      "slug": "标识符",
+      "add": "添加分类",
+      "edit": "编辑分类",
+      "deleteConfirm": "删除分类",
+      "deleteAreYouSure": "确定要删除这个分类吗？",
+      "inUse": "无法删除：该分类正被文章使用",
+      "articlesCount": "文章数"
+    },
+    "tags": {
+      "title": "标签管理",
+      "name": "名称（英文）",
+      "nameZh": "名称（中文）",
+      "slug": "标识符",
+      "add": "添加标签",
+      "edit": "编辑标签",
+      "deleteConfirm": "删除标签",
+      "deleteAreYouSure": "确定要删除这个标签吗？",
+      "inUse": "无法删除：该标签正被文章使用",
+      "articlesCount": "文章数"
+    },
+    "common": {
+      "logout": "退出登录",
+      "loading": "加载中...",
+      "error": "错误",
+      "success": "成功",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除",
+      "add": "添加",
+      "edit": "编辑",
+      "back": "返回",
+      "yes": "是",
+      "no": "否"
+    },
+    "categories": {
+      "title": "管理分类",
+      "noCategories": "还没有分类。添加第一个分类吧！",
+      "addTitle": "添加新分类",
+      "addDescription": "创建一个新的新闻分类。",
+      "slug": "标识符",
+      "nameEn": "名称（英文）",
+      "nameZh": "名称（中文）",
+      "color": "颜色",
+      "confirmDelete": "删除分类",
+      "confirmDeleteDesc": "确定要删除 \"{slug}\" 吗？该分类下的文章不会被删除。此操作不可撤销。",
+      "add": "添加分类",
+      "edit": "编辑分类"
+    },
+    "tags": {
+      "title": "管理标签",
+      "noTags": "还没有标签。添加第一个标签吧！",
+      "addTitle": "添加新标签",
+      "addDescription": "创建一个新的新闻标签。",
+      "slug": "标识符",
+      "nameEn": "名称（英文）",
+      "nameZh": "名称（中文）",
+      "confirmDelete": "删除标签",
+      "confirmDeleteDesc": "确定要删除 \"{slug}\" 吗？此操作不可撤销。",
+      "add": "添加标签",
+      "edit": "编辑标签"
+    },
+    "tabs": {
+      "newsArticles": "新闻文章",
+      "performance": "演出",
+      "registration": "报名"
+    },
+    "performances": {
+      "calendarTitle": "演出日历",
+      "addTitle": "添加演出",
+      "editTitle": "编辑演出",
+      "allTitle": "全部演出",
+      "selectedDate": "选中日期",
+      "all": "全部",
+      "create": "创建",
+      "save": "保存",
+      "clear": "清空",
+      "loadFailed": "加载演出失败",
+      "saveFailed": "保存演出失败",
+      "deleteFailed": "删除演出失败",
+      "deleteConfirm": "确定删除“{title}”吗？",
+      "emptyAll": "还没有演出。",
+      "emptySelected": "这一天没有演出。",
+      "totalCount": "共 {count} 个演出",
+      "selectedCount": "选中日期有 {count} 个演出",
+      "moreCount": "还有 {count} 个",
+      "weekdays": {
+        "sun": "周日",
+        "mon": "周一",
+        "tue": "周二",
+        "wed": "周三",
+        "thu": "周四",
+        "fri": "周五",
+        "sat": "周六"
+      },
+      "fields": {
+        "title": "标题",
+        "slug": "标识符",
+        "description": "描述",
+        "start": "开始",
+        "end": "结束",
+        "venue": "地点",
+        "coverImage": "封面图片 URL",
+        "showOnHomepage": "显示在首页"
+      }
+    },
+    "registrations": {
+      "title": "报名管理",
+      "underConstruction": "这个功能正在施工中。"
+    }
+  },
+  "news": {
+    "title": "最新资讯与动态",
+    "admin": {
+      "title": "新闻"
+    },
+    "subtitle": "了解木兰舞蹈工作室的最新消息",
+    "readMore": "阅读更多",
+    "backToNews": "返回新闻",
+    "allCategories": "全部分类",
+    "filterByCategory": "按分类筛选",
+    "noArticles": "未找到文章",
+    "publishedAt": "发布于",
+    "by": "作者",
+    "loading": "加载文章..."
+  }
+}

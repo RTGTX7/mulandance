@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grace Dance Academy — Where Movement Becomes Art</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: 40 33% 97%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --popover: 0 0% 100%;
+      --popover-foreground: 222.2 84% 4.9%;
+      --primary: 222.2 47.4% 11.2%;
+      --primary-foreground: 210 40% 98%;
+      --secondary: 43 45% 60%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --accent: 35 50% 85%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --destructive: 0 72% 51%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 43 45% 60%;
+      --radius: 0.5rem;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Playfair Display', serif;
+    }
+
+    .font-accent {
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      width: 100%;
+      border-bottom: 1px solid hsl(var(--border) / 0.4);
+      background: hsl(var(--background) / 0.95);
+      backdrop-filter: blur(8px);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 4rem;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: hsl(var(--primary));
+      text-decoration: none;
+    }
+
+    .nav {
+      display: none;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    @media (min-width: 1024px) {
+      .nav { display: flex; }
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: hsl(var(--muted-foreground));
+      text-decoration: none;
+      border-radius: 0.375rem;
+      transition: color 0.2s, background 0.2s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+
+    .nav-link:hover {
+      color: hsl(var(--foreground));
+      background: hsl(var(--accent) / 0.5);
+    }
+
+    .nav-link.active {
+      color: hsl(var(--foreground));
+      background: hsl(var(--accent) / 0.5);
+    }
+
+    .nav-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0.25rem;
+      width: 14rem;
+      background: hsl(var(--popover));
+      border: 1px solid hsl(var(--border));
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      display: none;
+      z-index: 50;
+    }
+
+    .nav-item:hover .nav-dropdown {
+      display: block;
+    }
+
+    .nav-dropdown a {
+      display: block;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      text-decoration: none;
+      border-radius: 0.375rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .nav-dropdown a:hover {
+      background: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
+    }
+
+    .header-actions {
+      display: none;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    @media (min-width: 1024px) {
+      .header-actions { display: flex; }
+    }
+
+    .lang-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.5rem;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 0.375rem;
+      transition: color 0.2s;
+    }
+
+    .lang-switch:hover {
+      color: hsl(var(--foreground));
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.5rem 1.5rem;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+    }
+
+    .btn-primary:hover {
+      background: hsl(var(--primary) / 0.9);
+    }
+
+    .btn-secondary {
+      background: hsl(var(--secondary));
+      color: hsl(var(--secondary-foreground));
+    }
+
+    .btn-secondary:hover {
+      background: hsl(var(--secondary) / 0.9);
+    }
+
+    .btn-outline {
+      border: 1px solid hsl(var(--input));
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+    }
+
+    .btn-outline:hover {
+      background: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
+    }
+
+    .btn-lg {
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+    }
+
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      height: 70vh;
+      min-height: 500px;
+      max-height: 800px;
+      overflow: hidden;
+    }
+
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+
+    .hero-slide.active {
+      opacity: 1;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+    }
+
+    .hero-bg-1 {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #533483 100%);
+    }
+
+    .hero-bg-2 {
+      background: linear-gradient(135deg, #c9a96e 0%, #b8944d 40%, #e8d5b7 70%, #d4b896 100%);
+    }
+
+    .hero-bg-3 {
+      background: linear-gradient(135deg, #e8d5b7 0%, #d4b896 40%, #c9a96e 70%, #b8944d 100%);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.1;
+      background:
+        radial-gradient(circle at 30% 50%, rgba(255,255,255,0.15), transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(201,169,110,0.2), transparent 40%);
+    }
+
+    .hero-content {
+      position: relative;
+      height: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: white;
+      padding: 0 1rem;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.75rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 2rem;
+      max-width: 32rem;
+      line-height: 1.7;
+    }
+
+    .hero-ctas {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .hero-ctas {
+        flex-direction: row;
+      }
+    }
+
+    .hero-nav {
+      position: absolute;
+      bottom: 2rem;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .hero-nav-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(4px);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .hero-nav-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .hero-dots {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .hero-dot {
+      height: 0.5rem;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.4);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      padding: 0;
+      width: 0.5rem;
+    }
+
+    .hero-dot.active {
+      width: 2rem;
+      background: white;
+    }
+
+    /* Sections */
+    .section {
+      padding: 4rem 0;
+    }
+
+    .section-alt {
+      background: hsl(var(--card) / 0.5);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .container-narrow {
+      max-width: 56rem;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .section-header h2 {
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-header p {
+      font-size: 1.125rem;
+      color: hsl(var(--muted-foreground));
+      max-width: 32rem;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Stats */
+    .stats {
+      padding: 4rem 0;
+      background: hsl(var(--primary));
+      color: white;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    @media (min-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      margin-bottom: 1rem;
+    }
+
+    .stat-icon svg {
+      width: 1.5rem;
+      height: 1.5rem;
+      color: hsl(var(--secondary));
+    }
+
+    .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Cards */
+    .card {
+      border-radius: 0.5rem;
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      color: hsl(var(--card-foreground));
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+
+    .card-hover:hover {
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      transform: translateY(-4px);
+    }
+
+    .card-header {
+      padding: 1.5rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .card-description {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    /* Program Grid */
+    .program-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .program-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .program-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .program-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .program-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background: hsl(var(--secondary) / 0.1);
+      color: hsl(var(--secondary));
+      margin-bottom: 0.75rem;
+      transition: all 0.3s;
+    }
+
+    .program-card:hover .program-icon {
+      background: hsl(var(--secondary));
+      color: hsl(var(--secondary-foreground));
+    }
+
+    .program-card .card-title {
+      margin-bottom: 0.5rem;
+    }
+
+    .program-card .card-body {
+      padding-top: 0;
+    }
+
+    .program-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: hsl(var(--secondary));
+    }
+
+    .program-card:hover .program-link {
+      text-decoration: underline;
+    }
+
+    /* Event Cards */
+    .event-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .event-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .event-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .event-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .event-image {
+      height: 12rem;
+      background: hsl(var(--muted));
+      border-radius: 0.5rem 0.5rem 0 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .event-image-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+    }
+
+    .event-badge {
+      position: absolute;
+      bottom: 0.75rem;
+      left: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.9);
+      color: hsl(var(--primary));
+    }
+
+    .event-card .card-header {
+      padding-bottom: 0.5rem;
+    }
+
+    .event-card .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .event-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .event-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .event-meta-item svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+
+    /* Testimonials */
+    .testimonial-section {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .testimonial {
+      text-align: center;
+      padding: 2rem 1rem;
+      position: relative;
+    }
+
+    .testimonial-quote-icon {
+      position: absolute;
+      top: -0.5rem;
+      left: 0;
+      width: 3rem;
+      height: 3rem;
+      color: hsl(var(--secondary) / 0.2);
+    }
+
+    .testimonial blockquote {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-family: 'Cormorant Garamond', serif;
+      line-height: 1.7;
+      color: hsl(var(--foreground));
+      margin-bottom: 2rem;
+      max-width: 36rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .testimonial-author {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .testimonial-avatar {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      border: 2px solid hsl(var(--secondary) / 0.3);
+      background: hsl(var(--secondary) / 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: hsl(var(--secondary));
+      font-size: 1rem;
+    }
+
+    .testimonial-name {
+      font-weight: 600;
+    }
+
+    .testimonial-affiliation {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .testimonial-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .testimonial-dots {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .testimonial-dot {
+      height: 0.5rem;
+      border-radius: 9999px;
+      background: hsl(var(--muted-foreground) / 0.3);
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      width: 0.5rem;
+      transition: all 0.3s;
+    }
+
+    .testimonial-dot.active {
+      width: 2rem;
+      background: hsl(var(--secondary));
+    }
+
+    /* News Grid */
+    .news-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .news-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .news-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .news-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .news-image {
+      height: 11rem;
+      background: hsl(var(--muted));
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .news-card .card-header {
+      padding-bottom: 0.5rem;
+    }
+
+    .news-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .news-category {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: hsl(var(--secondary));
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .news-date {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .news-card .card-title {
+      margin-bottom: 0.5rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .news-card .card-body {
+      padding-top: 0;
+    }
+
+    .news-summary {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .footer-inner { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 1024px) {
+      .footer-inner { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .footer-brand p {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .footer-social a {
+      color: hsl(var(--muted-foreground));
+      transition: color 0.2s;
+    }
+
+    .footer-social a:hover {
+      color: hsl(var(--secondary));
+    }
+
+    .footer-social svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .footer h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .footer-links a {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: hsl(var(--foreground));
+    }
+
+    .footer-contact {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-contact-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .footer-contact-item svg {
+      width: 1rem;
+      height: 1rem;
+      color: hsl(var(--secondary));
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+    }
+
+    .footer-newsletter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .footer-newsletter p {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .newsletter-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .input {
+      width: 100%;
+      border-radius: 0.375rem;
+      border: 1px solid hsl(var(--input));
+      background: hsl(var(--background));
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: hsl(var(--foreground));
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: hsl(var(--ring));
+      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 2rem 0;
+      border-top: 1px solid hsl(var(--border));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .footer-bottom {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+    }
+
+    .footer-bottom p {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .footer-bottom-links {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .footer-bottom-links a {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-bottom-links a:hover {
+      color: hsl(var(--foreground));
+    }
+
+    /* Page Header */
+    .page-header {
+      padding: 3rem 0 2rem;
+    }
+
+    .breadcrumbs {
+      margin-bottom: 1.5rem;
+    }
+
+    .breadcrumbs ol {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      list-style: none;
+    }
+
+    .breadcrumbs a {
+      color: hsl(var(--muted-foreground));
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .breadcrumbs a:hover {
+      color: hsl(var(--foreground));
+    }
+
+    .breadcrumbs .separator {
+      width: 0.875rem;
+      height: 0.875rem;
+      flex-shrink: 0;
+    }
+
+    .breadcrumbs .current {
+      color: hsl(var(--foreground));
+      font-weight: 500;
+    }
+
+    .page-header h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 1rem;
+    }
+
+    .page-header p {
+      font-size: 1.125rem;
+      color: hsl(var(--muted-foreground));
+      max-width: 32rem;
+      line-height: 1.7;
+    }
+
+    /* About Hub */
+    .about-hub {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (min-width: 768px) {
+      .about-hub { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .about-hub-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Contact Form */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+      .contact-grid { grid-template-columns: 3fr 2fr; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .form-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .form-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .select {
+      width: 100%;
+      border-radius: 0.375rem;
+      border: 1px solid hsl(var(--input));
+      background: hsl(var(--background));
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: hsl(var(--foreground));
+      font-family: inherit;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+    }
+
+    .select:focus {
+      outline: none;
+      border-color: hsl(var(--ring));
+      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+    }
+
+    .textarea {
+      width: 100%;
+      border-radius: 0.375rem;
+      border: 1px solid hsl(var(--input));
+      background: hsl(var(--background));
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: hsl(var(--foreground));
+      font-family: inherit;
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .textarea:focus {
+      outline: none;
+      border-color: hsl(var(--ring));
+      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+    }
+
+    /* Accordion */
+    .accordion {
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    .accordion-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      font-size: 1rem;
+      font-weight: 500;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      color: hsl(var(--foreground));
+      text-align: left;
+    }
+
+    .accordion-trigger svg {
+      width: 1rem;
+      height: 1rem;
+      transition: transform 0.2s;
+    }
+
+    .accordion-trigger.open svg {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease;
+    }
+
+    .accordion-content.open {
+      max-height: 500px;
+    }
+
+    .accordion-content-inner {
+      padding-bottom: 1rem;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      line-height: 1.7;
+    }
+
+    /* Portal */
+    .portal-card {
+      max-width: 28rem;
+      margin: 0 auto;
+    }
+
+    .portal-card .card-header {
+      text-align: center;
+    }
+
+    .portal-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .portal-tab {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: 1px solid hsl(var(--input));
+      border-radius: 0.375rem;
+      background: hsl(var(--background));
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .portal-tab.active {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      border-color: hsl(var(--primary));
+    }
+
+    .portal-footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .portal-footer a {
+      color: hsl(var(--secondary));
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .portal-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+    }
+
+    .forgot-link {
+      font-size: 0.875rem;
+      color: hsl(var(--secondary));
+      text-decoration: none;
+    }
+
+    .forgot-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Dashboard */
+    .dashboard-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .dashboard-stats { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .dashboard-stat {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .dashboard-stat:hover {
+      border-color: hsl(var(--secondary) / 0.5);
+    }
+
+    .dashboard-stat-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.5rem;
+      background: hsl(var(--secondary) / 0.1);
+      color: hsl(var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .dashboard-stat-icon svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .dashboard-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .dashboard-stat-label {
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .schedule-item, .announcement-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      background: hsl(var(--muted) / 0.5);
+      gap: 1rem;
+    }
+
+    .schedule-item-info p:first-child {
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    .schedule-item-info p:last-child {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .announcement-item {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .announcement-item p:first-child {
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    .announcement-item p:last-child {
+      font-size: 0.75rem;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.125rem 0.625rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-secondary {
+      background: hsl(var(--secondary) / 0.15);
+      color: hsl(var(--secondary-foreground));
+    }
+
+    /* Page Navigation */
+    .page-nav {
+      position: fixed;
+      top: 50%;
+      left: 1rem;
+      transform: translateY(-50%);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    @media (min-width: 1280px) {
+      .page-nav { left: 1rem; }
+    }
+
+    .page-nav-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      color: hsl(var(--muted-foreground));
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.625rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      writing-mode: vertical-rl;
+    }
+
+    .page-nav-btn:hover, .page-nav-btn.active {
+      border-color: hsl(var(--secondary));
+      color: hsl(var(--secondary));
+      background: hsl(var(--secondary) / 0.1);
+    }
+
+    /* Section spacer for demo */
+    .demo-section {
+      scroll-margin-top: 5rem;
+    }
+
+    /* Mobile menu */
+    .mobile-menu-btn {
+      display: flex;
+      padding: 0.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: hsl(var(--foreground));
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-menu-btn { display: none; }
+    }
+
+    .mobile-menu {
+      display: none;
+      border-top: 1px solid hsl(var(--border));
+      background: hsl(var(--background));
+    }
+
+    .mobile-menu.open {
+      display: block;
+    }
+
+    .mobile-menu-inner {
+      padding: 1rem;
+    }
+
+    .mobile-menu-section {
+      margin-bottom: 1rem;
+    }
+
+    .mobile-menu-title {
+      padding: 0.5rem 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
+    }
+
+    .mobile-menu-link {
+      display: block;
+      padding: 0.375rem 0;
+      font-size: 0.875rem;
+      color: hsl(var(--muted-foreground));
+      text-decoration: none;
+    }
+
+    /* Program detail */
+    .program-features {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .program-features { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .program-feature-card .card-header {
+      padding-bottom: 0.5rem;
+    }
+
+    .program-feature-card .card-title {
+      font-size: 0.875rem;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .program-ctas {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* SVG icons inline */
+    .icon { display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="#hero" class="logo">Grace Dance Academy</a>
+
+      <nav class="nav" aria-label="Main navigation">
+        <div class="nav-item">
+          <button class="nav-link active">About</button>
+          <div class="nav-dropdown">
+            <a href="#mission">Mission & Values</a>
+            <a href="#history">Our History</a>
+            <a href="#leadership">Leadership</a>
+            <a href="#edi">Equity & Inclusion</a>
+            <a href="#careers">Careers</a>
+            <a href="#contact">Contact</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <button class="nav-link">Programs</button>
+          <div class="nav-dropdown">
+            <a href="#ballet">Ballet</a>
+            <a href="#contemporary">Contemporary</a>
+            <a href="#chinese">Chinese Dance</a>
+            <a href="#jazz">Jazz</a>
+            <a href="#hiphop">Hip-Hop</a>
+            <a href="#pricing">Pricing</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <button class="nav-link">Performances</button>
+          <div class="nav-dropdown">
+            <a href="#season">Current Season</a>
+            <a href="#archive">Archive</a>
+            <a href="#tickets">Tickets</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <button class="nav-link">Events</button>
+          <div class="nav-dropdown">
+            <a href="#calendar">Event Calendar</a>
+            <a href="#gala">Annual Gala</a>
+            <a href="#workshops">Workshops</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <button class="nav-link">Classes</button>
+          <div class="nav-dropdown">
+            <a href="#schedule">Schedule</a>
+            <a href="#register">Register</a>
+            <a href="#policy">Absence Policy</a>
+          </div>
+        </div>
+        <div class="nav-item">
+          <button class="nav-link">Support</button>
+          <div class="nav-dropdown">
+            <a href="#donate">Donate</a>
+            <a href="#membership">Membership</a>
+            <a href="#sponsorship">Sponsorship</a>
+            <a href="#volunteer">Volunteer</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="header-actions">
+        <button class="lang-switch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          EN
+        </button>
+        <a href="#portal" class="text-sm font-medium" style="color: hsl(var(--muted-foreground)); text-decoration: none;">Portal</a>
+        <a href="#donate" class="btn btn-secondary btn-sm">Donate</a>
+      </div>
+
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-inner">
+        <div class="mobile-menu-section">
+          <div class="mobile-menu-title">About</div>
+          <a href="#mission" class="mobile-menu-link">Mission & Values</a>
+          <a href="#history" class="mobile-menu-link">Our History</a>
+          <a href="#contact" class="mobile-menu-link">Contact</a>
+        </div>
+        <div class="mobile-menu-section">
+          <div class="mobile-menu-title">Programs</div>
+          <a href="#ballet" class="mobile-menu-link">Ballet</a>
+          <a href="#contemporary" class="mobile-menu-link">Contemporary</a>
+          <a href="#chinese" class="mobile-menu-link">Chinese Dance</a>
+        </div>
+        <div class="mobile-menu-section">
+          <div class="mobile-menu-title">Performances</div>
+          <a href="#season" class="mobile-menu-link">Current Season</a>
+          <a href="#tickets" class="mobile-menu-link">Tickets</a>
+        </div>
+        <div class="mobile-menu-section">
+          <div class="mobile-menu-title">Classes</div>
+          <a href="#schedule" class="mobile-menu-link">Schedule</a>
+          <a href="#register" class="mobile-menu-link">Register</a>
+        </div>
+        <div class="mobile-menu-section">
+          <div class="mobile-menu-title">Support</div>
+          <a href="#donate" class="mobile-menu-link">Donate</a>
+          <a href="#membership" class="mobile-menu-link">Membership</a>
+        </div>
+        <div class="mobile-menu-section">
+          <a href="#portal" class="mobile-menu-link">Portal</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Carousel -->
+  <section class="hero demo-section" id="hero">
+    <div class="hero-slide active" data-slide="0">
+      <div class="hero-bg hero-bg-1"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">Grace Dance Academy</span>
+        <h1>Where Movement Becomes Art</h1>
+        <p>Nurturing dancers from first steps to professional stages since 1985</p>
+        <div class="hero-ctas">
+          <a href="#programs" class="btn btn-primary btn-lg" style="background: white; color: hsl(var(--primary));">Explore Programs</a>
+          <a href="#season" class="btn btn-outline btn-lg" style="border-color: rgba(255,255,255,0.4); color: white;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Watch Our Story
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-slide" data-slide="1">
+      <div class="hero-bg hero-bg-2"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">2025/2026 Season</span>
+        <h1>Five Productions, One Unforgettable Season</h1>
+        <p>Get your tickets now for Swan Lake, The Nutcracker, and more</p>
+        <div class="hero-ctas">
+          <a href="#tickets" class="btn btn-primary btn-lg" style="background: white; color: hsl(var(--primary));">Get Tickets</a>
+          <a href="#season" class="btn btn-outline btn-lg" style="border-color: rgba(255,255,255,0.4); color: white;">View Season</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-slide" data-slide="2">
+      <div class="hero-bg hero-bg-3"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">Summer 2026</span>
+        <h1>Summer Camps 2026</h1>
+        <p>Two weeks of dance, fun, and creativity for ages 5-17</p>
+        <div class="hero-ctas">
+          <a href="#register" class="btn btn-primary btn-lg" style="background: hsl(var(--primary)); color: white;">Register Now</a>
+          <a href="#programs" class="btn btn-outline btn-lg" style="border-color: rgba(255,255,255,0.4); color: white;">Learn More</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-nav">
+      <button class="hero-nav-btn" onclick="prevSlide()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="hero-dots">
+        <button class="hero-dot active" onclick="goToSlide(0)"></button>
+        <button class="hero-dot" onclick="goToSlide(1)"></button>
+        <button class="hero-dot" onclick="goToSlide(2)"></button>
+      </div>
+      <button class="hero-nav-btn" onclick="nextSlide()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats demo-section" id="stats">
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="stat-value">2,000+</div>
+        <div class="stat-label">Students</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        </div>
+        <div class="stat-value">40</div>
+        <div class="stat-label">Years of Excellence</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="stat-value">50+</div>
+        <div class="stat-label">Annual Performances</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div class="stat-value">35</div>
+        <div class="stat-label">Professional Faculty</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Programs -->
+  <section class="section section-alt demo-section" id="programs">
+    <div class="container">
+      <div class="section-header">
+        <h2>Our Programs</h2>
+        <p>Comprehensive dance training for every age and level</p>
+      </div>
+      <div class="program-grid">
+        <a href="#ballet" class="program-card">
+          <div class="card">
+            <div class="card-header">
+              <div class="program-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c-4 0-8 4-8 9 0 4 3 7 4 9l4-2 4 2c1-2 4-5 4-9 0-5-4-9-8-9z"/><path d="M9 12h6"/></svg>
+              </div>
+              <h3 class="card-title">Ballet</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Classical technique from early years to pre-professional training</p>
+              <span class="program-link">Learn More &rarr;</span>
+            </div>
+          </div>
+        </a>
+        <a href="#contemporary" class="program-card">
+          <div class="card">
+            <div class="card-header">
+              <div class="program-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 7l4-4 4 4"/><path d="M5 12c0-3 2-5 7-5s7 2 7 5"/><path d="M3 17c2-1 4-2 9-2s7 1 9 2"/></svg>
+              </div>
+              <h3 class="card-title">Contemporary</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Modern movement and improvisation techniques</p>
+              <span class="program-link">Learn More &rarr;</span>
+            </div>
+          </div>
+        </a>
+        <a href="#chinese" class="program-card">
+          <div class="card">
+            <div class="card-header">
+              <div class="program-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+              <h3 class="card-title">Chinese Dance</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Traditional and folk dance heritage preservation</p>
+              <span class="program-link">Learn More &rarr;</span>
+            </div>
+          </div>
+        </a>
+        <a href="#jazz" class="program-card">
+          <div class="card">
+            <div class="card-header">
+              <div class="program-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              </div>
+              <h3 class="card-title">Jazz</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Commercial and theatrical jazz technique</p>
+              <span class="program-link">Learn More &rarr;</span>
+            </div>
+          </div>
+        </a>
+        <a href="#hiphop" class="program-card">
+          <div class="card">
+            <div class="card-header">
+              <div class="program-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+              </div>
+              <h3 class="card-title">Hip-Hop</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Urban dance styles and choreography</p>
+              <span class="program-link">Learn More &rarr;</span>
+            </div>
+          </div>
+        </a>
+        <a href="#summer" class="program-card">
+          <div class="card">
+            <div class="card-header">
+              <div class="program-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+              </div>
+              <h3 class="card-title">Summer Camps</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Intensive programs during school holidays</p>
+              <span class="program-link">Learn More &rarr;</span>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div style="text-align: center; margin-top: 2.5rem;">
+        <a href="#programs" class="btn btn-outline btn-lg">View All Programs</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Events -->
+  <section class="section demo-section" id="events">
+    <div class="container">
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem;">
+        <h2 style="font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 700; letter-spacing: -0.025em;">Upcoming Events</h2>
+        <p style="font-size: 1.125rem; color: hsl(var(--muted-foreground));">Join us for performances, workshops, and community events</p>
+        <a href="#calendar" style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--secondary)); text-decoration: none;">View All Events &rarr;</a>
+      </div>
+      <div class="event-grid">
+        <a href="#gala" class="event-card">
+          <div class="card" style="display: flex; flex-direction: column;">
+            <div class="event-image" style="background: linear-gradient(135deg, #1a1a2e, #533483);">
+              <div class="event-image-overlay"></div>
+              <span class="event-badge">Performance</span>
+            </div>
+            <div class="card-header">
+              <h3 class="card-title">Spring Showcase 2026</h3>
+            </div>
+            <div class="card-body" style="flex: 1;">
+              <p class="card-description" style="margin-bottom: 1rem;">Annual student performance featuring all dance programs.</p>
+              <div class="event-meta">
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span>May 15, 2026</span>
+                </div>
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span>7:00 PM</span>
+                </div>
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>Grand Theatre</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+        <a href="#workshops" class="event-card">
+          <div class="card" style="display: flex; flex-direction: column;">
+            <div class="event-image" style="background: linear-gradient(135deg, #c9a96e, #e8d5b7);">
+              <div class="event-image-overlay"></div>
+              <span class="event-badge">Workshop</span>
+            </div>
+            <div class="card-header">
+              <h3 class="card-title">Contemporary Workshop</h3>
+            </div>
+            <div class="card-body" style="flex: 1;">
+              <p class="card-description" style="margin-bottom: 1rem;">Open workshop with guest choreographer Maria Chen.</p>
+              <div class="event-meta">
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span>June 1, 2026</span>
+                </div>
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span>10:00 AM</span>
+                </div>
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>Studio A</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+        <a href="#gala" class="event-card">
+          <div class="card" style="display: flex; flex-direction: column;">
+            <div class="event-image" style="background: linear-gradient(135deg, #0f3460, #1a1a2e);">
+              <div class="event-image-overlay"></div>
+              <span class="event-badge">Gala</span>
+            </div>
+            <div class="card-header">
+              <h3 class="card-title">Annual Gala Dinner</h3>
+            </div>
+            <div class="card-body" style="flex: 1;">
+              <p class="card-description" style="margin-bottom: 1rem;">Fundraising gala celebrating our 40th anniversary.</p>
+              <div class="event-meta">
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span>June 20, 2026</span>
+                </div>
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span>6:30 PM</span>
+                </div>
+                <div class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>Ballroom, Grand Hotel</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section section-alt demo-section" id="testimonials">
+    <div class="testimonial-section">
+      <div class="section-header">
+        <h2>What Our Students Say</h2>
+        <p>Hear from our dance community</p>
+      </div>
+      <div class="testimonial" id="testimonialContainer">
+        <svg class="testimonial-quote-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+        <blockquote id="testimonialQuote">"Grace Dance Academy transformed my daughter's confidence. The faculty is world-class and the community feels like family."</blockquote>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" id="testimonialAvatar">SM</div>
+          <div>
+            <p class="testimonial-name" id="testimonialName">Sarah Mitchell</p>
+            <p class="testimonial-affiliation" id="testimonialAffiliation">Parent, RAD Level 5 Student</p>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-nav">
+        <button class="hero-nav-btn" onclick="prevTestimonial()" style="background: hsl(var(--muted)); color: hsl(var(--foreground));">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="testimonial-dots">
+          <button class="testimonial-dot active" onclick="goToTestimonial(0)"></button>
+          <button class="testimonial-dot" onclick="goToTestimonial(1)"></button>
+          <button class="testimonial-dot" onclick="goToTestimonial(2)"></button>
+          <button class="testimonial-dot" onclick="goToTestimonial(3)"></button>
+        </div>
+        <button class="hero-nav-btn" onclick="nextTestimonial()" style="background: hsl(var(--muted)); color: hsl(var(--foreground));">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="#testimonials" style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--secondary)); text-decoration: none;">Read More Stories &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- News -->
+  <section class="section demo-section" id="news">
+    <div class="container">
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem;">
+        <h2 style="font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 700; letter-spacing: -0.025em;">Latest News</h2>
+        <p style="font-size: 1.125rem; color: hsl(var(--muted-foreground));">Updates from the academy</p>
+        <a href="#news" style="font-size: 0.875rem; font-weight: 500; color: hsl(var(--secondary)); text-decoration: none;">View All News &rarr;</a>
+      </div>
+      <div class="news-grid">
+        <a href="#news" class="news-card">
+          <div class="card">
+            <div class="news-image" style="background: linear-gradient(135deg, #16213e, #0f3460);"></div>
+            <div class="card-header">
+              <div class="news-meta">
+                <span class="news-category">Events</span>
+                <span class="news-date">Apr 15, 2026</span>
+              </div>
+              <h3 class="card-title">Spring Showcase 2026 Announced</h3>
+            </div>
+            <div class="card-body">
+              <p class="news-summary">Join us for our annual student performance featuring over 200 dancers across all programs.</p>
+            </div>
+          </div>
+        </a>
+        <a href="#news" class="news-card">
+          <div class="card">
+            <div class="news-image" style="background: linear-gradient(135deg, #c9a96e, #b8944d);"></div>
+            <div class="card-header">
+              <div class="news-meta">
+                <span class="news-category">Announcements</span>
+                <span class="news-date">Apr 1, 2026</span>
+              </div>
+              <h3 class="card-title">New RAD Examination Centre</h3>
+            </div>
+            <div class="card-body">
+              <p class="news-summary">Grace Dance Academy is now an approved RAD examination centre for the 2026-2027 session.</p>
+            </div>
+          </div>
+        </a>
+        <a href="#news" class="news-card">
+          <div class="card">
+            <div class="news-image" style="background: linear-gradient(135deg, #e8d5b7, #d4b896);"></div>
+            <div class="card-header">
+              <div class="news-meta">
+                <span class="news-category">Programs</span>
+                <span class="news-date">Mar 20, 2026</span>
+              </div>
+              <h3 class="card-title">Summer Camp Registration Open</h3>
+            </div>
+            <div class="card-body">
+              <p class="news-summary">Early bird pricing available for our 2026 summer dance camps. Register before May 31.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="section section-alt demo-section" id="about">
+    <div class="container container-narrow">
+      <div class="breadcrumbs">
+        <ol>
+          <li><a href="#hero">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </a></li>
+          <svg class="separator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <li class="current">About</li>
+        </ol>
+      </div>
+      <h1>About Us</h1>
+      <p>Nurturing dancers from first steps to professional stages since 1985</p>
+
+      <div class="about-hub" style="margin-top: 2rem;">
+        <a href="#mission" class="about-hub-card">
+          <div class="card">
+            <div class="card-body">
+              <h3 class="card-title" style="margin-bottom: 0.5rem;">Mission & Values</h3>
+              <p class="card-description">To inspire and empower individuals through the art of dance.</p>
+            </div>
+          </div>
+        </a>
+        <a href="#history" class="about-hub-card">
+          <div class="card">
+            <div class="card-body">
+              <h3 class="card-title" style="margin-bottom: 0.5rem;">Our History</h3>
+              <p class="card-description">Founded in 1985 with a dream to share the beauty of dance.</p>
+            </div>
+          </div>
+        </a>
+        <a href="#leadership" class="about-hub-card">
+          <div class="card">
+            <div class="card-body">
+              <h3 class="card-title" style="margin-bottom: 0.5rem;">Leadership</h3>
+              <p class="card-description">Meet our board, artistic staff, and faculty team.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Accordion -->
+      <div style="margin-top: 2rem;">
+        <div class="accordion">
+          <button class="accordion-trigger open" onclick="toggleAccordion(this)">
+            Our Mission & Values
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="accordion-content open">
+            <div class="accordion-content-inner">
+              <p style="margin-bottom: 1rem;">To inspire and empower individuals through the art of dance, fostering creativity, discipline, and community.</p>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                <div><strong>Excellence</strong> — We uphold the highest standards in dance education.</div>
+                <div><strong>Inclusivity</strong> — Dance is for everyone.</div>
+                <div><strong>Community</strong> — Lasting connections through shared art.</div>
+                <div><strong>Innovation</strong> — New approaches honoring traditions.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="accordion" style="margin-top: 1rem;">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            Equity, Diversity & Inclusion
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              We are committed to creating an environment where every dancer feels valued, respected, and empowered to reach their full potential.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ballet Program Detail -->
+  <section class="section demo-section" id="ballet">
+    <div class="container container-narrow">
+      <div class="breadcrumbs">
+        <ol>
+          <li><a href="#hero">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </a></li>
+          <svg class="separator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <li><a href="#programs">Programs</a></li>
+          <svg class="separator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <li class="current">Ballet</li>
+        </ol>
+      </div>
+      <h1>Ballet</h1>
+      <p>Our ballet program follows the Royal Academy of Dance syllabus, providing a structured pathway from early years to pre-professional training.</p>
+
+      <div class="program-features" style="margin-top: 2rem;">
+        <div class="card program-feature-card">
+          <div class="card-header">
+            <h3 class="card-title">RAD Syllabus-Based</h3>
+          </div>
+          <div class="card-body">
+            <p class="card-description">Our ballet program follows the Royal Academy of Dance syllabus, providing a structured pathway from early years to pre-professional training.</p>
+          </div>
+        </div>
+        <div class="card program-feature-card">
+          <div class="card-header">
+            <h3 class="card-title">Examination Preparation</h3>
+          </div>
+          <div class="card-body">
+            <p class="card-description">Preparation for RAD graded examinations at all levels, from Pre-Primary to Advanced.</p>
+          </div>
+        </div>
+        <div class="card program-feature-card">
+          <div class="card-header">
+            <h3 class="card-title">Annual Showcase</h3>
+          </div>
+          <div class="card-body">
+            <p class="card-description">Annual showcase performance giving students valuable stage experience.</p>
+          </div>
+        </div>
+        <div class="card program-feature-card">
+          <div class="card-header">
+            <h3 class="card-title">Cross-Training Included</h3>
+          </div>
+          <div class="card-body">
+            <p class="card-description">Pilates, conditioning, and anatomy classes included for comprehensive training.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="program-ctas">
+        <a href="#register" class="btn btn-primary btn-lg">Register Now</a>
+        <a href="#pricing" class="btn btn-outline btn-lg">View Pricing</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="section section-alt demo-section" id="contact">
+    <div class="container">
+      <div class="breadcrumbs">
+        <ol>
+          <li><a href="#hero">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </a></li>
+          <svg class="separator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <li><a href="#about">About</a></li>
+          <svg class="separator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <li class="current">Contact</li>
+        </ol>
+      </div>
+      <h1>Contact Us</h1>
+      <p>Nurturing dancers from first steps to professional stages since 1985</p>
+
+      <div class="contact-grid" style="margin-top: 2rem;">
+        <div class="card">
+          <div class="card-body">
+            <form style="display: flex; flex-direction: column; gap: 1rem;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Your Name</label>
+                  <input type="text" class="input" placeholder="Your name">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email Address</label>
+                  <input type="email" class="input" placeholder="your@email.com">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subject</label>
+                <select class="select">
+                  <option>Select a topic</option>
+                  <option>General Inquiry</option>
+                  <option>Programs & Classes</option>
+                  <option>Enrollment</option>
+                  <option>Performances & Tickets</option>
+                  <option>Venue Rental</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="textarea" rows="5" placeholder="How can we help you?"></textarea>
+              </div>
+              <button type="button" class="btn btn-primary btn-lg" style="width: auto;" onclick="this.textContent='Thank you! We will respond within 2 business days.'">Send Message</button>
+            </form>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <div class="card">
+            <div class="card-body" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--secondary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 0.125rem;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div>
+                  <p style="font-weight: 500;">Grace Dance Academy</p>
+                  <p style="font-size: 0.875rem; color: hsl(var(--muted-foreground));">123 Dance Avenue, Arts District</p>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--secondary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <a href="tel:+15551234567" style="font-size: 0.875rem; color: hsl(var(--muted-foreground)); text-decoration: none;">+1 (555) 123-4567</a>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--secondary))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <a href="mailto:info@gracedanceacademy.org" style="font-size: 0.875rem; color: hsl(var(--muted-foreground)); text-decoration: none;">info@gracedanceacademy.org</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Hours</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem;">
+                <div style="display: flex; justify-content: space-between;"><span style="color: hsl(var(--muted-foreground));">Monday - Friday</span><span style="font-weight: 500;">9:00 AM - 9:00 PM</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: hsl(var(--muted-foreground));">Saturday</span><span style="font-weight: 500;">9:00 AM - 6:00 PM</span></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color: hsl(var(--muted-foreground));">Sunday</span><span style="font-weight: 500;">10:00 AM - 4:00 PM</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Portal Login -->
+  <section class="section demo-section" id="portal">
+    <div class="container">
+      <div class="portal-card">
+        <div class="card">
+          <div class="card-header">
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Login</h2>
+            <p style="color: hsl(var(--muted-foreground));">Welcome back</p>
+          </div>
+          <div class="card-body">
+            <div class="portal-tabs">
+              <button class="portal-tab active">Student / Parent</button>
+              <button class="portal-tab">Faculty</button>
+            </div>
+            <form style="display: flex; flex-direction: column; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="input" placeholder="your@email.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Password</label>
+                <div class="password-wrapper">
+                  <input type="password" class="input" placeholder="Min. 8 characters">
+                  <button type="button" class="password-toggle" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <a href="#" class="forgot-link">Forgot Password?</a>
+              </div>
+              <button type="button" class="btn btn-primary" style="width: 100%;">Login</button>
+            </form>
+            <div class="portal-footer">
+              Don't have an account? <a href="#register">Register</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section class="section section-alt demo-section" id="dashboard">
+    <div class="container">
+      <div class="dashboard-header">
+        <div>
+          <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.25rem;">Dashboard</h1>
+          <p style="font-size: 1.125rem; color: hsl(var(--muted-foreground));">Welcome back</p>
+        </div>
+        <button class="btn btn-outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </button>
+      </div>
+
+      <div class="dashboard-stats">
+        <div class="dashboard-stat">
+          <div class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <div class="dashboard-stat-value">3</div>
+            <div class="dashboard-stat-label">Upcoming Classes</div>
+          </div>
+        </div>
+        <div class="dashboard-stat">
+          <div class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+          <div>
+            <div class="dashboard-stat-value">$0</div>
+            <div class="dashboard-stat-label">Payments</div>
+          </div>
+        </div>
+        <div class="dashboard-stat">
+          <div class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <div class="dashboard-stat-value">2</div>
+            <div class="dashboard-stat-label">Messages</div>
+          </div>
+        </div>
+        <div class="dashboard-stat">
+          <div class="dashboard-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          </div>
+          <div>
+            <div class="dashboard-stat-value">5</div>
+            <div class="dashboard-stat-label">Announcements</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3 style="font-size: 1.125rem; font-weight: 600;">Upcoming Classes</h3>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="schedule-item">
+              <div class="schedule-item-info">
+                <p>Ballet Grade 3</p>
+                <p>Monday at 5:00 PM • Ms. Chen</p>
+              </div>
+              <span class="badge badge-secondary">Upcoming</span>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-item-info">
+                <p>Contemporary Intermediate</p>
+                <p>Wednesday at 6:00 PM • Mr. Park</p>
+              </div>
+              <span class="badge badge-secondary">Upcoming</span>
+            </div>
+            <div class="schedule-item">
+              <div class="schedule-item-info">
+                <p>Chinese Dance Advanced</p>
+                <p>Saturday at 10:00 AM • Ms. Li</p>
+              </div>
+              <span class="badge badge-secondary">Upcoming</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 style="font-size: 1.125rem; font-weight: 600;">Announcements</h3>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="#" class="announcement-item">
+              <p>Spring Showcase Registration</p>
+              <p>Apr 15, 2026</p>
+            </a>
+            <a href="#" class="announcement-item">
+              <p>Summer Camp Early Bird Pricing</p>
+              <p>Apr 10, 2026</p>
+            </a>
+            <a href="#" class="announcement-item">
+              <p>Holiday Schedule Update</p>
+              <p>Apr 5, 2026</p>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Support / Donate -->
+  <section class="section demo-section" id="donate">
+    <div class="container container-narrow">
+      <div class="section-header">
+        <h2>Support Us</h2>
+        <p>Your generosity helps us continue providing world-class dance education</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card" style="padding: 1.5rem; text-align: center;">
+          <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">Supporter</h3>
+          <p style="font-size: 1.5rem; font-weight: 700; color: hsl(var(--secondary)); margin-bottom: 0.25rem;">$50+</p>
+          <p class="card-description">Annual donation from $50</p>
+        </div>
+        <div class="card" style="padding: 1.5rem; text-align: center;">
+          <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">Patron</h3>
+          <p style="font-size: 1.5rem; font-weight: 700; color: hsl(var(--secondary)); margin-bottom: 0.25rem;">$250+</p>
+          <p class="card-description">Annual donation from $250</p>
+        </div>
+        <div class="card" style="padding: 1.5rem; text-align: center;">
+          <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">Benefactor</h3>
+          <p style="font-size: 1.5rem; font-weight: 700; color: hsl(var(--secondary)); margin-bottom: 0.25rem;">$1,000+</p>
+          <p class="card-description">Annual donation from $1,000</p>
+        </div>
+        <div class="card" style="padding: 1.5rem; text-align: center; border-color: hsl(var(--secondary) / 0.3);">
+          <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">Visionary</h3>
+          <p style="font-size: 1.5rem; font-weight: 700; color: hsl(var(--secondary)); margin-bottom: 0.25rem;">$5,000+</p>
+          <p class="card-description">Annual donation from $5,000</p>
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <button class="btn btn-primary btn-lg">Donate Now</button>
+        <p style="font-size: 0.75rem; color: hsl(var(--muted-foreground)); margin-top: 0.75rem;">Secure payment via Stripe</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--primary)); margin-bottom: 0.75rem;">Grace Dance Academy</h3>
+        <p>Nurturing dancers from first steps to professional stages since 1985</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="#" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+          </a>
+          <a href="#" aria-label="YouTube">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+          </a>
+          <a href="#" aria-label="X (Twitter)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <h4>Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="#about">About</a></li>
+          <li><a href="#programs">Programs</a></li>
+          <li><a href="#season">Performances</a></li>
+          <li><a href="#events">Events</a></li>
+          <li><a href="#donate">Support</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Contact Us</h4>
+        <div class="footer-contact">
+          <div class="footer-contact-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>123 Dance Avenue, Arts District</span>
+          </div>
+          <div class="footer-contact-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>+1 (555) 123-4567</span>
+          </div>
+          <div class="footer-contact-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <span>info@gracedanceacademy.org</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4>Newsletter</h4>
+        <p style="font-size: 0.875rem; color: hsl(var(--muted-foreground)); margin-bottom: 0.75rem;">Stay updated with our latest news and events.</p>
+        <div class="newsletter-form">
+          <input type="email" class="input" placeholder="Enter your email">
+          <button class="btn btn-primary btn-sm" style="width: 100%;">Subscribe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Grace Dance Academy. All rights reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Accessibility</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Hero Carousel
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots = document.querySelectorAll('.hero-dot');
+
+    function goToSlide(index) {
+      slides[currentSlide].classList.remove('active');
+      dots[currentSlide].classList.remove('active');
+      currentSlide = index;
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+    }
+
+    function nextSlide() { goToSlide((currentSlide + 1) % slides.length); }
+    function prevSlide() { goToSlide((currentSlide - 1 + slides.length) % slides.length); }
+
+    setInterval(nextSlide, 6000);
+
+    // Testimonials
+    const testimonials = [
+      { quote: '"Grace Dance Academy transformed my daughter\'s confidence. The faculty is world-class and the community feels like family."', name: 'Sarah Mitchell', affiliation: 'Parent, RAD Level 5 Student', initials: 'SM' },
+      { quote: '"The contemporary program pushed me to discover movement I never knew I was capable of. The training here is truly exceptional."', name: 'James Park', affiliation: 'Pre-Professional Program, Class of 2024', initials: 'JP' },
+      { quote: '"Learning Chinese dance at Grace Academy connected me to my cultural heritage in the most beautiful way. Every class is a celebration."', name: 'Li Mei', affiliation: 'Chinese Dance, Advanced Level', initials: 'LM' },
+      { quote: '"As an adult beginner, I was nervous about starting dance. The supportive environment and patient instructors made all the difference."', name: 'Emma Rodriguez', affiliation: 'Adult Beginner Ballet', initials: 'ER' },
+    ];
+
+    let currentTestimonial = 0;
+    const testimonialDots = document.querySelectorAll('.testimonial-dot');
+
+    function goToTestimonial(index) {
+      testimonialDots[currentTestimonial].classList.remove('active');
+      currentTestimonial = index;
+      testimonialDots[currentTestimonial].classList.add('active');
+      document.getElementById('testimonialQuote').textContent = testimonials[index].quote;
+      document.getElementById('testimonialName').textContent = testimonials[index].name;
+      document.getElementById('testimonialAffiliation').textContent = testimonials[index].affiliation;
+      document.getElementById('testimonialAvatar').textContent = testimonials[index].initials;
+    }
+
+    function nextTestimonial() { goToTestimonial((currentTestimonial + 1) % testimonials.length); }
+    function prevTestimonial() { goToTestimonial((currentTestimonial - 1 + testimonials.length) % testimonials.length); }
+
+    setInterval(nextTestimonial, 8000);
+
+    // Accordion
+    function toggleAccordion(btn) {
+      const content = btn.nextElementSibling;
+      const isOpen = btn.classList.contains('open');
+      btn.classList.toggle('open');
+      content.classList.toggle('open');
+    }
+
+    // Mobile Menu
+    function toggleMobileMenu() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+    }
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Close mobile menu if open
+          document.getElementById('mobileMenu').classList.remove('open');
+        }
+      });
+    });
+
+    // Portal tabs
+    document.querySelectorAll('.portal-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

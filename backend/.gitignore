@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backend data (keep folders but ignore contents)
+data/*.sqlite3
+!data/.gitkeep
+data/news/*
+!data/news/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
+data/backups/
+
+# Database file itself (keep for dev, but allow ignoring in prod)
+# dance_org.db

@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - nextjs
+      - fastapi
+    restart: unless-stopped
+
+  nextjs:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://dance_user:dance_pass@postgres:5432/dance_org
+      - API_URL=http://fastapi:8000
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=change_me_in_production
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - fastapi
+    restart: unless-stopped
+
+  fastapi:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://dance_user:dance_pass@postgres:5432/dance_org
+      - SECRET_KEY=change_me_in_production
+      - ALLOWED_HOSTS=http://localhost:3000
+      - NEWS_FILES_DIR=/app/data/news
+      - USE_FILE_STORAGE=true
+    volumes:
+      - ./backend/data:/app/data
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=dance_org
+      - POSTGRES_USER=dance_user
+      - POSTGRES_PASSWORD=dance_pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/alembic/initial.sql:/docker-entrypoint-initdb.d/00-initial.sql
+    ports:
+      - '5432:5432'
+    restart: unless-stopped
+
+volumes:
+  pgdata:

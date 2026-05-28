@@ -1,0 +1,696 @@
+{
+  "common": {
+    "appName": "Mulan Dance Studio",
+    "nav": {
+      "home": "Home",
+      "about": "About",
+      "programs": "Programs",
+      "performances": "Performances",
+      "classes": "Classes",
+      "contact": "Contact"
+    },
+    "buttons": {
+      "learnMore": "Learn More",
+      "register": "Register Now",
+      "subscribe": "Subscribe",
+      "viewAll": "View All",
+      "submit": "Submit",
+      "back": "Back",
+      "close": "Close",
+      "openMenu": "Open Menu",
+      "closeMenu": "Close Menu"
+    },
+    "footer": {
+      "quickLinks": "Quick Links",
+      "programs": "Programs",
+      "performances": "Performances",
+      "events": "Events",
+      "contact": "Contact Us",
+      "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
+      "phone": "343-777-1766",
+      "email": "info@mulandance.com",
+      "followUs": "Follow Us",
+      "newsletter": "Newsletter",
+      "newsletterPlaceholder": "Enter your email",
+      "newsletterButton": "Subscribe",
+      "newsletterSuccess": "Thank you for subscribing!",
+      "copyright": "All rights reserved.",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "accessibility": "Accessibility"
+    },
+    "hero": {
+      "tagline": "Where Movement Becomes Art",
+      "subtitle": "学中乐、学中思、学中悟 — Ottawa Chinese Dance Studio for All Ages"
+    },
+    "sections": {
+      "ourPrograms": "Our Programs",
+      "upcomingEvents": "Upcoming Events",
+      "testimonials": "Testimonials",
+      "latestNews": "Latest News",
+      "whyChooseUs": "Why Choose Us",
+      "featuredPerformances": "Featured Performances"
+    },
+    "features": {
+      "worldClassFaculty": "World-Class Faculty",
+      "allLevels": "All Levels Welcome",
+      "performanceOpportunities": "Performance Opportunities",
+      "examPreparation": "Exam Preparation"
+    },
+    "accessibility": {
+      "skipToContent": "Skip to main content",
+      "skipToNavigation": "Skip to navigation",
+      "mainContent": "Main content",
+      "navigation": "Navigation",
+      "search": "Search",
+      "language": "Language",
+      "menu": "Menu",
+      "close": "Close",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "previous": "Previous",
+      "next": "Next",
+      "loading": "Loading...",
+      "error": "An error occurred",
+      "required": "Required field",
+      "formSubmitted": "Form submitted successfully"
+    },
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "add": "Add",
+    "edit": "Edit",
+    "back": "Back",
+    "loading": "Loading...",
+    "logout": "Logout",
+    "success": "Success",
+    "error": "Error",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "home": {
+    "hero": {
+      "slides": [
+        {
+          "title": "Where Movement Becomes Art",
+          "subtitle": "学中乐、学中思、学中悟 — Mulan Dance Studio in Ottawa",
+          "cta1": "Explore Programs",
+          "cta2": "Watch Our Story"
+        },
+        {
+          "title": "2025/2026 Season",
+          "subtitle": "Annual Student Showcase + Xiaohe Fengchi Children's Dance Competition",
+          "cta1": "Learn About Performances",
+          "cta2": "Watch on YouTube"
+        },
+        {
+          "title": "Summer Camps 2026",
+          "subtitle": "Dance summer camp for ages 5-17, one-week immersive experience",
+          "cta1": "Register Now",
+          "cta2": "Learn More"
+        }
+      ]
+    },
+    "programs": {
+      "title": "Our Programs",
+      "subtitle": "Comprehensive dance training for every age and level in Ottawa",
+      "chinese": "Classical Chinese Dance",
+      "chineseDesc": "Heritage of Chinese culture and tradition, inherited from China's intangible cultural heritage",
+      "folk": "Chinese Folk Dance",
+      "folkDesc": "Rich ethnic dance styles from across China's diverse regions",
+      "ballet": "Ballet",
+      "balletDesc": "Solid foundation with systematic training — the basis for all dance disciplines",
+      "contemporary": "Contemporary",
+      "contemporaryDesc": "Creative Chinese-style modern dance that encourages deep thinking",
+      "jazz": "Jazz",
+      "jazzDesc": "Fashionable commercial and performance jazz with Chinese style",
+      "hiphop": "Hip-Hop",
+      "hiphopDesc": "Trendy street dance training with our popular instructor Teacher Yezi"
+    },
+    "stats": {
+      "students": "Students",
+      "years": "Years of Excellence",
+      "performances": "Annual Performances",
+      "teachers": "Professional Teachers"
+    },
+    "events": {
+      "title": "Season Performances",
+      "subtitle": "Join us for student showcases, competitions, and special events",
+      "viewAll": "Learn About All Events"
+    },
+    "testimonials": {
+      "title": "What Our Students Say",
+      "subtitle": "Hear from our dance community",
+      "viewAll": "Read More Stories",
+      "tangtang": "Tangtang (糖糖)",
+      "tangtangQuote": "I love music, and dance helps me feel and express music better, making me more confident. In Teacher Bao's class, she always encourages me to overcome challenges and master the basics of dance.",
+      "tangtangAff": "Mulan Student, Ages 5-8",
+      "tangtang2": "Tangtang (糖糖)",
+      "tangtang2Quote": "I love food, music, dance, art, and reading. Teacher Bao's classes inspire me to keep going, and I often sing along while practicing the moves she taught us.",
+      "tangtang2Aff": "Young Dancer, Mulan Dance Studio",
+      "gege": "Gege (格格)",
+      "gegeQuote": "I love dance, I love Mulan, and I love Teacher Bao even more. Following Teacher Bao for many years, I love how ballet forms the foundation for all dance styles, and especially the Chinese-style contemporary and jazz that deepen my understanding of dance as an art.",
+      "gegeAff": "Long-time Student, Mulan Dance Studio",
+      "gege2": "Gege (格格)",
+      "gege2Quote": "加油我的小妹妹们，你们一定也会爱上舞蹈，爱上Mulan，爱上鲍老师的。",
+      "gege2Aff": "Mulan Dance Studio Student"
+    },
+    "news": {
+      "title": "Latest News",
+      "subtitle": "Updates from Mulan Dance Studio",
+      "viewAll": "View All News"
+    },
+    "cta": {
+      "title": "Join the Mulan Dance Family",
+      "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
+      "register": "Register Now",
+      "contact": "Contact Us"
+    }
+  },
+  "about": {
+    "title": "About Us",
+    "intro_intro": "Mulan Dance Studio was founded by Teacher Bao Junwei in 2021 in Ottawa, Canada, specializing in early childhood dance education and professional youth training.",
+    "intro_created": "Founded in 2021 by Teacher Bao Junwei in Ottawa, Canada.",
+    "intro_experience": "Drawing on Teacher Bao's many years of experience in children's dance education and leading students to compete at the highest national dance competitions, we've developed a unique teaching model and philosophy.",
+    "philosophy": {
+      "title": "Teaching Philosophy",
+      "heading": "Learn Through Joy, Learn Through Thinking, Learn Through Understanding",
+      "desc": "Under this teaching philosophy, students not only learn solid dance fundamentals, but also experience the joy that dance brings. Through dance as an art form, students can discover and feel the charm of China's 5,000 years of culture, freely exploring the world of dance art."
+    },
+    "goals": {
+      "title": "Our Goals",
+      "items": [
+        "Cultivate students' comprehensive dance literacy",
+        "Understand various dance styles and performance modes",
+        "Experience the perfect fusion of art and body through systematic teaching",
+        "Inspire students' interest and confidence in learning",
+        "Develop teamwork spirit and stage presence"
+      ]
+    },
+    "history": {
+      "title": "Our History",
+      "founded": "Founded in 2021 by Teacher Bao Junwei"
+    },
+    "leadership": {
+      "title": "Our Faculty",
+      "founder": "Teacher Bao Junwei",
+      "founderRole": "Founder & Principal Instructor",
+      "founderDesc": "Founder of Mulan Dance Studio with many years of children's dance education experience. Specializes in Classical Chinese Dance, Chinese Folk Dance, Ballet, and Contemporary. Creator of the \"Learn Through Joy, Think, and Understand\" teaching philosophy. Known for inspiring students to overcome challenges and build confidence while integrating traditional Chinese culture into dance teaching.",
+      "kayley": "Kayley",
+      "kayleyRole": "Choreography / Jazz / K-Pop / Hip-Hop Instructor",
+      "kayleyDesc": "One of Ottawa's most dynamic dance instructors with extensive competition and performance experience.",
+      "kayleyAchievements": [
+        "2022 Shandong Children's Spring Gala Outstanding Choreography Director",
+        "China-Korea Street Dance Exchange Competition Third Prize",
+        "Invited Guest at China Dance Festival",
+        "Invited Guest at Beijing Yukou Cultural Festival",
+        "Invited Guest at Tangshan May Fourth Youth Day",
+        "Top 8 at 'Keep the Love' Freestyle Competition",
+        "Top 8 at Qingdao Battle of the Wings 2v2 Freestyle",
+        "Runner-up at Weifang Dance Out Miracles Group Competition",
+        "Personal resume included in China Youth Talent Database",
+        "Studied at Dance邦, HelloDance, Old Dog and other renowned dance studios",
+        "Collaborated with artists: Zhuo Hai Tun, Wang OK, Li Tianze, Li Peiling, Park Jae-jung, Zhou Shen, Zhang Yuzi Stage 2023 Finals"
+      ],
+      "hailey": "Hailey Smith",
+      "haileyRole": "Ballet / Jazz / Acro Instructor",
+      "haileyDesc": "Hailey Smith holds a Bachelor's degree in Cognitive Science with a concentration in Neuroscience and a minor in Linguistics. She brings strong technical foundation and competitive experience to her teaching.",
+      "haileyAchievements": [
+        "Top 24 at Youth America Grand Prix",
+        "Highest-scoring acro audition at Candance 2024",
+        "Top 5 overall with jazz solo 2024",
+        "Strong styles: Ballet, Jazz, and Acro",
+        "Acro is a particular passion with extensive teaching experience"
+      ]
+    },
+    "vision": {
+      "title": "Our Vision",
+      "items": [
+        "Become a benchmark in Chinese-language dance education in Ottawa",
+        "Help Chinese-speaking children overseas receive systematic professional dance education",
+        "Pass on and promote Chinese traditional culture through dance art",
+        "Cultivate more excellent young dancers",
+        "Create a warm and caring dance learning community"
+      ]
+    },
+    "contact": {
+      "title": "Contact Us",
+      "form": {
+        "name": "Your Name",
+        "namePlaceholder": "Your full name",
+        "email": "Email Address",
+        "emailPlaceholder": "your@email.com",
+        "subject": "Subject",
+        "message": "Message",
+        "messagePlaceholder": "What would you like to know?",
+        "submit": "Send Message",
+        "success": "Thank you for your message. We will respond within 2 business days."
+      }
+    },
+    "joinUs": {
+      "title": "Join Our Family",
+      "subtitle": "Whether you are a complete beginner or already have dance experience, Mulan Dance Studio has a program and stage for you."
+    }
+  },
+  "performance": {
+    "title": "Performances",
+    "currentSeason": "Current Season",
+    "seasonSubtle": "Annual Student Showcase + Xiaohe Fengchi Competition",
+    "seasonDesc": "Mulan Dance Studio holds annual student showcases where every student has the opportunity to shine on their own stage, plus participation in the highest-level children's dance competition in China.",
+    "showcase": {
+      "title": "Annual Student Showcase",
+      "desc": "Held every mid-year or end of year, every student has the chance to showcase their talent on the dedicated stage. Students learn from each other, inspiring interest in dance. Outstanding students receive the title of \"Little Dance King\" at Mulan Dance Studio.",
+      "date": "June / December",
+      "venue": "Grand Theatre, Ottawa"
+    },
+    "xiaohe": {
+      "title": "Xiaohe Fengchi Children's Dance Competition",
+      "desc": "The highest-level children's dance competition in China. Mulan Dance Studio students have achieved outstanding results, providing our students with a high-level competitive and exhibition stage.",
+      "date": "Varies",
+      "venue": "Various locations in China"
+    },
+    "summer": {
+      "title": "Summer Camp Demo Performance",
+      "desc": "Summer camp graduation showcase, presenting what students have accomplished after a week of intensive training.",
+      "date": "August",
+      "venue": "Mulan Dance Studio"
+    }
+  },
+  "programs": {
+    "title": "Programs",
+    "subtitle": "Comprehensive dance training for every age and level",
+    "levels": {
+      "children": "Children (Ages 3-12)",
+      "teens": "Teens (Ages 13-17)",
+      "parents": "Parents (Ages 18+)",
+      "summer": "Summer Camps (Ages 5-17)"
+    },
+    "ballet": {
+      "title": "Ballet",
+      "description": "Our ballet program provides a solid foundation with systematic training, using ballet as the basis for all other dance disciplines.",
+      "features": {
+        "radSyllabus": "Solid Ballet Fundamentals",
+        "exams": "Systematic Training",
+        "performances": "Annual Showcase",
+        "crossTraining": "Foundation for All Dance Styles"
+      }
+    },
+    "contemporary": {
+      "title": "Contemporary",
+      "description": "Creative Chinese-style modern dance that encourages deep thinking, integrating traditional Chinese cultural elements into contemporary movement.",
+      "features": {
+        "technique": "Modern Technique",
+        "improvisation": "Chinese Style Creativity",
+        "choreography": "Choreographic Lab",
+        "performances": "Season Performances"
+      }
+    },
+    "chinese": {
+      "title": "Classical Chinese Dance",
+      "description": "Classical Chinese dance rich in Chinese cultural heritage, inheriting and passing on traditional Chinese dance art through systematic training.",
+      "features": {
+        "classical": "Classical Chinese Dance",
+        "folk": "Ethnic Folk Dance",
+        "acrobatics": "Dance Acrobatics (flexibility)",
+        "cultural": "Cultural Context"
+      }
+    },
+    "jazz": {
+      "title": "Jazz",
+      "description": "Fashionable commercial and performance jazz with a distinctive Chinese style, helping students understand the art of dance through a blend of Western and Eastern influences.",
+      "features": {
+        "broadway": "Broadway Jazz",
+        "commercial": "Commercial Jazz",
+        "lyrical": "Chinese-Style Jazz",
+        "performances": "Performance Opportunities"
+      }
+    },
+    "hiphop": {
+      "title": "Hip-Hop",
+      "description": "Trendy street dance training class led by our popular instructor Teacher Yezi, one of Ottawa's most beloved dance teachers. Learn everything from foundational moves to complex choreography.",
+      "features": {
+        "fundamentals": "Fundamentals",
+        "choreography": "Choreography",
+        "freestyle": "Freestyle & Improv",
+        "styles": "Various Styles Covered"
+      }
+    },
+    "summer": {
+      "title": "Summer Camp",
+      "description": "Intensive dance programs during school holidays for ages 5-17. A one-week immersive dance experience covering ballet, Chinese dance, contemporary, jazz, and more.",
+      "features": {
+        "youngDancers": "Young Dancers Camp",
+        "intermediate": "Intermediate Camp",
+        "intensive": "Dance Intensive",
+        "adult": "Family Activities"
+      }
+    },
+    "pricing": {
+      "title": "Pricing",
+      "subtitle": "Investment in your dance journey",
+      "monthly": "Monthly",
+      "term": "Per Term",
+      "annual": "Annual",
+      "financialAid": "Financial Aid Available",
+      "siblingDiscount": "Sibling Discount Available",
+      "freeIntro": "Free Introductory Class"
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "Begin your dance journey today",
+      "form": {
+        "studentName": "Student Name",
+        "studentNamePlaceholder": "Enter student's full name",
+        "parentName": "Parent/Guardian Name",
+        "parentNamePlaceholder": "Enter parent/guardian name (optional)",
+        "email": "Email",
+        "emailPlaceholder": "your@email.com",
+        "phone": "Phone",
+        "phonePlaceholder": "Enter phone number (optional)",
+        "age": "Age",
+        "agePlaceholder": "Enter age (optional)",
+        "program": "Program",
+        "selectProgram": "Select a program",
+        "experience": "Previous Experience",
+        "experiencePlaceholder": "Any previous dance experience? (optional)",
+        "message": "Message",
+        "messagePlaceholder": "Any questions or special requirements? (optional)",
+        "submit": "Register Now"
+      }
+    }
+  },
+  "performances": {
+    "title": "Performances",
+    "currentSeason": "Current Season",
+    "archive": "Archive",
+    "tickets": "Tickets",
+    "subscribe": "Subscribe",
+    "season": {
+      "title": "2025/2026 Season",
+      "subtitle": "Student showcases and special events",
+      "tickets": "Get Tickets",
+      "productions": {
+        "showcase": {
+          "title": "Annual Student Showcase",
+          "desc": "Every student has the opportunity to showcase their talent on the dedicated stage"
+        },
+        "xiaohe": {
+          "title": "Xiaohe Fengchi Dance Competition",
+          "desc": "The highest-level children's dance competition in China"
+        },
+        "summer": {
+          "title": "Summer Camp Demo",
+          "desc": "Summer camp graduation showcase and progress report"
+        }
+      }
+    }
+  },
+  "classes": {
+    "title": "Classes",
+    "schedule": "Class Schedule",
+    "pricing": "Pricing",
+    "register": "Register",
+    "absencePolicy": "Absence & Makeup Policy",
+    "faqs": "Frequently Asked Questions",
+    "scheduleTable": {
+      "day": "Day",
+      "time": "Time",
+      "program": "Program",
+      "instructor": "Instructor",
+      "level": "Level",
+      "capacity": "Capacity"
+    }
+  },
+  "portal": {
+    "title": "Student Portal",
+    "login": "Login",
+    "register": "Register",
+    "dashboard": "Dashboard",
+    "email": "Email",
+    "password": "Password"
+  },
+  "footer": {
+    "quickLinks": "Quick Links",
+    "programs": "Programs",
+    "performances": "Performances",
+    "events": "Events",
+    "contact": "Contact Us",
+    "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
+    "phone": "343-777-1766",
+    "email": "info@mulandance.com",
+    "followUs": "Follow Us"
+  },
+  "error": {
+    "title": "Page Not Found",
+    "description": "Oops! The page you're looking for doesn't exist or has been moved.",
+    "returnHome": "Return Home",
+    "explorePrograms": "Explore Programs",
+    "helpTitle": "How to Find What You're Looking For",
+    "checkUrl": {
+      "label": "Check the URL",
+      "desc": "Make sure you've typed the address correctly"
+    },
+    "useSearch": {
+      "label": "Use Search",
+      "desc": "Try searching for the content you need"
+    },
+    "contactUs": {
+      "label": "Contact Us",
+      "desc": "Reach out and we'll help you find your way"
+    }
+  },
+  "admin": {
+    "login": {
+      "title": "Admin Login",
+      "email": "Email",
+      "password": "Password",
+      "signIn": "Sign In",
+      "noAccount": "No admin access? Contact the administrator.",
+      "invalid": "Invalid email or password"
+    },
+    "dashboard": {
+      "title": "News Articles",
+      "totalArticles": "Total Articles",
+      "published": "Published",
+      "drafts": "Drafts",
+      "recentArticles": "Recent Articles",
+      "newArticle": "New Article",
+      "viewAll": "View All",
+      "totalPublished": "Published",
+      "totalDrafts": "Drafts",
+      "totalCategories": "Categories",
+      "totalTags": "Tags",
+      "noArticles": "No articles yet. Create your first article!",
+      "articleTotal": "{count} articles total"
+    },
+    "editor": {
+      "title": "Editor",
+      "newArticle": "New Article",
+      "editArticle": "Edit Article",
+      "articleTitle": "Title",
+      "summary": "Summary",
+      "coverImage": "Cover Image URL",
+      "body": "Content (Markdown)",
+      "category": "Category",
+      "categories": "Categories",
+      "tags": "Tags",
+      "locale": "Locale",
+      "status": "Status",
+      "published": "Published",
+      "draft": "Draft",
+      "save": "Save Draft",
+      "publish": "Publish",
+      "preview": "Preview",
+      "source": "Source",
+      "saveDraft": "Save as Draft",
+      "wordCount": "words",
+      "charCount": "characters",
+      "lastSaved": "Last saved",
+      "autoSaving": "Auto-saving...",
+      "created": "Article created",
+      "updated": "Article updated",
+      "deleteConfirm": "Are you sure you want to delete this article?"
+    },
+    "articles": {
+      "title": "Articles",
+      "subtitle": "Manage news, announcements, and posts.",
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete",
+      "hide": "Hide",
+      "publish": "Publish",
+      "confirmDelete": "Are you sure you want to delete this article?",
+      "confirmHide": "Hide this article? It will no longer be visible on the public site.",
+      "confirmPublish": "Publish this article? It will become visible on the public site.",
+      "deleted": "Article deleted",
+      "hidden": "Article hidden",
+      "published": "Article published",
+      "search": "Search articles...",
+      "searchPlaceholder": "Search by title...",
+      "status": "Status",
+      "date": "Date",
+      "categoriesFilter": "Filter by category",
+      "allCategories": "All Categories",
+      "statusFilter": "Status",
+      "allStatus": "All",
+      "publishedStatus": "Published",
+      "unpublishedStatus": "Unpublished",
+      "draft": "Draft",
+      "hidden": "Hidden",
+      "noArticles": "No articles yet",
+      "noArticlesDesc": "Create your first article to publish news or announcements.",
+      "newArticle": "New Article",
+      "publishedBadge": "Published",
+      "unpublishedBadge": "Unpublished",
+      "draftBadge": "Draft",
+      "switchPublish": "Click to publish",
+      "switchToDraft": "Click to set as draft",
+      "locale": "Locale",
+      "sort": "Sort",
+      "newestFirst": "Newest first",
+      "oldestFirst": "Oldest first",
+      "excerpt": "Summary",
+      "tags": "Tags",
+      "articleCount": "{count} articles",
+      "actions": "Actions",
+      "viewPublic": "View on site",
+      "viewDraftNotice": "Draft articles are not yet public",
+      "untitled": "Untitled Article",
+      "publishedLabel": "Published",
+      "unpublishedLabel": "Unpublished",
+      "statusFailed": "Failed to update status",
+      "switchPublish": "Click to publish this article",
+      "switchUnpublish": "Click to hide this article",
+      "statusTextFailed": "Failed to update status"
+    },
+    "categories": {
+      "title": "Categories",
+      "name": "Name (English)",
+      "nameZh": "Name (中文)",
+      "color": "Color",
+      "slug": "Slug",
+      "add": "Add Category",
+      "edit": "Edit Category",
+      "deleteConfirm": "Delete category",
+      "deleteAreYouSure": "Are you sure you want to delete this category?",
+      "inUse": "Cannot delete category: in use by articles",
+      "articlesCount": "Articles"
+    },
+    "tags": {
+      "title": "Tags",
+      "name": "Name (English)",
+      "nameZh": "Name (中文)",
+      "slug": "Slug",
+      "add": "Add Tag",
+      "edit": "Edit Tag",
+      "deleteConfirm": "Delete tag",
+      "deleteAreYouSure": "Are you sure you want to delete this tag?",
+      "inUse": "Cannot delete tag: in use by articles",
+      "articlesCount": "Articles"
+    },
+    "common": {
+      "logout": "Logout",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "add": "Add",
+      "edit": "Edit",
+      "back": "Back",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "categories": {
+      "title": "Manage Categories",
+      "noCategories": "No categories yet. Add your first one!",
+      "addTitle": "Add New Category",
+      "addDescription": "Create a new news category.",
+      "slug": "Slug",
+      "nameEn": "Name (English)",
+      "nameZh": "Name (中文)",
+      "color": "Color",
+      "confirmDelete": "Delete Category",
+      "confirmDeleteDesc": "Are you sure you want to delete \"{slug}\"? Articles in this category will not be deleted. This action cannot be undone.",
+      "add": "Add Category",
+      "edit": "Edit Category"
+    },
+    "news": {
+      "title": "News"
+    },
+    "tags": {
+      "title": "Manage Tags",
+      "noTags": "No tags yet. Add your first one!",
+      "addTitle": "Add New Tag",
+      "addDescription": "Create a new news tag.",
+      "slug": "Slug",
+      "nameEn": "Name (English)",
+      "nameZh": "Name (中文)",
+      "confirmDelete": "Delete Tag",
+      "confirmDeleteDesc": "Are you sure you want to delete \"{slug}\"? This action cannot be undone.",
+      "add": "Add Tag",
+      "edit": "Edit Tag"
+    },
+    "tabs": {
+      "newsArticles": "News Articles",
+      "performance": "Performance",
+      "registration": "Registration"
+    },
+    "performances": {
+      "calendarTitle": "Performance Calendar",
+      "addTitle": "Add Performance",
+      "editTitle": "Edit Performance",
+      "allTitle": "All Performances",
+      "selectedDate": "Selected Date",
+      "all": "All",
+      "create": "Create",
+      "save": "Save",
+      "clear": "Clear",
+      "loadFailed": "Failed to load performances",
+      "saveFailed": "Failed to save performance",
+      "deleteFailed": "Failed to delete performance",
+      "deleteConfirm": "Delete \"{title}\"?",
+      "emptyAll": "No performances yet.",
+      "emptySelected": "No performances on this date.",
+      "totalCount": "{count} performances total",
+      "selectedCount": "{count} performances on selected date",
+      "moreCount": "+{count} more",
+      "weekdays": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "fields": {
+        "title": "Title",
+        "slug": "Slug",
+        "description": "Description",
+        "start": "Start",
+        "end": "End",
+        "venue": "Venue",
+        "coverImage": "Cover Image URL",
+        "showOnHomepage": "Show on homepage"
+      }
+    },
+    "registrations": {
+      "title": "Registration Management",
+      "underConstruction": "This feature is under construction."
+    }
+  },
+  "news": {
+    "title": "Latest News & Updates",
+    "subtitle": "Stay informed with the latest from Mulan Dance Studio",
+    "readMore": "Read More",
+    "backToNews": "Back to News",
+    "allCategories": "All Categories",
+    "filterByCategory": "Filter by Category",
+    "noArticles": "No articles found",
+    "publishedAt": "Published on",
+    "by": "by",
+    "loading": "Loading articles..."
+  }
+}

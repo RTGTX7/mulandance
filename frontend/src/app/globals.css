@@ -1,0 +1,427 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ============================================
+       木兰舞蹈学校 - 统一设计系统
+       Mulan Dance Studio Design System
+       ============================================ */
+
+    /* --- 品牌色彩系统 --- */
+
+    /* 主色: 深紫色 - 优雅、艺术 */
+    --primary: 271 55% 38%;           /* #6B21A8 - 深紫 */
+    --primary-foreground: 0 0% 100%;  /* 白色文字 */
+
+    /* 辅助色: 金色 - 高贵、典雅 */
+    --secondary: 38 72% 55%;          /* #D4A843 - 金色 */
+    --secondary-foreground: 270 20% 15%; /* 深色文字 */
+
+    /* 强调色: 粉红色 - 活力、舞蹈 */
+    --accent: 330 65% 55%;            /* #EC4899 - 粉红 */
+    --accent-foreground: 0 0% 100%;
+
+    /* --- 中性色系统 --- */
+
+    /* 背景色: 暖白色 */
+    --background: 30 15% 98%;         /* #FAFAF8 */
+    --foreground: 270 12% 12%;        /* 接近黑色的深紫灰 */
+
+    /* 卡片: 纯白 */
+    --card: 0 0% 100%;
+    --card-foreground: 270 12% 15%;
+
+    /* 弹层 */
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 12% 12%;
+
+    /* 次要文字 */
+    --muted: 260 10% 95%;
+    --muted-foreground: 260 8% 48%;
+
+    /* 边框 */
+    --border: 260 10% 88%;
+
+    /* 输入框 */
+    --input: 260 10% 88%;
+
+    /* 环/焦点 */
+    --ring: 271 55% 38%;
+
+    /* 破坏色 */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* 圆角 */
+    --radius: 0.5rem;
+
+    /* --- 渐变 --- */
+    --gradient-primary: linear-gradient(135deg, hsl(271 55% 38%), hsl(290 45% 55%));
+    --gradient-gold: linear-gradient(135deg, hsl(38 72% 55%), hsl(330 65% 55%));
+    --gradient-hero: linear-gradient(135deg, hsl(271 55% 35% / 0.95), hsl(280 40% 30% / 0.9), hsl(290 45% 45% / 0.85));
+  }
+
+  .dark {
+    --background: 270 20% 8%;
+    --foreground: 260 15% 95%;
+    --card: 270 15% 12%;
+    --card-foreground: 260 15% 95%;
+    --popover: 270 15% 12%;
+    --popover-foreground: 260 15% 95%;
+    --primary: 271 55% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 38 72% 55%;
+    --secondary-foreground: 270 20% 15%;
+    --muted: 270 15% 18%;
+    --muted-foreground: 260 10% 70%;
+    --accent: 290 45% 60%;
+    --accent-foreground: 270 15% 15%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 270 15% 20%;
+    --input: 270 15% 20%;
+    --ring: 271 55% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* --- 标题字体系统 --- */
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  /* 装饰字体 */
+  .font-accent {
+    font-family: var(--font-accent);
+  }
+
+  /* --- 选择颜色 --- */
+  ::selection {
+    background-color: hsl(271 55% 38%);
+    color: hsl(0 0% 100%);
+  }
+
+  /* --- 平滑滚动 --- */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* --- 焦点样式 --- */
+  :focus-visible {
+    outline: 2px solid hsl(271 55% 38%);
+    outline-offset: 2px;
+  }
+
+  /* --- 跳过链接(无障碍) --- */
+  .skip-link {
+    @apply sr-only absolute top-0 left-0 z-50 bg-primary text-primary-foreground px-4 py-3 font-medium;
+  }
+
+  .skip-link:focus {
+    @apply not-sr-only;
+  }
+}
+
+@layer components {
+  /* --- 页面区块间距 --- */
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  .section-padding-narrow {
+    @apply py-12 md:py-16;
+  }
+
+  /* --- 容器 --- */
+  .container-narrow {
+    @apply max-w-4xl;
+  }
+
+  .container-wide {
+    @apply max-w-7xl;
+  }
+
+  /* --- 标题样式 --- */
+  .heading-xl {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
+    line-height: 1.15;
+  }
+
+  .heading-lg {
+    @apply text-3xl md:text-4xl font-bold tracking-tight;
+    line-height: 1.2;
+  }
+
+  .heading-md {
+    @apply text-2xl md:text-3xl font-bold;
+    line-height: 1.3;
+  }
+
+  .heading-sm {
+    @apply text-xl md:text-2xl font-semibold;
+    line-height: 1.35;
+  }
+
+  .heading-xs {
+    @apply text-lg font-semibold;
+    line-height: 1.4;
+  }
+
+  /* --- 正文字体 --- */
+  .text-lead {
+    @apply text-lg md:text-xl text-muted-foreground leading-relaxed;
+  }
+
+  .text-body {
+    @apply text-base leading-relaxed;
+  }
+
+  .text-small {
+    @apply text-sm leading-relaxed;
+  }
+
+  /* --- 标签/徽章 --- */
+  .label-tag {
+    @apply inline-block text-xs font-semibold uppercase tracking-widest;
+  }
+
+  .label-tag-accent {
+    @apply label-tag text-accent;
+  }
+
+  .label-tag-secondary {
+    @apply label-tag text-secondary;
+  }
+
+  /* --- 装饰线 --- */
+  .divider-ornament {
+    @apply flex items-center justify-center gap-3 my-8;
+  }
+
+  .divider-ornament::before,
+  .divider-ornament::after {
+    content: '';
+    @apply h-px w-16 bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  /* --- 按钮样式 --- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground transition-all duration-300 hover:bg-secondary/90 hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-lg border-2 border-primary bg-transparent px-6 py-3 text-sm font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold text-foreground transition-all duration-300 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  /* --- 卡片样式 --- */
+  .card {
+    @apply rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .card-featured {
+    @apply card border-primary/30 shadow-md;
+  }
+
+  /* --- 渐变效果 --- */
+  .gradient-gold {
+    @apply bg-gradient-to-r from-secondary via-amber-400 to-secondary;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-secondary via-amber-400 to-secondary bg-clip-text text-transparent;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-accent;
+  }
+
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  /* --- 背景装饰 --- */
+  .bg-pattern-dots {
+    background-image: radial-gradient(circle, hsl(271 55% 38% / 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .bg-gradient-overlay {
+    @apply bg-gradient-to-b from-transparent via-background/20 to-background;
+  }
+
+  /* --- 阴影变体 --- */
+  .shadow-soft {
+    box-shadow: 0 2px 20px rgba(107, 33, 168, 0.08);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 30px rgba(107, 33, 168, 0.12);
+  }
+
+  .shadow-strong {
+    box-shadow: 0 8px 40px rgba(107, 33, 168, 0.18);
+  }
+
+  /* --- 图片容器 --- */
+  .img-container {
+    @apply overflow-hidden rounded-xl;
+  }
+
+  .img-container img,
+  .img-container svg {
+    @apply transition-transform duration-500;
+  }
+
+  .img-container:hover img,
+  .img-container:hover svg {
+    @apply scale-105;
+  }
+
+  /* --- 表单样式 --- */
+  .input {
+    @apply flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .textarea {
+    @apply flex min-h-[120px] w-full rounded-lg border border-input bg-background px-4 py-3 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* --- 动画 --- */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out;
+  }
+}
+
+@layer utilities {
+  /* 文字渐变 */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* 动画工具类 */
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* --- 关键帧动画 --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* --- 加载骨架屏 --- */
+.skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+.skeleton-text {
+  @apply skeleton h-4 w-full mb-2;
+}
+
+.skeleton-title {
+  @apply skeleton h-8 w-3/4 mb-4;
+}
+
+/* --- 打印样式 --- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    @apply bg-white text-black;
+  }
+
+  a {
+    @apply text-black;
+  }
+
+  a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.75em;
+    color: #666;
+  }
+}
