@@ -1,226 +1,81 @@
 # Development Log - Alpha 1.1.0
 
-**Version:** alpha 1.1.1  
-**Date:** 2026-05-27  
+**Version:** alpha 1.1.2  
+**Date:** 2026-05-28  
 **Repository:** github.com/RTGTX7/mulandance  
 
 ---
 
 ## Summary
 
-This release fixes a critical database path bug that caused the backend to use the wrong SQLite database file depending on the server's working directory.
-
----
-
-## Bug Fixes
-
-### 1. Wrong Database File (Admin Articles List Shows Only 1 Article)
-
-**Root Cause:** The database path in `backend/app/core/config.py` was configured as a relative path (`sqlite:///./dance_org.db`). When the backend server was started from the workspace root (`c:\Workspace`) instead of the backend directory (`c:\Workspace\dance-organization\backend`), SQLite resolved the path relative to the wrong working directory, creating/using a different database file.
-
-| File Location | Articles | Status |
-|---------------|----------|--------|
-| `c:\Workspace\dance-organization\backend\dance_org.db` | 8 | Correct (original) |
-| `c:\Workspace\dance_org.db` | 1 | Wrong (accidental duplicate) |
-
-**Fix:** Changed `backend/app/core/config.py` to compute the absolute database path relative to the config file's own location, ensuring the correct database is always used regardless of the working directory.
-
-```python
-# Before (broken - relative path)
-DATABASE_URL: str = "sqlite:///./dance_org.db"
-
-# After (fixed - absolute path from config file location)
-_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_DB_PATH = os.path.join(_BACKEND_DIR, "dance_org.db")
-_DATABASE_URL = f"sqlite:///{_DB_PATH.replace(chr(92), '/')}"
-```
-
-**Files Changed:**
-- `backend/app/core/config.py` - Absolute database path resolution
-
-**No Data Loss:** Both database files remain intact with their respective data. The fix ensures the server always connects to the correct database (the one with 8 articles).
-
----
-
-# Development Log - Alpha 1.1.0
-
-**Version:** alpha 1.1.0  
-**Date:** 2026-05-26  
-**Repository:** github.com/[username]/dance-organization
-
----
-
-## Summary
-
-This release focuses on fixing critical bugs in the admin article editor, implementing image upload functionality, and resolving authentication persistence issues.
-
----
-
-## Bug Fixes
-
-### 1. Article Creation 500 Error (`TypeError: write() argument must be str, not bytes`)
-
-**Root Cause:** The `frontmatter.dump()` function in newer versions of the `python-frontmatter` library internally encodes content to bytes. Opening the file in text mode (`"w"`) caused a byte/string mismatch.
-
-**Fix:** Changed `_write_markdown_file()` to use `frontmatter.dumps()` for rendering the complete markdown string, then write it with UTF-8 text encoding.
-
-**Files Changed:**
-- `backend/app/services/news_files.py` - `_write_markdown_file()` function
-
-```python
-# Before (broken)
-def _write_markdown_file(filepath: Path, content: str, metadata: dict) -> None:
-    with open(filepath, "w", encoding="utf-8") as f:
-        frontmatter.dump(frontmatter.Post(content, **metadata), f)
-
-# After (fixed)
-def _write_markdown_file(filepath: Path, content: str, metadata: dict) -> None:
-    post = frontmatter.Post(content or "", **metadata)
-    rendered = frontmatter.dumps(post)
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    with open(filepath, "w", encoding="utf-8", newline="") as f:
-        f.write(rendered)
-```
-
----
-
-### 2. Edit Mode Data Loading (body/categories/tags/cover_image missing)
-
-**Root Cause:** Two issues:
-1. Pydantic schema `ArticleWithRelations` did not include a `body` field, so FastAPI automatically filtered it out of API responses.
-2. `get_article()` did not read body content from markdown files when file storage was enabled.
-
-**Fixes:**
-
-**Files Changed:**
-- `backend/app/schemas/news.py` - Added `body: Optional[str] = None` to `ArticleWithRelations`
-- `backend/app/services/news_files.py` - `_get_article_with_relations()` returns body field; `get_article()` reads body from markdown file
-
-```python
-# backend/app/schemas/news.py
-class ArticleWithRelations(BaseModel):
-    id: str
-    slug: str
-    title: str
-    summary: Optional[str] = None
-    body: Optional[str] = None  # ← Added
-    ...
-```
-
-- `backend/app/api/v1/news.py` - Added admin-only endpoint `GET /api/v1/news/admin/{slug}` that returns all articles (including drafts)
-
-```python
-# Admin endpoint: get any article (including drafts)
-@router.get("/admin/{slug}", response_model=ArticleWithHtml)
-def get_admin_article(slug: str, db: Session = Depends(get_db)):
-    article = news_files.get_article(db, slug, include_html=True)
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return article
-```
-
-- `frontend/src/lib/api.ts` - Changed `newsApi.get()` to use `/v1/news/admin/{slug}` instead of `/v1/news/{slug}`
-
----
-
-### 3. Image Upload 404 Not Found
-
-**Root Cause:** The upload router was included with an empty prefix (`prefix=""`), so the route was `/api/v1/upload/image`. However, static files were not mounted for serving uploaded images.
-
-**Fixes:**
-
-**Files Changed:**
-- `backend/app/api/v1/upload.py` - Created complete upload API with organized storage structure
-- `backend/app/api/v1/router.py` - Changed upload prefix to `/upload`
-- `backend/app/main.py` - Mounted static files at `/static/uploads`
-
-**Upload API:**
-```
-POST /api/v1/upload/image
-Request: FormData with `file` field
-Response: { "url": "...", "filename": "...", "path": "..." }
-```
-
-**Storage Structure:**
-```
-data/
-└── uploads/
-    └── images/
-        └── editor/
-            ├── 2026/
-            │   └── 05/
-            │       └── <uuid>.png
-            └── covers/
-                └── 2026/
-                    └── 05/
-                        └── <uuid>.png
-```
-
-**Public URL:** `http://localhost:8000/static/uploads/images/editor/2026/05/<uuid>.png`
-
----
-
-### 4. Admin Auth Persistence (every refresh shows login page)
-
-**Root Cause:** `admin/layout.tsx` used SSR to check authentication via `isAuthenticated()`. On the server side, `localStorage` is not available, so `getAuthToken()` always returned `null`, causing `isAuthenticated()` to return `false` and redirecting to login.
-
-**Fix:** Removed SSR authentication check from `admin/layout.tsx`. Authentication is now handled entirely on the client side by each page's `useEffect`.
-
-**Files Changed:**
-- `frontend/src/app/[locale]/admin/layout.tsx` - Removed `redirect()` and `isAuthenticated()` calls
+This release adds new admin sections for managing performances and registrations, introduces `AdminSectionTabs` component for unified admin navigation, improves the article editor with a new `EditorContent` component, and updates all major site content pages (programs, classes, events, performances, portal, support, about) with fresh i18n translations and layout improvements.
 
 ---
 
 ## New Features
 
-### 1. Image Upload in Article Editor
+### 1. Admin Section Navigation (`AdminSectionTabs`)
 
-Added a toolbar button for uploading images directly from the article editor. When an image is selected:
-1. The file is uploaded to the backend via `POST /api/v1/upload/image`
-2. Backend saves it to `data/uploads/images/editor/YYYY/MM/<uuid>.<ext>`
-3. Backend returns a public URL
-4. Frontend inserts `![filename](url)` markdown syntax at the cursor position
+New `AdminSectionTabs` component provides consistent sidebar navigation across all admin pages with sections for Dashboard, Articles, Categories, Tags, Performances, and Registrations.
+
+**Files Added:**
+- `frontend/src/components/layout/AdminSectionTabs.tsx`
+- `frontend/src/app/[locale]/admin/performances/page.tsx`
+- `frontend/src/app/[locale]/admin/registrations/page.tsx`
+
+### 2. Article Editor Refactoring
+
+Extracted editor content area into a separate `EditorContent` component for better code organization and reusability.
+
+**Files Added:**
+- `frontend/src/app/[locale]/admin/editor/EditorContent.tsx`
+
+---
+
+## Changes
+
+### Frontend - Content Page Updates
+All major site pages received i18n translation updates and layout improvements:
+
+**Programs:** ballet, chinese-dance, contemporary, hip-hop, jazz, summer-camps
+**Classes:** schedule, pricing, register, absence-policy, faqs
+**Events:** calendar, gala, workshops
+**Performances:** current-season, archive, tickets
+**Portal:** login, register, forgot-password, dashboard
+**Support:** donate, membership, sponsorship, volunteer
+**About:** mission-values, history, equity-diversity-inclusion, careers
+**Other:** accessibility, privacy, terms, resources, alumni
+
+**Backend:**
+- `backend/app/api/v1/events.py` - Event API updates
+- `backend/app/schemas/event.py` - Event schema improvements
+- `backend/app/core/config.py` - Config refinements
+- `frontend/src/lib/api.ts` - API layer updates
+- `frontend/src/lib/locales/en.json` and `zh.json` - Translation updates
+- `frontend/middleware.ts` and `frontend/src/app/[locale]/layout.tsx` - Middleware/layout improvements
+
+---
+
+## Previous Releases
+
+### Alpha 1.1.1 (2026-05-27)
+
+Fixed critical database path bug that caused the backend to use the wrong SQLite database file when started from the wrong working directory. The fix uses an absolute path computed from the config file's location.
 
 **Files Changed:**
-- `frontend/src/app/[locale]/admin/editor/page.tsx` - Added image upload button, file input, and `handleInsertImage()` handler
-- `frontend/src/lib/api.ts` - Added `uploadApi.image()` function with detailed error messages
+- `backend/app/core/config.py` - Absolute database path resolution
 
----
+### Alpha 1.1.0 (2026-05-26)
 
-### 2. Enhanced Error Handling
-
-Added try/except blocks with detailed logging to article creation and update endpoints. Errors now return descriptive JSON responses instead of generic 500 errors.
+Initial release with article editor fixes, image upload, and auth persistence improvements.
 
 **Files Changed:**
-- `backend/app/api/v1/news.py` - Added `logging` import and error handlers for `create_article` and `update_article`
-
----
-
-## Testing
-
-### Article Creation & Editing
-1. Create a new article with title, body content, and categories
-2. Click Publish - should save without 500 error
-3. Click Edit on the saved article - body content should load correctly
-4. Categories/tags should be highlighted correctly
-5. Cover image URL should display in the input field
-
-### Image Upload
-1. Open article editor
-2. Click the image icon in the toolbar
-3. Select an image file (PNG/JPG/GIF/WEBP/SVG, max 10MB)
-4. Image should be uploaded and markdown inserted at cursor
-5. Image should be accessible at the returned URL
-
-### Auth Persistence
-1. Login with admin credentials
-2. Navigate to dashboard
-3. Refresh the page - should remain logged in
-4. Close browser and reopen - should remain logged in (token persists in localStorage)
-5. Logout - token should be cleared
-
----
-
-## Known Issues
-
-- The bcrypt `__about__` warning from `passlib` is still present but does not affect functionality. This is caused by incompatibility between `passlib` and newer versions of the `bcrypt` library.
+- `backend/app/services/news_files.py` - Article file writing fix
+- `backend/app/schemas/news.py` - Added body field to ArticleWithRelations
+- `backend/app/api/v1/news.py` - Admin article endpoints
+- `backend/app/api/v1/upload.py` - Image upload API
+- `backend/app/api/v1/router.py` - Upload route configuration
+- `backend/app/main.py` - Static file mounting
+- `frontend/src/app/[locale]/admin/layout.tsx` - Removed SSR auth check
+- `frontend/src/app/[locale]/admin/editor/page.tsx` - Image upload button
+- `frontend/src/lib/api.ts` - Upload API and admin article fetch

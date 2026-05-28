@@ -1,22 +1,23 @@
 'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { BookOpen, Footprints, Sparkles, Music, Zap, Globe } from 'lucide-react';
+import { BookOpen, Footprints, Sparkles, Music, Zap, Globe, Sun } from 'lucide-react';
 
 export default function ProgramsPage() {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <div className="pt-16">
       {/* Hero Section */}
-      <section className="relative h-[300px] bg-gradient-to-r from-primary to-purple-700 overflow-visible">
+      <section className="relative h-[340px] bg-gradient-to-r from-primary to-purple-700 overflow-hidden">
         <div className="absolute inset-0 bg-black/30" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 translate-y-[38%] bg-gradient-to-b from-purple-900/70 via-purple-700/45 to-accent/20 backdrop-blur-xl" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-14 translate-y-[24%] bg-gradient-to-b from-purple-800/55 via-purple-700/20 to-transparent blur-2xl" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-32 bg-gradient-to-b from-transparent via-purple-700/35 to-accent/20" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 bg-gradient-to-b from-transparent via-purple-500/20 to-accent/20 blur-xl" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white relative z-10 px-4">
             <Breadcrumbs
@@ -157,6 +158,32 @@ export default function ProgramsPage() {
               </div>
               <div className="rounded-2xl overflow-hidden shadow-xl">
                 <img src="/programs/hip-hop.jpg" alt="Hip-Hop Dance" className="w-full h-[400px] object-cover" />
+              </div>
+            </div>
+          </div>
+
+          {/* Summer Camps */}
+          <div id="summer-camps" className="scroll-mt-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 text-white mb-6">
+                  <Sun className="h-7 w-7" />
+                </div>
+                <h2 className="heading-lg mb-4">{t('programs.summer.title')}</h2>
+                <p className="text-lead text-muted-foreground mb-4">
+                  {t('programs.summer.description')}
+                </p>
+                <p className="text-body text-muted-foreground mb-6">
+                  {t('programs.summerDesc')}
+                </p>
+                <Link href={`/${locale}/programs/summer-camps`}>
+                  <Button size="lg">
+                    {t('common.buttons.learnMore')}
+                  </Button>
+                </Link>
+              </div>
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img src="/programs/summer-camps.jpg" alt="Summer Camps" className="w-full h-[400px] object-cover" />
               </div>
             </div>
           </div>

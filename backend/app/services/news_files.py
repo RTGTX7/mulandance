@@ -55,6 +55,21 @@ def _generate_filename(slug: str, published_at: Optional[datetime] = None) -> st
     return f"{date_str}-{clean_slug}.md"
 
 
+def _clean_slug_for_file(slug: str) -> str:
+    return re.sub(r"[^a-z0-9\-]", "", slug.lower().replace(" ", "-"))
+
+
+def _find_markdown_file(slug: str, preferred_date: Optional[datetime] = None) -> Optional[Path]:
+    news_dir = _get_news_dir()
+    preferred = news_dir / _generate_filename(slug, preferred_date)
+    if preferred.exists():
+        return preferred
+
+    clean_slug = _clean_slug_for_file(slug)
+    matches = sorted(news_dir.glob(f"*-{clean_slug}.md"), key=lambda path: path.stat().st_mtime, reverse=True)
+    return matches[0] if matches else None
+
+
 def _read_markdown_file(filepath: Path) -> Optional[dict]:
     if not filepath.exists():
         return None
@@ -147,9 +162,8 @@ def _get_translation_with_relations(
 
     body = translation.body or ""
     if include_html and settings.USE_FILE_STORAGE:
-        now = datetime.utcnow()
-        filepath = _get_news_dir() / _generate_filename(translation.slug, translation.published_at or now)
-        if filepath.exists():
+        filepath = _find_markdown_file(translation.slug, translation.published_at)
+        if filepath:
             post = _read_markdown_file(filepath)
             if post:
                 body = post.content or body
@@ -361,8 +375,23 @@ def create_article_translation(
         )
         if existing_trans:
             # Update existing translation
-            for field, value in data.model_dump(exclude_unset=True).items():
+            update_fields = data.model_dump(exclude_unset=True)
+            body_content = update_fields.pop("body", None)
+            for field, value in update_fields.items():
                 setattr(existing_trans, field, value)
+            if settings.USE_FILE_STORAGE and body_content is not None:
+                filepath = _get_news_dir() / _generate_filename(group_slug, existing_trans.published_at or datetime.utcnow())
+                metadata = {
+                    "title": existing_trans.title,
+                    "slug": group_slug,
+                    "summary": existing_trans.summary or "",
+                    "cover_image": existing_trans.cover_image or "",
+                    "locale": existing_trans.locale,
+                }
+                _write_markdown_file(filepath, body_content, metadata)
+                existing_trans.body = None
+            elif body_content is not None:
+                existing_trans.body = body_content
             db.commit()
             db.refresh(existing_trans)
             return _get_translation_with_relations(db, existing_trans, True, True, True)
@@ -385,7 +414,7 @@ def create_article_translation(
         slug=group_slug,
         title=data.title,
         summary=data.summary,
-        body=data.body,
+        body=None if settings.USE_FILE_STORAGE else data.body,
         author_id=author_id,
         published_at=now if data.is_published else None,
         cover_image=data.cover_image,
@@ -454,6 +483,7 @@ def update_article_translation(
 
     for translation in target_translations:
         update_fields = data.model_dump(exclude_unset=True)
+        body_content = update_fields.get("body")
 
         if "category_slugs" in update_fields:
             # Delete existing category links
@@ -485,6 +515,8 @@ def update_article_translation(
                     db.add(agt)
 
         for field, value in update_fields.items():
+            if settings.USE_FILE_STORAGE and field == "body":
+                continue
             setattr(translation, field, value)
 
         if data.is_published and not translation.is_published:
@@ -500,7 +532,13 @@ def update_article_translation(
                 "cover_image": translation.cover_image or "",
                 "locale": translation.locale,
             }
-            _write_markdown_file(filepath, translation.body or "", metadata)
+            if body_content is None:
+                existing_file = _find_markdown_file(group.shared_slug, translation.published_at)
+                if existing_file:
+                    post = _read_markdown_file(existing_file)
+                    body_content = post.content if post else ""
+            _write_markdown_file(filepath, body_content or "", metadata)
+            translation.body = None
 
         updated_results.append(translation)
 

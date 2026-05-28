@@ -6,6 +6,7 @@ from functools import lru_cache
 # Resolve absolute DB path relative to the backend directory.
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _DB_PATH = os.path.join(_BACKEND_DIR, "dance_org.db")
+_NEWS_FILES_DIR = os.path.join(_BACKEND_DIR, "data", "news")
 # Convert to forward slashes for SQLAlchemy SQLite URL
 _DB_PATH_FWSLASH = _DB_PATH.replace("\\", "/")
 _DATABASE_URL = f"sqlite:///{_DB_PATH_FWSLASH}"
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALLOWED_HOSTS: str = "http://localhost:3000"
     DEBUG: bool = True
-    NEWS_FILES_DIR: str = "./data/news"
+    NEWS_FILES_DIR: str = _NEWS_FILES_DIR
     USE_FILE_STORAGE: bool = True
 
     @field_validator("DEBUG", "USE_FILE_STORAGE", mode="before")

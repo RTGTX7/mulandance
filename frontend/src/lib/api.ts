@@ -348,6 +348,12 @@ export const performanceApi = {
     return api.get<PerformanceItem[]>(`/v1/events/performances${qs ? '?' + qs : ''}`);
   },
 
+  getBySlug: (slug: string) =>
+    api.get<PerformanceItem>(`/v1/events/performances/slug/${slug}`),
+
+  get: (id: string) =>
+    api.get<PerformanceItem>(`/v1/events/performances/${id}`),
+
   create: (body: PerformanceBody) =>
     api.post<PerformanceItem>('/v1/events/performances', body),
 

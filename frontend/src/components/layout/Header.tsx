@@ -36,8 +36,9 @@ const navSections = [
   {
     key: 'performances',
     labelKey: 'common.nav.performances',
+    href: '/performances',
     links: [
-      { labelKey: 'performance.currentSeason', href: '/performances' },
+      { labelKey: 'performance.currentSeason', href: '/performances/current-season' },
     ],
   },
 ];
@@ -91,15 +92,28 @@ export function Header() {
               key={section.key}
               className="relative group"
             >
-              <button
-                className={cn(
-                  'flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
-                  activeDropdown === section.key && 'text-foreground bg-accent/50'
-                )}
-              >
-                {t(section.labelKey)}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", activeDropdown === section.key && "rotate-180")} />
-              </button>
+              {section.href ? (
+                <Link
+                  href={href(section.href)}
+                  className={cn(
+                    'flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+                    activeDropdown === section.key && 'text-foreground bg-accent/50'
+                  )}
+                >
+                  {t(section.labelKey)}
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", activeDropdown === section.key && "rotate-180")} />
+                </Link>
+              ) : (
+                <button
+                  className={cn(
+                    'flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+                    activeDropdown === section.key && 'text-foreground bg-accent/50'
+                  )}
+                >
+                  {t(section.labelKey)}
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", activeDropdown === section.key && "rotate-180")} />
+                </button>
+              )}
               <div className="absolute top-full left-0 mt-1 w-56 rounded-md border bg-popover p-2 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1">
                 {section.links.map((link) => {
                   const linkPath = link.href.split('#')[0];
@@ -118,6 +132,12 @@ export function Header() {
               </div>
             </div>
           ))}
+          <Link
+            href={href('/news')}
+            className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
+          >
+            {t('common.nav.news')}
+          </Link>
         </nav>
 
         <div className="hidden lg:flex items-center gap-4">
@@ -186,6 +206,13 @@ export function Header() {
                 })}
               </div>
             ))}
+            <Link
+              href={href('/news')}
+              className="block px-3 py-2 text-sm font-semibold text-foreground"
+              onClick={() => setMobileOpen(false)}
+            >
+              {t('common.nav.news')}
+            </Link>
             <div className="pt-4">
               {authenticated ? (
                 <>
