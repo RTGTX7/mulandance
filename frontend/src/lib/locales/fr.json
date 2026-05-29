@@ -5,9 +5,10 @@
       "home": "Home",
       "about": "About",
       "programs": "Programs",
-      "performances": "Performances",
+      "performances": "Événements",
       "news": "News",
-      "classrooms": "Salles",
+      "schedule": "Horaire",
+      "classrooms": "Location",
       "classes": "Classes",
       "contact": "Contact"
     },
@@ -88,7 +89,36 @@
     "success": "Success",
     "error": "Error",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "weekdays": {
+      "short": [
+        "Dim",
+        "Lun",
+        "Mar",
+        "Mer",
+        "Jeu",
+        "Ven",
+        "Sam"
+      ],
+      "long": [
+        "Dimanche",
+        "Lundi",
+        "Mardi",
+        "Mercredi",
+        "Jeudi",
+        "Vendredi",
+        "Samedi"
+      ]
+    },
+    "ui": {
+      "timeline": "Chronologie",
+      "upcoming": "À venir",
+      "archive": "Archives",
+      "relatedArticles": "Articles liés",
+      "loading": "Chargement...",
+      "empty": "Aucun contenu",
+      "all": "Tout"
+    }
   },
   "home": {
     "hero": {
@@ -426,6 +456,16 @@
       "instructor": "Instructor",
       "level": "Level",
       "capacity": "Capacity"
+    },
+    "schedulePage": {
+      "badge": "Calendrier des cours",
+      "description": "Consultez les horaires, niveaux, âges recommandés et lieux par jour de la semaine. Les places sont confirmées lors de l’inscription.",
+      "calendarTitle": "Calendrier hebdomadaire",
+      "calendarHint": "Les cours sont classés par heure du lundi au dimanche. Les jours vides n’ont pas de cours public affiché.",
+      "slotCount": "{count} créneaux",
+      "dayCount": "{count} cours",
+      "noCourse": "Aucun cours",
+      "loadFailed": "Impossible de charger l’horaire"
     }
   },
   "portal": {
@@ -530,7 +570,7 @@
       "confirmHide": "Hide this article? It will no longer be visible on the public site.",
       "confirmPublish": "Publish this article? It will become visible on the public site.",
       "deleted": "Article deleted",
-      "hidden": "Article hidden",
+      "hidden": "Hidden",
       "published": "Article published",
       "search": "Search articles...",
       "searchPlaceholder": "Search by title...",
@@ -543,14 +583,13 @@
       "publishedStatus": "Published",
       "unpublishedStatus": "Unpublished",
       "draft": "Draft",
-      "hidden": "Hidden",
       "noArticles": "No articles yet",
       "noArticlesDesc": "Create your first article to publish news or announcements.",
       "newArticle": "New Article",
       "publishedBadge": "Published",
       "unpublishedBadge": "Unpublished",
       "draftBadge": "Draft",
-      "switchPublish": "Click to publish",
+      "switchPublish": "Click to publish this article",
       "switchToDraft": "Click to set as draft",
       "locale": "Locale",
       "sort": "Sort",
@@ -566,48 +605,8 @@
       "publishedLabel": "Published",
       "unpublishedLabel": "Unpublished",
       "statusFailed": "Failed to update status",
-      "switchPublish": "Click to publish this article",
       "switchUnpublish": "Click to hide this article",
       "statusTextFailed": "Failed to update status"
-    },
-    "categories": {
-      "title": "Categories",
-      "name": "Name (English)",
-      "nameZh": "Name (中文)",
-      "color": "Color",
-      "slug": "Slug",
-      "add": "Add Category",
-      "edit": "Edit Category",
-      "deleteConfirm": "Delete category",
-      "deleteAreYouSure": "Are you sure you want to delete this category?",
-      "inUse": "Cannot delete category: in use by articles",
-      "articlesCount": "Articles"
-    },
-    "tags": {
-      "title": "Tags",
-      "name": "Name (English)",
-      "nameZh": "Name (中文)",
-      "slug": "Slug",
-      "add": "Add Tag",
-      "edit": "Edit Tag",
-      "deleteConfirm": "Delete tag",
-      "deleteAreYouSure": "Are you sure you want to delete this tag?",
-      "inUse": "Cannot delete tag: in use by articles",
-      "articlesCount": "Articles"
-    },
-    "common": {
-      "logout": "Logout",
-      "loading": "Loading...",
-      "error": "Error",
-      "success": "Success",
-      "save": "Save",
-      "cancel": "Cancel",
-      "delete": "Delete",
-      "add": "Add",
-      "edit": "Edit",
-      "back": "Back",
-      "yes": "Yes",
-      "no": "No"
     },
     "categories": {
       "title": "Manage Categories",
@@ -623,9 +622,6 @@
       "add": "Add Category",
       "edit": "Edit Category"
     },
-    "news": {
-      "title": "News"
-    },
     "tags": {
       "title": "Manage Tags",
       "noTags": "No tags yet. Add your first one!",
@@ -638,6 +634,23 @@
       "confirmDeleteDesc": "Are you sure you want to delete \"{slug}\"? This action cannot be undone.",
       "add": "Add Tag",
       "edit": "Edit Tag"
+    },
+    "common": {
+      "logout": "Logout",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "add": "Add",
+      "edit": "Edit",
+      "back": "Back",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "news": {
+      "title": "News"
     },
     "tabs": {
       "newsArticles": "News Articles",
@@ -718,5 +731,68 @@
     "publishedAt": "Published on",
     "by": "by",
     "loading": "Loading articles..."
+  },
+  "performanceTimeline": {
+    "badge": "Chronologie",
+    "title": "Spectacles et événements",
+    "subtitle": "Consultez les spectacles, concours, camps et événements dans une chronologie unique. Les articles restent dans les nouvelles comme annonces et comptes rendus.",
+    "upcoming": "À venir",
+    "timeline": "Chronologie",
+    "archive": "Archives",
+    "relatedArticles": "Articles liés",
+    "noItems": "Aucun spectacle ou événement.",
+    "noUpcoming": "Aucun élément à venir.",
+    "noArchive": "Aucune archive.",
+    "articleEmpty": "Les nouvelles, annonces et comptes rendus liés aux spectacles peuvent rester comme articles et apparaître ici.",
+    "type": {
+      "performance": "Spectacle",
+      "competition": "Concours",
+      "camp": "Camp",
+      "event": "Événement",
+      "other": "Autre"
+    }
+  },
+  "classroomsPage": {
+    "title": "Location",
+    "badge": "Location de studio",
+    "description": "Consultez les créneaux confirmés pour la grande et la petite salle. Les demandes externes peuvent être envoyées ci-dessous puis confirmées par un administrateur.",
+    "calendarTitle": "Calendrier des salles",
+    "calendarHint": "Seules les affectations internes et locations externes confirmées sont affichées.",
+    "available": "Disponible",
+    "confirmedCount": "{count} créneaux confirmés",
+    "emptyRoom": "Aucune location ou classe confirmée.",
+    "ownerFallback": "Réservé",
+    "loadFailed": "Impossible de charger le calendrier de location",
+    "submitSuccess": "Demande envoyée. Une fois confirmée, elle apparaîtra dans le calendrier public.",
+    "submitFailed": "Échec de l’envoi. Veuillez réessayer plus tard.",
+    "formTitle": "Formulaire de location",
+    "introTitle": "Envoyer une demande",
+    "introText": "Les demandes sont envoyées à la page admin des salles pour examen, confirmation ou suppression. Les créneaux confirmés apparaissent dans le calendrier public.",
+    "tipRoom": "Choisissez la grande ou la petite salle",
+    "tipPending": "Les demandes sont en attente par défaut",
+    "tipNotes": "Indiquez le nombre de personnes, l’usage et les besoins matériels",
+    "room": "Salle",
+    "weekday": "Jour",
+    "startTime": "Heure de début",
+    "endTime": "Heure de fin",
+    "purpose": "Usage / activité",
+    "applicant": "Demandeur",
+    "contact": "Contact",
+    "notes": "Notes",
+    "purposePlaceholder": "Location de {room}, répétition, événement, etc.",
+    "contactPlaceholder": "Téléphone ou courriel",
+    "notesPlaceholder": "Nombre de personnes, usage, besoins matériels, etc.",
+    "submitting": "Envoi...",
+    "submit": "Envoyer",
+    "rooms": {
+      "large": {
+        "label": "Grande salle",
+        "description": "Idéale pour répétitions, cours collectifs, activités et petits événements."
+      },
+      "small": {
+        "label": "Petite salle",
+        "description": "Idéale pour cours privés, petites répétitions, auditions et pratique calme."
+      }
+    }
   }
 }

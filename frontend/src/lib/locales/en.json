@@ -5,9 +5,10 @@
       "home": "Home",
       "about": "About",
       "programs": "Programs",
-      "performances": "Performances",
+      "performances": "Events",
       "news": "News",
-      "classrooms": "Classrooms",
+      "schedule": "Schedule",
+      "classrooms": "Rentals",
       "classes": "Classes",
       "contact": "Contact"
     },
@@ -88,7 +89,36 @@
     "success": "Success",
     "error": "Error",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "weekdays": {
+      "short": [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+      ],
+      "long": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    "ui": {
+      "timeline": "Timeline",
+      "upcoming": "Upcoming",
+      "archive": "Archive",
+      "relatedArticles": "Related Articles",
+      "loading": "Loading...",
+      "empty": "No content yet",
+      "all": "All"
+    }
   },
   "home": {
     "hero": {
@@ -426,6 +456,16 @@
       "instructor": "Instructor",
       "level": "Level",
       "capacity": "Capacity"
+    },
+    "schedulePage": {
+      "badge": "Class Calendar",
+      "description": "View class times, age guidance, level notes, and locations by weekday. Availability is confirmed through registration.",
+      "calendarTitle": "Weekly Class Calendar",
+      "calendarHint": "Classes are ordered by time from Monday to Sunday. Empty days have no public classes listed.",
+      "slotCount": "{count} class times",
+      "dayCount": "{count} classes",
+      "noCourse": "No classes",
+      "loadFailed": "Failed to load schedule"
     }
   },
   "portal": {
@@ -530,7 +570,7 @@
       "confirmHide": "Hide this article? It will no longer be visible on the public site.",
       "confirmPublish": "Publish this article? It will become visible on the public site.",
       "deleted": "Article deleted",
-      "hidden": "Article hidden",
+      "hidden": "Hidden",
       "published": "Article published",
       "search": "Search articles...",
       "searchPlaceholder": "Search by title...",
@@ -543,14 +583,13 @@
       "publishedStatus": "Published",
       "unpublishedStatus": "Unpublished",
       "draft": "Draft",
-      "hidden": "Hidden",
       "noArticles": "No articles yet",
       "noArticlesDesc": "Create your first article to publish news or announcements.",
       "newArticle": "New Article",
       "publishedBadge": "Published",
       "unpublishedBadge": "Unpublished",
       "draftBadge": "Draft",
-      "switchPublish": "Click to publish",
+      "switchPublish": "Click to publish this article",
       "switchToDraft": "Click to set as draft",
       "locale": "Locale",
       "sort": "Sort",
@@ -566,48 +605,8 @@
       "publishedLabel": "Published",
       "unpublishedLabel": "Unpublished",
       "statusFailed": "Failed to update status",
-      "switchPublish": "Click to publish this article",
       "switchUnpublish": "Click to hide this article",
       "statusTextFailed": "Failed to update status"
-    },
-    "categories": {
-      "title": "Categories",
-      "name": "Name (English)",
-      "nameZh": "Name (中文)",
-      "color": "Color",
-      "slug": "Slug",
-      "add": "Add Category",
-      "edit": "Edit Category",
-      "deleteConfirm": "Delete category",
-      "deleteAreYouSure": "Are you sure you want to delete this category?",
-      "inUse": "Cannot delete category: in use by articles",
-      "articlesCount": "Articles"
-    },
-    "tags": {
-      "title": "Tags",
-      "name": "Name (English)",
-      "nameZh": "Name (中文)",
-      "slug": "Slug",
-      "add": "Add Tag",
-      "edit": "Edit Tag",
-      "deleteConfirm": "Delete tag",
-      "deleteAreYouSure": "Are you sure you want to delete this tag?",
-      "inUse": "Cannot delete tag: in use by articles",
-      "articlesCount": "Articles"
-    },
-    "common": {
-      "logout": "Logout",
-      "loading": "Loading...",
-      "error": "Error",
-      "success": "Success",
-      "save": "Save",
-      "cancel": "Cancel",
-      "delete": "Delete",
-      "add": "Add",
-      "edit": "Edit",
-      "back": "Back",
-      "yes": "Yes",
-      "no": "No"
     },
     "categories": {
       "title": "Manage Categories",
@@ -623,9 +622,6 @@
       "add": "Add Category",
       "edit": "Edit Category"
     },
-    "news": {
-      "title": "News"
-    },
     "tags": {
       "title": "Manage Tags",
       "noTags": "No tags yet. Add your first one!",
@@ -638,6 +634,23 @@
       "confirmDeleteDesc": "Are you sure you want to delete \"{slug}\"? This action cannot be undone.",
       "add": "Add Tag",
       "edit": "Edit Tag"
+    },
+    "common": {
+      "logout": "Logout",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "add": "Add",
+      "edit": "Edit",
+      "back": "Back",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "news": {
+      "title": "News"
     },
     "tabs": {
       "newsArticles": "News Articles",
@@ -718,5 +731,68 @@
     "publishedAt": "Published on",
     "by": "by",
     "loading": "Loading articles..."
+  },
+  "performanceTimeline": {
+    "badge": "Timeline",
+    "title": "Events & Performances",
+    "subtitle": "Browse performances, competitions, camps, and events in one timeline. News articles remain as coverage and related updates.",
+    "upcoming": "Upcoming",
+    "timeline": "Timeline",
+    "archive": "Archive",
+    "relatedArticles": "Related Articles",
+    "noItems": "No performances or events yet.",
+    "noUpcoming": "No upcoming items.",
+    "noArchive": "No archived items.",
+    "articleEmpty": "Performance news, notices, and recaps can stay as articles and appear here.",
+    "type": {
+      "performance": "Performance",
+      "competition": "Competition",
+      "camp": "Camp",
+      "event": "Event",
+      "other": "Other"
+    }
+  },
+  "classroomsPage": {
+    "title": "Rentals",
+    "badge": "Studio Rental",
+    "description": "View confirmed large-room and small-room time slots. External rental requests can be submitted below and confirmed by an administrator.",
+    "calendarTitle": "Studio Calendar",
+    "calendarHint": "Only confirmed internal assignments and external rentals are shown.",
+    "available": "Available",
+    "confirmedCount": "{count} confirmed slots",
+    "emptyRoom": "No confirmed rentals or classes.",
+    "ownerFallback": "Reserved",
+    "loadFailed": "Failed to load rental calendar",
+    "submitSuccess": "Rental request submitted. Once confirmed by an administrator, it will appear on the public calendar.",
+    "submitFailed": "Submission failed. Please try again later.",
+    "formTitle": "Rental Request Form",
+    "introTitle": "Submit a Rental Request",
+    "introText": "Submitted requests go to the admin classroom page for review, confirmation, or removal. Confirmed slots appear on the public calendar.",
+    "tipRoom": "Choose the large room or small room",
+    "tipPending": "Requests are pending by default",
+    "tipNotes": "Include headcount, purpose, and equipment needs in the notes",
+    "room": "Room",
+    "weekday": "Day",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "purpose": "Purpose / Activity Name",
+    "applicant": "Applicant",
+    "contact": "Contact",
+    "notes": "Notes",
+    "purposePlaceholder": "{room} rental, rehearsal, event, etc.",
+    "contactPlaceholder": "Phone or email",
+    "notesPlaceholder": "Headcount, purpose, equipment needs, etc.",
+    "submitting": "Submitting...",
+    "submit": "Submit Request",
+    "rooms": {
+      "large": {
+        "label": "Large Room",
+        "description": "Best for rehearsals, group classes, activities, and small events."
+      },
+      "small": {
+        "label": "Small Room",
+        "description": "Best for private lessons, small rehearsals, auditions, and quiet practice."
+      }
+    }
   }
 }

@@ -38,10 +38,9 @@ const navSections = [
     labelKey: 'common.nav.performances',
     href: '/performances',
     links: [
-      { label: '演出与活动', href: '/performances' },
-      { labelKey: 'events.calendar', href: '/events/calendar' },
-      { labelKey: 'events.workshops', href: '/events/workshops' },
-      { labelKey: 'performances.archive', href: '/performances/archive' },
+      { labelKey: 'performanceTimeline.title', href: '/performances' },
+      { labelKey: 'performanceTimeline.upcoming', href: '/performances#upcoming' },
+      { labelKey: 'performanceTimeline.archive', href: '/performances#archive' },
     ],
   },
 ];
@@ -124,20 +123,20 @@ export function Header() {
           )}
         </div>
       )}
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between gap-3">
         <Link
           href={href('/')}
           className="flex items-center gap-2"
         >
           <img src={settings.logo_url || '/logo.png'} alt={settings.site_name} className="h-10 w-10 rounded-full object-cover" />
-          <span className="hidden text-sm font-semibold text-foreground sm:inline">{settings.site_name}</span>
+          <span className="hidden text-sm font-semibold text-foreground 2xl:inline">{settings.site_name}</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1" aria-label={t('common.accessibility.navigation')}>
+        <nav className="hidden lg:flex items-center gap-0.5" aria-label={t('common.accessibility.navigation')}>
           <Link
             href={href('/')}
             className={cn(
-              'px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+              'whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
               activeDropdown === null && 'text-foreground'
             )}
           >
@@ -152,7 +151,7 @@ export function Header() {
                 <Link
                   href={href(section.href)}
                   className={cn(
-                    'flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+                    'flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
                     activeDropdown === section.key && 'text-foreground bg-accent/50'
                   )}
                 >
@@ -162,7 +161,7 @@ export function Header() {
               ) : (
                 <button
                   className={cn(
-                    'flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
+                    'flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
                     activeDropdown === section.key && 'text-foreground bg-accent/50'
                   )}
                 >
@@ -181,7 +180,7 @@ export function Header() {
                       href={fullPath}
                       className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
-                      {'label' in link ? link.label : t(link.labelKey)}
+                      {t(link.labelKey)}
                     </Link>
                   );
                 })}
@@ -189,20 +188,26 @@ export function Header() {
             </div>
           ))}
           <Link
-            href={href('/classrooms')}
-            className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
+            href={href('/classes/schedule')}
+            className="whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
           >
-            {t('common.nav.classrooms', { defaultMessage: '教室使用' })}
+            {t('common.nav.schedule', { defaultMessage: 'Schedule' })}
+          </Link>
+          <Link
+            href={href('/classrooms')}
+            className="whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
+          >
+            {t('common.nav.classrooms', { defaultMessage: 'Rentals' })}
           </Link>
           <Link
             href={href('/news')}
-            className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
+            className="whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
           >
             {t('common.nav.news')}
           </Link>
         </nav>
 
-        <div className="hidden lg:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-2">
           <LanguageSwitcher />
           <Button variant="default" size="sm" asChild>
             <a href={configuredHref(ctaHref)}>
@@ -213,20 +218,20 @@ export function Header() {
             <>
               <Button variant="outline" size="sm" asChild>
                 <Link href={href('/admin/dashboard')}>
-                  <LayoutDashboard className="h-4 w-4 mr-1" />
-                  Dashboard
+                  <LayoutDashboard className="h-4 w-4 2xl:mr-1" />
+                  <span className="hidden 2xl:inline">Dashboard</span>
                 </Link>
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-1" />
-                {t('admin.common.logout')}
+                <LogOut className="h-4 w-4 2xl:mr-1" />
+                <span className="hidden 2xl:inline">{t('admin.common.logout')}</span>
               </Button>
             </>
           ) : settings.show_admin_login ? (
             <Button variant="outline" size="sm" asChild>
               <Link href={href('/admin/login')}>
-                <LogIn className="h-4 w-4 mr-1" />
-                Login
+                <LogIn className="h-4 w-4 2xl:mr-1" />
+                <span className="hidden 2xl:inline">Login</span>
               </Link>
             </Button>
           ) : null}
@@ -267,12 +272,19 @@ export function Header() {
                       className="block px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
                       onClick={() => setMobileOpen(false)}
                     >
-                      {'label' in link ? link.label : t(link.labelKey)}
+                      {t(link.labelKey)}
                     </Link>
                   );
                 })}
               </div>
             ))}
+            <Link
+              href={href('/classes/schedule')}
+              className="block px-3 py-2 text-sm font-semibold text-foreground"
+              onClick={() => setMobileOpen(false)}
+            >
+              {t('common.nav.schedule', { defaultMessage: 'Schedule' })}
+            </Link>
             <Link
               href={href('/news')}
               className="block px-3 py-2 text-sm font-semibold text-foreground"
@@ -285,7 +297,7 @@ export function Header() {
               className="block px-3 py-2 text-sm font-semibold text-foreground"
               onClick={() => setMobileOpen(false)}
             >
-              {t('common.nav.classrooms', { defaultMessage: '教室使用' })}
+              {t('common.nav.classrooms', { defaultMessage: 'Rentals' })}
             </Link>
             <div className="pt-4">
               <a

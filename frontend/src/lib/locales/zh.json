@@ -5,9 +5,10 @@
       "home": "首页",
       "about": "关于我们",
       "programs": "课程",
-      "performances": "演出",
+      "performances": "演出与活动",
       "news": "新闻",
-      "classrooms": "教室使用",
+      "schedule": "排课表",
+      "classrooms": "租教室",
       "classes": "课堂",
       "contact": "联系我们"
     },
@@ -88,7 +89,36 @@
     "success": "成功",
     "error": "错误",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "weekdays": {
+      "short": [
+        "周日",
+        "周一",
+        "周二",
+        "周三",
+        "周四",
+        "周五",
+        "周六"
+      ],
+      "long": [
+        "星期日",
+        "星期一",
+        "星期二",
+        "星期三",
+        "星期四",
+        "星期五",
+        "星期六"
+      ]
+    },
+    "ui": {
+      "timeline": "时间线",
+      "upcoming": "即将开始",
+      "archive": "往期档案",
+      "relatedArticles": "相关文章",
+      "loading": "加载中...",
+      "empty": "暂无内容",
+      "all": "全部"
+    }
   },
   "home": {
     "hero": {
@@ -427,6 +457,16 @@
       "instructor": "教师",
       "level": "级别",
       "capacity": "名额"
+    },
+    "schedulePage": {
+      "badge": "课程周历",
+      "description": "按星期查看各班级上课时间、适合年龄基础和上课地址。具体名额以报名确认结果为准。",
+      "calendarTitle": "一周排课日历",
+      "calendarHint": "周一到周日按时间排列，空白日期表示暂无公开排课。",
+      "slotCount": "{count} 个课程时段",
+      "dayCount": "{count} 个课程",
+      "noCourse": "暂无课程",
+      "loadFailed": "排课表加载失败"
     }
   },
   "portal": {
@@ -534,7 +574,7 @@
       "confirmHide": "确定要隐藏这篇文章吗？它将不再在公开网站上显示。",
       "confirmPublish": "确定要发布这篇文章吗？它将出现在公开网站上。",
       "deleted": "文章已删除",
-      "hidden": "文章已隐藏",
+      "hidden": "已隐藏",
       "published": "文章已发布",
       "search": "搜索文章...",
       "searchPlaceholder": "按标题搜索...",
@@ -547,14 +587,13 @@
       "publishedStatus": "已发布",
       "unpublishedStatus": "未发布",
       "draft": "草稿",
-      "hidden": "已隐藏",
       "noArticles": "还没有文章",
       "noArticlesDesc": "创建第一篇文章来发布新闻或公告。",
       "newArticle": "新建文章",
       "publishedBadge": "已发布",
       "unpublishedBadge": "未发布",
       "draftBadge": "草稿",
-      "switchPublish": "点击发布",
+      "switchPublish": "点击发布此文章",
       "switchToDraft": "点击设为草稿",
       "locale": "语言",
       "sort": "排序",
@@ -567,48 +606,8 @@
       "viewPublic": "查看发布页",
       "viewDraftNotice": "草稿文章暂未公开",
       "untitled": "未命名文章",
-      "switchPublish": "点击发布此文章",
       "switchUnpublish": "点击隐藏此文章",
       "statusTextFailed": "更新状态失败"
-    },
-    "categories": {
-      "title": "分类管理",
-      "name": "名称（英文）",
-      "nameZh": "名称（中文）",
-      "color": "颜色",
-      "slug": "标识符",
-      "add": "添加分类",
-      "edit": "编辑分类",
-      "deleteConfirm": "删除分类",
-      "deleteAreYouSure": "确定要删除这个分类吗？",
-      "inUse": "无法删除：该分类正被文章使用",
-      "articlesCount": "文章数"
-    },
-    "tags": {
-      "title": "标签管理",
-      "name": "名称（英文）",
-      "nameZh": "名称（中文）",
-      "slug": "标识符",
-      "add": "添加标签",
-      "edit": "编辑标签",
-      "deleteConfirm": "删除标签",
-      "deleteAreYouSure": "确定要删除这个标签吗？",
-      "inUse": "无法删除：该标签正被文章使用",
-      "articlesCount": "文章数"
-    },
-    "common": {
-      "logout": "退出登录",
-      "loading": "加载中...",
-      "error": "错误",
-      "success": "成功",
-      "save": "保存",
-      "cancel": "取消",
-      "delete": "删除",
-      "add": "添加",
-      "edit": "编辑",
-      "back": "返回",
-      "yes": "是",
-      "no": "否"
     },
     "categories": {
       "title": "管理分类",
@@ -636,6 +635,20 @@
       "confirmDeleteDesc": "确定要删除 \"{slug}\" 吗？此操作不可撤销。",
       "add": "添加标签",
       "edit": "编辑标签"
+    },
+    "common": {
+      "logout": "退出登录",
+      "loading": "加载中...",
+      "error": "错误",
+      "success": "成功",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除",
+      "add": "添加",
+      "edit": "编辑",
+      "back": "返回",
+      "yes": "是",
+      "no": "否"
     },
     "tabs": {
       "newsArticles": "新闻文章",
@@ -719,5 +732,68 @@
     "publishedAt": "发布于",
     "by": "作者",
     "loading": "加载文章..."
+  },
+  "performanceTimeline": {
+    "badge": "Timeline",
+    "title": "演出与活动",
+    "subtitle": "按时间线查看演出、比赛、Camp 和各类活动。新闻文章作为报道和说明保留在新闻栏目，并在这里作为相关文章展示。",
+    "upcoming": "即将开始",
+    "timeline": "时间线",
+    "archive": "往期档案",
+    "relatedArticles": "演出相关文章",
+    "noItems": "暂无演出或活动。",
+    "noUpcoming": "暂无即将开始的演出或活动。",
+    "noArchive": "暂无往期档案。",
+    "articleEmpty": "文章里可以继续写演出报道、通知和回顾；这里会显示分类为“演出”的新闻文章。",
+    "type": {
+      "performance": "演出",
+      "competition": "比赛",
+      "camp": "Camp",
+      "event": "活动",
+      "other": "其他"
+    }
+  },
+  "classroomsPage": {
+    "title": "租教室",
+    "badge": "Studio Rental",
+    "description": "查看大教室、小教室已经确认的使用时段。外部租借可以在页面下方提交申请，管理员审核后再确认。",
+    "calendarTitle": "教室周历",
+    "calendarHint": "只显示后台已经确认的内部排课和外部租借。",
+    "available": "可申请",
+    "confirmedCount": "{count} 个已确认时段",
+    "emptyRoom": "暂无已确认租借或排课。",
+    "ownerFallback": "已预约",
+    "loadFailed": "租教室日历加载失败",
+    "submitSuccess": "租借申请已提交。管理员确认后，该时段会显示在公开日历中。",
+    "submitFailed": "提交失败，请稍后再试",
+    "formTitle": "租借申请表",
+    "introTitle": "提交租借申请",
+    "introText": "填写申请后会进入后台“教室使用”页面，管理员可以审核、确认或删除。确认后该时段会自动出现在公开日历。",
+    "tipRoom": "可选择大教室或小教室",
+    "tipPending": "申请默认进入待审核状态",
+    "tipNotes": "请在备注中写明活动人数、用途和特殊设备需求",
+    "room": "教室",
+    "weekday": "星期",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "purpose": "用途 / 活动名称",
+    "applicant": "申请人",
+    "contact": "联系方式",
+    "notes": "备注",
+    "purposePlaceholder": "{room}租借、排练、活动等",
+    "contactPlaceholder": "电话或邮箱",
+    "notesPlaceholder": "人数、用途、设备需求等",
+    "submitting": "提交中...",
+    "submit": "提交申请",
+    "rooms": {
+      "large": {
+        "label": "大教室",
+        "description": "适合排练、集体课、工作坊和小型活动。"
+      },
+      "small": {
+        "label": "小教室",
+        "description": "适合私教、小组排练、面试和安静练习。"
+      }
+    }
   }
 }
