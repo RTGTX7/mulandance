@@ -317,6 +317,7 @@
     "title": "Programs",
     "subtitle": "Comprehensive dance training for every age and level",
     "levels": {
+      "title": "Program Levels",
       "children": "Children (Ages 3-12)",
       "teens": "Teens (Ages 13-17)",
       "parents": "Parents (Ages 18+)",
@@ -474,7 +475,10 @@
     "register": "Register",
     "dashboard": "Dashboard",
     "email": "Email",
-    "password": "Password"
+    "password": "Password",
+    "forgotPassword": "Forgot Password",
+    "logout": "Logout",
+    "resetPassword": "Reset Password"
   },
   "footer": {
     "quickLinks": "Quick Links",
@@ -485,7 +489,16 @@
     "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
     "phone": "343-777-1766",
     "email": "info@mulandance.com",
-    "followUs": "Follow Us"
+    "followUs": "Follow Us",
+    "accessibility": "Accessibility",
+    "alumni": "Alumni",
+    "careers": "Careers",
+    "donate": "Donate",
+    "membership": "Membership",
+    "rentals": "Rentals",
+    "resources": "Resources",
+    "sponsorship": "Sponsorship",
+    "volunteer": "Volunteer"
   },
   "error": {
     "title": "Page Not Found",
@@ -504,7 +517,18 @@
     "contactUs": {
       "label": "Contact Us",
       "desc": "Reach out and we'll help you find your way"
-    }
+    },
+    "contactSupport": "Contact support",
+    "forbidden": "Access forbidden",
+    "goHome": "Go home",
+    "loadingFailed": "Loading failed",
+    "networkError": "Network error",
+    "notFound": "Not found",
+    "pageNotFound": "The page you are looking for could not be found",
+    "serverError": "Server error",
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try again",
+    "unauthorized": "Unauthorized"
   },
   "admin": {
     "login": {
@@ -654,8 +678,15 @@
     },
     "tabs": {
       "newsArticles": "News Articles",
-      "performance": "Performance",
-      "registration": "Registration"
+      "categories": "Categories",
+      "tags": "Tags",
+      "programs": "Programs",
+      "schedules": "Schedules",
+      "performance": "Events & Performances",
+      "registration": "Registration",
+      "faculty": "Faculty",
+      "classrooms": "Classrooms",
+      "settings": "System Settings"
     },
     "performances": {
       "calendarTitle": "Performance Calendar",
@@ -715,6 +746,58 @@
         "showOnHomepage": "Show on homepage"
       }
     },
+    "classrooms": {
+      "title": "Classroom Time Table",
+      "subtitle": "Manage internal teacher assignments and external room requests for each classroom.",
+      "addTitle": "Add Classroom Booking",
+      "addToTable": "Add to Time Table",
+      "saving": "Saving...",
+      "loadFailed": "Failed to load classroom bookings",
+      "saveFailed": "Failed to save classroom booking",
+      "updateFailed": "Failed to update classroom booking",
+      "deleteFailed": "Failed to delete classroom booking",
+      "deleteConfirm": "Delete \"{title}\"?",
+      "approve": "Approve",
+      "empty": "No classroom bookings yet.",
+      "noOwner": "No owner assigned",
+      "rooms": {
+        "large": "Large Classroom",
+        "small": "Small Classroom"
+      },
+      "types": {
+        "internal": "Internal teacher assignment",
+        "external": "External request"
+      },
+      "status": {
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "rejected": "Rejected"
+      },
+      "weekdays": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "fields": {
+        "room": "Classroom",
+        "type": "Type",
+        "title": "Class / Purpose",
+        "weekday": "Weekday",
+        "start": "Start",
+        "end": "End",
+        "time": "Time",
+        "owner": "Teacher / Owner",
+        "applicant": "Applicant",
+        "contact": "Contact",
+        "notes": "Notes",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
     "registrations": {
       "title": "Registration Management",
       "underConstruction": "This feature is under construction."
@@ -730,7 +813,10 @@
     "noArticles": "No articles found",
     "publishedAt": "Published on",
     "by": "by",
-    "loading": "Loading articles..."
+    "loading": "Loading articles...",
+    "admin": {
+      "title": "News"
+    }
   },
   "performanceTimeline": {
     "badge": "Timeline",
@@ -764,7 +850,18 @@
     "ownerFallback": "Reserved",
     "loadFailed": "Failed to load rental calendar",
     "submitSuccess": "Rental request submitted. Once confirmed by an administrator, it will appear on the public calendar.",
+    "receiptSent": "Rental request submitted. A copy of your form response has been sent to {email}.",
+    "receiptNotRequested": "Rental request submitted. No email receipt was sent because the contact field did not include an email address.",
+    "receiptNotConfigured": "Rental request submitted. Email sending is not configured yet, so no receipt email was sent.",
+    "receiptFailed": "Rental request submitted, but the email receipt failed to send. Please keep a copy of your submitted details.",
     "submitFailed": "Submission failed. Please try again later.",
+    "requiredFields": "Please fill in purpose, applicant, and contact before submitting.",
+    "contactLimitExceeded": "This contact has reached the maximum number of rental requests.",
+    "captcha": "Human Check",
+    "captchaPlaceholder": "Answer",
+    "captchaRequired": "Please answer the human check before submitting.",
+    "captchaFailed": "Human check failed. Please answer the new question and submit again.",
+    "refreshCaptcha": "Refresh",
     "formTitle": "Rental Request Form",
     "introTitle": "Submit a Rental Request",
     "introText": "Submitted requests go to the admin classroom page for review, confirmation, or removal. Confirmed slots appear on the public calendar.",
@@ -793,6 +890,84 @@
         "label": "Small Room",
         "description": "Best for private lessons, small rehearsals, auditions, and quiet practice."
       }
+    }
+  },
+  "registerPage": {
+    "opening": "Opening registration link...",
+    "manualHint": "If the page does not open automatically, click the button below to continue registration.",
+    "openLink": "Open registration link",
+    "notConfigured": "The registration link has not been configured yet. Please try again later.",
+    "loadFailed": "Unable to load registration link"
+  },
+  "performanceDetail": {
+    "backHome": "Back to Home",
+    "notFoundTitle": "Performance Not Found",
+    "notFoundText": "The performance you are looking for does not exist or has been removed.",
+    "moreSoon": "More details coming soon.",
+    "details": "Performance details"
+  },
+  "legal": {
+    "lastUpdated": "Last updated: May 24, 2026",
+    "privacy": {
+      "sections": [
+        {
+          "title": "Information We Collect",
+          "text": "We collect information you provide directly, such as name, email address, phone number, and payment information when you enroll in classes or contact us. We also collect information about your children for enrollment purposes."
+        },
+        {
+          "title": "How We Use Your Information",
+          "text": "We use the information we collect to provide services, process class enrollments and payments, communicate with you about classes and events, send newsletters with your consent, and ensure student safety."
+        },
+        {
+          "title": "Information Sharing",
+          "text": "We do not sell, trade, or rent your personal information to third parties. We may share information with partners who assist us in operating our website and services, or when required by law."
+        },
+        {
+          "title": "Data Security",
+          "text": "We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction."
+        },
+        {
+          "title": "Your Rights",
+          "text": "You have the right to access, correct, or delete your personal information. Contact us at info@mulandance.com to exercise these rights."
+        },
+        {
+          "title": "Contact",
+          "text": "If you have any questions about this privacy policy, please contact us at info@mulandance.com."
+        }
+      ]
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "sections": [
+        {
+          "title": "Acceptance of Terms",
+          "text": "By accessing and using the Mulan Dance Studio website and services, you agree to be bound by these Terms of Service. If you do not agree, please do not use our services."
+        },
+        {
+          "title": "Registration",
+          "text": "You must provide accurate and complete information when creating an account. You are responsible for maintaining the security of your account credentials and for all activities under your account."
+        },
+        {
+          "title": "Enrollment & Payments",
+          "text": "Class enrollment is subject to availability. Tuition fees are non-refundable after the first 14 days of a term. Cancellation requests must be submitted in writing. See our Absence & Makeup Policy for details."
+        },
+        {
+          "title": "Code of Conduct",
+          "text": "All students, parents, and visitors must follow our code of conduct, including respecting staff and other students, following studio rules, and maintaining a safe and welcoming environment."
+        },
+        {
+          "title": "Intellectual Property",
+          "text": "All content on this website, including text, images, videos, and choreography, is the property of Mulan Dance Studio and is protected by copyright laws."
+        },
+        {
+          "title": "Limitation of Liability",
+          "text": "Mulan Dance Studio is not liable for injuries sustained during dance activities. Participants engage in dance at their own risk. A waiver must be signed before participation in any class or performance."
+        },
+        {
+          "title": "Contact",
+          "text": "For questions about these terms, contact us at info@mulandance.com."
+        }
+      ]
     }
   }
 }

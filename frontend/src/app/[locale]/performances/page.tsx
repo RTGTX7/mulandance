@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,7 +48,7 @@ export default function PerformancesPage() {
 
   useEffect(() => {
     Promise.all([
-      performanceApi.list(),
+      performanceApi.list({ current: true }),
       newsApi.list({ category: 'performances', locale, limit: 6 }).catch(() => []),
     ])
       .then(([performanceItems, newsItems]) => {
@@ -96,24 +97,16 @@ export default function PerformancesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <section className="border-b bg-white">
-        <div className="container py-12">
-          <div className="max-w-3xl">
-            <Badge variant="outline" className="mb-4 border-purple-200 bg-purple-50 text-purple-700">
-              {t('performanceTimeline.badge')}
-            </Badge>
-            <h1 className="text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
-              {t('performanceTimeline.title')}
-            </h1>
-            <p className="mt-4 text-lg leading-8 text-slate-600">
-              {t('performanceTimeline.subtitle')}
-            </p>
-          </div>
-        </div>
-      </section>
+    <div className="pt-16">
+      <PageHero
+        breadcrumbLabel={t('common.nav.performances')}
+        breadcrumbHref="/performances"
+        title={t('performanceTimeline.title')}
+        subtitle={t('performanceTimeline.subtitle')}
+      />
 
-      <div className="container py-8">
+      <main className="section-padding bg-slate-100">
+        <div className="container">
         <div className="mb-6 flex flex-wrap gap-2">
           <a href="#upcoming">
             <Button variant="outline" size="sm">{t('performanceTimeline.upcoming')}</Button>
@@ -287,7 +280,8 @@ export default function PerformancesPage() {
             </aside>
           </div>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

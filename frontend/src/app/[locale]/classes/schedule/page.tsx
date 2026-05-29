@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from '@/components/ui/i18n-client';
@@ -74,21 +74,16 @@ export default function SchedulePage() {
   }, [policy]);
 
   return (
-    <main className="section-padding bg-slate-50">
-      <div className="container space-y-8">
-        <div className="max-w-3xl">
-          <Breadcrumbs items={[{ label: t('common.nav.classes'), href: 'classes' }]} />
-          <div className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-1 text-sm font-medium text-purple-700 shadow-sm">
-            <CalendarDays className="h-4 w-4" />
-            {t('classes.schedulePage.badge')}
-          </div>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
-            {t('classes.schedule')}
-          </h1>
-          <p className="mt-4 text-lg leading-8 text-slate-600">
-            {t('classes.schedulePage.description')}
-          </p>
-        </div>
+    <div className="pt-16">
+      <PageHero
+        breadcrumbLabel={t('common.nav.classes')}
+        breadcrumbHref="/classes/schedule"
+        title={t('classes.schedule')}
+        subtitle={t('classes.schedulePage.description')}
+      />
+
+      <main className="section-padding bg-slate-100">
+        <div className="container space-y-8">
 
         {error && (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -183,6 +178,7 @@ export default function SchedulePage() {
           </section>
         )}
       </div>
-    </main>
+      </main>
+    </div>
   );
 }

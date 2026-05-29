@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SystemSettings, isAuthenticated, settingsApi, uploadApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { ImagePlus, Loader2, Save, Settings } from 'lucide-react';
+import { ImagePlus, Loader2, Mail, Save, Settings } from 'lucide-react';
 
 const defaultSettings: SystemSettings = {
   site_name: 'Mulan Dance Studio',
@@ -28,6 +28,8 @@ const defaultSettings: SystemSettings = {
   contact_email: 'info@mulandance.com',
   contact_phone: '3437771766',
   contact_address: '',
+  outbound_email: '',
+  classroom_request_limit_per_contact: 0,
   youtube_url: 'https://www.youtube.com/@mulandancestudio21',
   xiaohongshu_url: 'https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476',
   instagram_url: '',
@@ -140,7 +142,7 @@ export default function AdminSettingsPage() {
                 系统设置
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                管理全站品牌、页眉、页脚、联系方式、社媒和版权信息。
+                管理全站品牌、页眉、页脚、联系方式、邮件发信人、社媒和版权信息。
               </p>
             </div>
             <Button type="submit" disabled={loading || saving || uploading}>
@@ -214,7 +216,45 @@ export default function AdminSettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>顶部公告条</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-primary" />
+                    邮件发送设置
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 lg:grid-cols-2">
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">对外发信人邮箱</span>
+                    <Input
+                      type="email"
+                      value={form.outbound_email}
+                      onChange={(e) => setField('outbound_email', e.target.value)}
+                      placeholder="noreply@mulandance.com"
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">同一联系方式最多申请次数</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={999}
+                      value={form.classroom_request_limit_per_contact}
+                      onChange={(e) =>
+                        setField('classroom_request_limit_per_contact', Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      0 表示不限制。这里限制前台租借申请表里的联系方式。
+                    </span>
+                  </label>
+                  <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
+                    这里控制网站邮件显示的 From 发信人。真正发送还需要后端配置 SMTP_HOST、SMTP_USERNAME、SMTP_PASSWORD。
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>顶部公告栏</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-5 lg:grid-cols-2">
                   <div className="lg:col-span-2">
@@ -265,7 +305,7 @@ export default function AdminSettingsPage() {
                 </CardHeader>
                 <CardContent className="grid gap-5 lg:grid-cols-2">
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">Email</span>
+                    <span className="text-sm font-medium">联系邮箱</span>
                     <Input value={form.contact_email} onChange={(e) => setField('contact_email', e.target.value)} />
                   </label>
                   <label className="block space-y-1">

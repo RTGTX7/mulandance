@@ -62,6 +62,8 @@ const defaultSettings: SystemSettings = {
   contact_email: 'info@mulandance.com',
   contact_phone: '3437771766',
   contact_address: '',
+  outbound_email: '',
+  classroom_request_limit_per_contact: 0,
   youtube_url: '',
   xiaohongshu_url: '',
   instagram_url: '',

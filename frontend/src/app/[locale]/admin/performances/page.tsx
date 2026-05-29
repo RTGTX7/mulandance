@@ -45,7 +45,15 @@ export default function AdminPerformancesPage() {
       && date.getMonth() === selectedDate.getMonth()
       && date.getDate() === selectedDate.getDate();
   });
-  const recent = performances.slice(0, 5);
+  const recent = useMemo(() => {
+    return [...performances]
+      .sort((a, b) => {
+        const aTime = Math.abs(new Date(a.start_date).getTime() - now);
+        const bTime = Math.abs(new Date(b.start_date).getTime() - now);
+        return aTime - bTime;
+      })
+      .slice(0, 5);
+  }, [now, performances]);
   const displayedPerformances = listMode === 'date' ? selectedPerformances : recent;
   const selectedDateLabel = selectedDate.toLocaleDateString(dateLocaleFor(locale), {
     month: 'long',

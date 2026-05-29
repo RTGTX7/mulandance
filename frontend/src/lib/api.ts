@@ -493,6 +493,8 @@ export interface SystemSettings {
   contact_email: string;
   contact_phone: string;
   contact_address: string;
+  outbound_email: string;
+  classroom_request_limit_per_contact: number;
   youtube_url: string;
   xiaohongshu_url: string;
   instagram_url: string;
@@ -613,6 +615,21 @@ export interface ClassroomBookingBody {
   start_time: string;
   end_time: string;
   notes?: string;
+  captcha_token?: string;
+  captcha_answer?: string;
+}
+
+export type ClassroomReceiptStatus = 'sent' | 'not_requested' | 'not_configured' | 'failed';
+
+export interface ClassroomBookingCreateResponse {
+  booking: ClassroomBooking;
+  receipt_email?: string;
+  receipt_status: ClassroomReceiptStatus;
+}
+
+export interface ClassroomCaptcha {
+  question: string;
+  token: string;
 }
 
 export const classroomApi = {
@@ -624,7 +641,8 @@ export const classroomApi = {
     return api.get<ClassroomBooking[]>(`/v1/classrooms/bookings${qs ? '?' + qs : ''}`);
   },
   create: (body: ClassroomBookingBody) =>
-    api.post<ClassroomBooking>('/v1/classrooms/bookings', body),
+    api.post<ClassroomBookingCreateResponse>('/v1/classrooms/bookings', body),
+  captcha: () => api.get<ClassroomCaptcha>('/v1/classrooms/captcha'),
   update: (id: string, body: Partial<ClassroomBookingBody>) =>
     api.put<ClassroomBooking>(`/v1/classrooms/bookings/${id}`, body),
   remove: (id: string) =>

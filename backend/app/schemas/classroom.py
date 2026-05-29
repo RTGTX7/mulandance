@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +19,13 @@ class ClassroomBookingBase(BaseModel):
 
 
 class ClassroomBookingCreate(ClassroomBookingBase):
-    pass
+    captcha_token: Optional[str] = None
+    captcha_answer: Optional[str] = None
+
+
+class ClassroomCaptchaResponse(BaseModel):
+    question: str
+    token: str
 
 
 class ClassroomBookingUpdate(BaseModel):
@@ -43,3 +49,9 @@ class ClassroomBookingResponse(ClassroomBookingBase):
 
     class Config:
         from_attributes = True
+
+
+class ClassroomBookingCreateResponse(BaseModel):
+    booking: ClassroomBookingResponse
+    receipt_email: Optional[str] = None
+    receipt_status: Literal["sent", "not_requested", "not_configured", "failed"] = "not_requested"

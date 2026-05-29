@@ -285,6 +285,8 @@ class SystemSettings(Base):
     contact_email = Column(String(255), default="info@mulandance.com")
     contact_phone = Column(String(100), default="3437771766")
     contact_address = Column(Text)
+    outbound_email = Column(String(255), default="")
+    classroom_request_limit_per_contact = Column(Integer, default=0)
     youtube_url = Column(String(1000), default="https://www.youtube.com/@mulandancestudio21")
     xiaohongshu_url = Column(String(1000), default="https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476")
     instagram_url = Column(String(1000), default="")

@@ -31,6 +31,63 @@ const initialForm: CourseScheduleItemBody = {
   order_index: 10,
 };
 
+function scheduleStatusLabels(locale: string, active: boolean) {
+  if (locale === 'fr') {
+    return {
+      label: active ? 'Publié' : 'Masqué',
+      title: active ? 'Cliquer pour masquer ce cours' : 'Cliquer pour publier ce cours',
+    };
+  }
+  if (locale === 'en') {
+    return {
+      label: active ? 'Published' : 'Hidden',
+      title: active ? 'Click to hide this class' : 'Click to publish this class',
+    };
+  }
+  return {
+    label: active ? '已发布' : '已隐藏',
+    title: active ? '点击隐藏此排课' : '点击发布此排课',
+  };
+}
+
+function SchedulePublishSwitch({
+  item,
+  locale,
+  loading,
+  onChange,
+}: {
+  item: CourseScheduleItem;
+  locale: string;
+  loading: boolean;
+  onChange: (item: CourseScheduleItem, nextValue: boolean) => void;
+}) {
+  const active = item.is_active;
+  const labels = scheduleStatusLabels(locale, active);
+
+  return (
+    <button
+      type="button"
+      disabled={loading}
+      onClick={() => onChange(item, !active)}
+      className={`
+        inline-flex h-8 min-w-[104px] items-center gap-2 rounded-full border px-2.5 text-xs font-medium transition-all duration-200
+        ${active
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+          : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+        }
+        ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+      `}
+      aria-pressed={active}
+      title={labels.title}
+    >
+      <span className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${active ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${active ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+      </span>
+      <span className="leading-none">{labels.label}</span>
+    </button>
+  );
+}
+
 export default function AdminSchedulesPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -47,6 +104,7 @@ export default function AdminSchedulesPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [switchLoading, setSwitchLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -135,6 +193,22 @@ export default function AdminSchedulesPage() {
       loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : '删除失败');
+    }
+  }
+
+  async function toggleScheduleStatus(item: CourseScheduleItem, nextValue: boolean) {
+    setSwitchLoading(item.id);
+    setError('');
+    try {
+      const updated = await scheduleApi.update(item.id, { is_active: nextValue });
+      setItems((prev) => prev.map((scheduleItem) => scheduleItem.id === item.id ? updated : scheduleItem));
+      if (editingId === item.id) {
+        setForm((prev) => ({ ...prev, is_active: updated.is_active }));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Status update failed');
+    } finally {
+      setSwitchLoading(null);
     }
   }
 
@@ -268,6 +342,12 @@ export default function AdminSchedulesPage() {
                         {item.description && <div className="mt-1 text-sm text-muted-foreground">{item.description}</div>}
                       </div>
                       <div className="flex shrink-0 gap-2">
+                        <SchedulePublishSwitch
+                          item={item}
+                          locale={locale}
+                          loading={switchLoading === item.id}
+                          onChange={toggleScheduleStatus}
+                        />
                         <Button size="sm" variant="outline" onClick={() => editItem(item)}>编辑</Button>
                         <Button size="sm" variant="outline" className="text-red-600" onClick={() => removeItem(item)}>
                           <Trash2 className="h-4 w-4" />

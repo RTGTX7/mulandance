@@ -26,14 +26,16 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const normalizedLocale = normalizeLocale(locale);
-  const zhTitle = isTraditionalLocale(normalizedLocale) ? '木蘭舞蹈學校 — 舞動藝術' : '木兰舞蹈学校 — 舞动艺术';
+  const zhTitle = isTraditionalLocale(normalizedLocale) ? '木蘭舞蹈學校 - 舞動藝術' : '木兰舞蹈学校 - 舞动艺术';
   const zhDescription = isTraditionalLocale(normalizedLocale)
     ? '渥太華中文舞蹈學校，提供中國舞、芭蕾、現代舞課程'
     : '渥太华中文舞蹈学校，提供中国舞、芭蕾、现代舞课程';
 
   return {
-    title: normalizedLocale === 'zh' || normalizedLocale === 'zh-Hant' ? zhTitle : 'Mulan Dance Studio — Dance Arts',
-    description: normalizedLocale === 'zh' || normalizedLocale === 'zh-Hant' ? zhDescription : 'Ottawa Chinese Dance Studio — Chinese Dance, Ballet, Contemporary for all ages.',
+    title: normalizedLocale === 'zh' || normalizedLocale === 'zh-Hant' ? zhTitle : 'Mulan Dance Studio - Dance Arts',
+    description: normalizedLocale === 'zh' || normalizedLocale === 'zh-Hant'
+      ? zhDescription
+      : 'Ottawa Chinese Dance Studio - Chinese Dance, Ballet, Contemporary for all ages.',
     alternates: {
       canonical: `/${normalizedLocale}`,
     },

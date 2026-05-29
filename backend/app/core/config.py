@@ -24,8 +24,14 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     NEWS_FILES_DIR: str = _NEWS_FILES_DIR
     USE_FILE_STORAGE: bool = True
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_USE_TLS: bool = True
 
-    @field_validator("DEBUG", "USE_FILE_STORAGE", mode="before")
+    @field_validator("DEBUG", "USE_FILE_STORAGE", "SMTP_USE_TLS", mode="before")
     @classmethod
     def parse_bool_like_env(cls, value):
         if isinstance(value, bool):

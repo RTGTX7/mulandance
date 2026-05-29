@@ -23,11 +23,11 @@ const fontAccent = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: '木兰舞蹈学校 Mulan Dance Studio — 舞动艺术',
+    default: '木兰舞蹈学校 Mulan Dance Studio - 舞动艺术',
     template: '%s | 木兰舞蹈学校 Mulan Dance Studio',
   },
   description:
-    '渥太华语舞蹈学校，提供中国舞、芭蕾、现代舞、爵士舞、街舞课程。适合所有年龄段的舞者。Mulan Dance Studio in Ottawa — Chinese Dance, Ballet, Contemporary, Jazz, Hip-Hop for all ages.',
+    '渥太华中文舞蹈学校，提供中国舞、芭蕾、现代舞、爵士舞、街舞课程。适合所有年龄段的舞者。Mulan Dance Studio in Ottawa - Chinese Dance, Ballet, Contemporary, Jazz, Hip-Hop for all ages.',
   keywords: [
     '木兰舞蹈',
     'Mulan Dance',
@@ -40,16 +40,15 @@ export const metadata: Metadata = {
     'hip-hop',
     '舞蹈学校',
     'dance school',
-    '华语舞蹈',
+    '中文舞蹈',
   ],
   authors: [{ name: '木兰舞蹈学校 Mulan Dance Studio' }],
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
     siteName: '木兰舞蹈学校 Mulan Dance Studio',
-    title: '木兰舞蹈学校 Mulan Dance Studio — 舞动艺术',
-    description:
-      '渥太华语舞蹈学校，传承中国文化，培养舞者从第一步到舞台。',
+    title: '木兰舞蹈学校 Mulan Dance Studio - 舞动艺术',
+    description: '渥太华中文舞蹈学校，传承中国文化，培养舞者从第一步到舞台。',
   },
   twitter: {
     card: 'summary_large_image',
@@ -73,10 +72,7 @@ export default function RootLayout({
           fontAccent.variable
         )}
       >
-        <a
-          href="#main-content"
-          className="skip-link"
-        >
+        <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
         {children}

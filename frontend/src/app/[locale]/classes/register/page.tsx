@@ -33,7 +33,7 @@ export default function RegisterPage() {
         }
       } catch (err) {
         if (mounted) {
-          setError(err instanceof Error ? err.message : 'Unable to load registration link');
+          setError(err instanceof Error ? err.message : t('registerPage.loadFailed'));
         }
       } finally {
         if (mounted) setLoading(false);
@@ -45,7 +45,7 @@ export default function RegisterPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   return (
     <div className="section-padding">
@@ -59,17 +59,17 @@ export default function RegisterPage() {
             {loading && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                正在打开报名链接...
+                {t('registerPage.opening')}
               </div>
             )}
 
             {!loading && targetUrl && (
               <>
-                <p className="text-muted-foreground">如果页面没有自动打开，请点击下面的按钮继续报名。</p>
+                <p className="text-muted-foreground">{t('registerPage.manualHint')}</p>
                 <Button asChild size="lg" className="w-full">
                   <a href={targetUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    打开报名链接
+                    {t('registerPage.openLink')}
                   </a>
                 </Button>
               </>
@@ -77,7 +77,7 @@ export default function RegisterPage() {
 
             {!loading && !targetUrl && (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {error || '报名链接还没有配置，请稍后再试。'}
+                {error || t('registerPage.notConfigured')}
               </div>
             )}
           </CardContent>

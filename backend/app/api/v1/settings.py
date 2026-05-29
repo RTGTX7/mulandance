@@ -104,6 +104,8 @@ def _system_to_response(settings: SystemSettings) -> SystemSettingsResponse:
         contact_email=settings.contact_email or "",
         contact_phone=settings.contact_phone or "",
         contact_address=settings.contact_address or "",
+        outbound_email=settings.outbound_email or "",
+        classroom_request_limit_per_contact=settings.classroom_request_limit_per_contact or 0,
         youtube_url=settings.youtube_url or "",
         xiaohongshu_url=settings.xiaohongshu_url or "",
         instagram_url=settings.instagram_url or "",

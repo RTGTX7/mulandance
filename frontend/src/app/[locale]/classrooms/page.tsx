@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,11 @@ import { useTranslations } from '@/components/ui/i18n-client';
 import {
   ClassroomBooking,
   ClassroomBookingBody,
+  ClassroomCaptcha,
   ClassroomRoom,
   classroomApi,
 } from '@/lib/api';
-import { CalendarDays, CheckCircle2, Clock3, DoorOpen, Send } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, RefreshCw, Send } from 'lucide-react';
 
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 
@@ -69,11 +70,31 @@ export default function ClassroomsPage() {
   const [roomFilter, setRoomFilter] = useState<'all' | ClassroomRoom>('all');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [captcha, setCaptcha] = useState<ClassroomCaptcha | null>(null);
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const loadFailedMessage = t('classroomsPage.loadFailed');
   const submitFailedMessage = t('classroomsPage.submitFailed');
   const submitSuccessMessage = t('classroomsPage.submitSuccess');
+  const requiredMessage = t('classroomsPage.requiredFields');
+  const captchaRequiredMessage = t('classroomsPage.captchaRequired');
+
+  function receiptMessage(status: string, email?: string) {
+    if (status === 'sent' && email) {
+      return interpolate(t('classroomsPage.receiptSent'), { email });
+    }
+    if (status === 'not_requested') {
+      return t('classroomsPage.receiptNotRequested');
+    }
+    if (status === 'not_configured') {
+      return t('classroomsPage.receiptNotConfigured');
+    }
+    if (status === 'failed') {
+      return t('classroomsPage.receiptFailed');
+    }
+    return submitSuccessMessage;
+  }
 
   function roomLabel(room: ClassroomRoom) {
     return rooms.find((item) => item.key === room)?.label || room;
@@ -90,6 +111,20 @@ export default function ClassroomsPage() {
       .catch((err) => setError(err instanceof Error ? err.message : loadFailedMessage))
       .finally(() => setLoading(false));
   }, [loadFailedMessage]);
+
+  function refreshCaptcha() {
+    classroomApi
+      .captcha()
+      .then((nextCaptcha) => {
+        setCaptcha(nextCaptcha);
+        setCaptchaAnswer('');
+      })
+      .catch(() => setCaptcha(null));
+  }
+
+  useEffect(() => {
+    refreshCaptcha();
+  }, []);
 
   const visibleRooms = useMemo(() => {
     return roomFilter === 'all' ? rooms : rooms.filter((room) => room.key === roomFilter);
@@ -130,42 +165,60 @@ export default function ClassroomsPage() {
     setError('');
 
     try {
-      await classroomApi.create({
+      const cleanedForm = {
         ...form,
+        title: form.title.trim(),
+        applicant_name: form.applicant_name?.trim() || '',
+        applicant_contact: form.applicant_contact?.trim() || '',
+        teacher_name: form.teacher_name?.trim() || '',
+        notes: form.notes?.trim() || '',
+      };
+      if (!cleanedForm.title || !cleanedForm.applicant_name || !cleanedForm.applicant_contact) {
+        setError(requiredMessage);
+        return;
+      }
+      if (!captcha?.token || !captchaAnswer.trim()) {
+        setError(captchaRequiredMessage);
+        return;
+      }
+
+      const response = await classroomApi.create({
+        ...cleanedForm,
         booking_type: 'external',
         status: 'pending',
+        captcha_token: captcha.token,
+        captcha_answer: captchaAnswer.trim(),
       });
       setForm({ ...initialForm, room: form.room });
-      setMessage(submitSuccessMessage);
+      refreshCaptcha();
+      setMessage(receiptMessage(response.receipt_status, response.receipt_email));
     } catch (err) {
-      setError(err instanceof Error ? err.message : submitFailedMessage);
+      const message = err instanceof Error ? err.message : submitFailedMessage;
+      if (
+        message.includes('Captcha') ||
+        message.includes('captcha')
+      ) {
+        refreshCaptcha();
+        setError(t('classroomsPage.captchaFailed'));
+      } else {
+        setError(message.includes('rental request limit') ? t('classroomsPage.contactLimitExceeded') : message);
+      }
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <main className="section-padding bg-slate-50">
-      <div className="container space-y-8">
-        <div className="max-w-3xl">
-          <Breadcrumbs items={[{ label: t('classroomsPage.title'), href: '/classrooms' }]} />
-          <div className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-1 text-sm font-medium text-purple-700 shadow-sm">
-            <DoorOpen className="h-4 w-4" />
-            {t('classroomsPage.badge')}
-          </div>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
-            {t('classroomsPage.title')}
-          </h1>
-          <p className="mt-4 text-lg leading-8 text-slate-600">
-            {t('classroomsPage.description')}
-          </p>
-        </div>
+    <div className="pt-16">
+      <PageHero
+        breadcrumbLabel={t('classroomsPage.title')}
+        breadcrumbHref="/classrooms"
+        title={t('classroomsPage.title')}
+        subtitle={t('classroomsPage.description')}
+      />
 
-        {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      <main className="section-padding bg-slate-100">
+        <div className="container space-y-8">
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -310,6 +363,14 @@ export default function ClassroomsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {error && (
+                  <div className="md:col-span-2">
+                    <div className="mx-auto max-w-2xl rounded-md border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+                      {error}
+                    </div>
+                  </div>
+                )}
+
                 <label className="space-y-1">
                   <span className="text-sm font-medium text-slate-700">{t('classroomsPage.room')}</span>
                   <select
@@ -365,7 +426,9 @@ export default function ClassroomsPage() {
                 </label>
 
                 <label className="space-y-1 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.purpose')}</span>
+                  <span className="text-sm font-medium text-slate-700">
+                    {t('classroomsPage.purpose')} <span className="text-red-500">*</span>
+                  </span>
                   <Input
                     required
                     value={form.title}
@@ -375,7 +438,9 @@ export default function ClassroomsPage() {
                 </label>
 
                 <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.applicant')}</span>
+                  <span className="text-sm font-medium text-slate-700">
+                    {t('classroomsPage.applicant')} <span className="text-red-500">*</span>
+                  </span>
                   <Input
                     required
                     value={form.applicant_name || ''}
@@ -386,7 +451,9 @@ export default function ClassroomsPage() {
                 </label>
 
                 <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.contact')}</span>
+                  <span className="text-sm font-medium text-slate-700">
+                    {t('classroomsPage.contact')} <span className="text-red-500">*</span>
+                  </span>
                   <Input
                     required
                     value={form.applicant_contact || ''}
@@ -407,6 +474,28 @@ export default function ClassroomsPage() {
                   />
                 </label>
 
+                <label className="space-y-1 md:col-span-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    {t('classroomsPage.captcha')} <span className="text-red-500">*</span>
+                  </span>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="flex h-10 min-w-[140px] items-center justify-center rounded-md border bg-slate-50 px-3 text-sm font-semibold text-slate-900">
+                      {captcha?.question || t('common.ui.loading')}
+                    </div>
+                    <Input
+                      required
+                      inputMode="numeric"
+                      value={captchaAnswer}
+                      placeholder={t('classroomsPage.captchaPlaceholder')}
+                      onChange={(event) => setCaptchaAnswer(event.target.value)}
+                    />
+                    <Button type="button" variant="outline" onClick={refreshCaptcha} className="shrink-0">
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      {t('classroomsPage.refreshCaptcha')}
+                    </Button>
+                  </div>
+                </label>
+
                 {message && (
                   <div className="md:col-span-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                     {message}
@@ -424,6 +513,7 @@ export default function ClassroomsPage() {
           </Card>
         </section>
       </div>
-    </main>
+      </main>
+    </div>
   );
 }

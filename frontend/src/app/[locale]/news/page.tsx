@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { newsApi } from '@/lib/api';
 import { useRouter, usePathname } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { PageHero } from '@/components/layout/PageHero';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, ArrowRight, Filter } from 'lucide-react';
@@ -101,21 +102,16 @@ export default function NewsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero / Header */}
-      <section className="bg-gradient-to-br from-primary/5 via-secondary/5 to-background border-b">
-        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-          <h1 className="heading-lg mb-3">
-            {t('news.title')}
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {t('news.subtitle')}
-          </p>
-        </div>
-      </section>
+    <div className="pt-16">
+      <PageHero
+        breadcrumbLabel={t('common.nav.news')}
+        breadcrumbHref="/news"
+        title={t('news.title')}
+        subtitle={t('news.subtitle')}
+      />
 
       {/* Filter Bar */}
-      <div className="bg-card border-b sticky top-12 z-10">
+      <div className="sticky top-16 z-10 border-b bg-card">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto">
           <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <Button
@@ -146,7 +142,8 @@ export default function NewsPage() {
       </div>
 
       {/* Articles Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="section-padding bg-slate-100">
+        <div className="container">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -238,14 +235,8 @@ export default function NewsPage() {
             })}
           </div>
         )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-muted/20 py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Mulan Dance Studio News</p>
         </div>
-      </footer>
+      </main>
     </div>
   );
 }

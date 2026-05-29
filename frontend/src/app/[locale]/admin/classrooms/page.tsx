@@ -15,13 +15,11 @@ import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslations } from '@/components/ui/i18n-client';
 import { CalendarClock, CheckCircle2, Clock3, DoorOpen, Trash2 } from 'lucide-react';
 
-const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-const rooms: Array<{ key: ClassroomRoom; label: string }> = [
-  { key: 'large', label: '大教室' },
-  { key: 'small', label: '小教室' },
-];
+const roomKeys: ClassroomRoom[] = ['large', 'small'];
+const weekdayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 const initialForm: ClassroomBookingBody = {
   room: 'large',
@@ -37,17 +35,8 @@ const initialForm: ClassroomBookingBody = {
   notes: '',
 };
 
-function statusLabel(status: ClassroomBookingStatus) {
-  if (status === 'confirmed') return '已确认';
-  if (status === 'pending') return '待审核';
-  return '已拒绝';
-}
-
-function typeLabel(type: ClassroomBookingType) {
-  return type === 'internal' ? '内部老师分配' : '外部申请';
-}
-
 export default function AdminClassroomsPage() {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
@@ -57,6 +46,7 @@ export default function AdminClassroomsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const weekdays = weekdayKeys.map((key) => t(`admin.classrooms.weekdays.${key}`));
   const sortedBookings = useMemo(
     () =>
       [...bookings].sort((a, b) =>
@@ -75,12 +65,24 @@ export default function AdminClassroomsPage() {
     loadBookings();
   }, [router, locale]);
 
+  function roomLabel(room: ClassroomRoom) {
+    return t(`admin.classrooms.rooms.${room}`);
+  }
+
+  function statusLabel(status: ClassroomBookingStatus) {
+    return t(`admin.classrooms.status.${status}`);
+  }
+
+  function typeLabel(type: ClassroomBookingType) {
+    return t(`admin.classrooms.types.${type}`);
+  }
+
   function loadBookings() {
     setLoading(true);
     classroomApi
       .list()
       .then(setBookings)
-      .catch((err) => setError(err instanceof Error ? err.message : '加载失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('admin.classrooms.loadFailed')))
       .finally(() => setLoading(false));
   }
 
@@ -97,7 +99,7 @@ export default function AdminClassroomsPage() {
       setForm({ ...initialForm, room: form.room });
       loadBookings();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : t('admin.classrooms.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -109,18 +111,18 @@ export default function AdminClassroomsPage() {
       await classroomApi.update(item.id, { status });
       loadBookings();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新失败');
+      setError(err instanceof Error ? err.message : t('admin.classrooms.updateFailed'));
     }
   }
 
   async function removeBooking(item: ClassroomBooking) {
-    if (!window.confirm(`删除「${item.title}」吗？`)) return;
+    if (!window.confirm(t('admin.classrooms.deleteConfirm').replace('{title}', item.title))) return;
     setError('');
     try {
       await classroomApi.remove(item.id);
       loadBookings();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : t('admin.classrooms.deleteFailed'));
     }
   }
 
@@ -136,10 +138,10 @@ export default function AdminClassroomsPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <DoorOpen className="h-6 w-6 text-primary" />
-            教室使用 Time Table
+            {t('admin.classrooms.title')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            管理大教室、小教室的内部老师分配和外部场地申请。
+            {t('admin.classrooms.subtitle')}
           </p>
         </div>
 
@@ -153,43 +155,43 @@ export default function AdminClassroomsPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <CalendarClock className="h-5 w-5" />
-              新增教室使用
+              {t('admin.classrooms.addTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">教室</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.room')}</span>
                 <select
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                   value={form.room}
                   onChange={(e) => setForm((prev) => ({ ...prev, room: e.target.value as ClassroomRoom }))}
                 >
-                  {rooms.map((room) => (
-                    <option key={room.key} value={room.key}>{room.label}</option>
+                  {roomKeys.map((room) => (
+                    <option key={room} value={room}>{roomLabel(room)}</option>
                   ))}
                 </select>
               </label>
 
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">类型</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.type')}</span>
                 <select
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                   value={form.booking_type}
                   onChange={(e) => setForm((prev) => ({ ...prev, booking_type: e.target.value as ClassroomBookingType }))}
                 >
-                  <option value="internal">内部老师分配</option>
-                  <option value="external">外部申请</option>
+                  <option value="internal">{typeLabel('internal')}</option>
+                  <option value="external">{typeLabel('external')}</option>
                 </select>
               </label>
 
               <label className="space-y-1 md:col-span-2">
-                <span className="text-xs font-medium text-muted-foreground">课程 / 用途</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.title')}</span>
                 <Input required value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} />
               </label>
 
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">星期</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.weekday')}</span>
                 <select
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                   value={form.day_of_week}
@@ -202,41 +204,41 @@ export default function AdminClassroomsPage() {
               </label>
 
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">开始</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.start')}</span>
                 <Input type="time" required value={form.start_time} onChange={(e) => setForm((prev) => ({ ...prev, start_time: e.target.value }))} />
               </label>
 
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">结束</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.end')}</span>
                 <Input type="time" required value={form.end_time} onChange={(e) => setForm((prev) => ({ ...prev, end_time: e.target.value }))} />
               </label>
 
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">老师 / 负责人</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.owner')}</span>
                 <Input value={form.teacher_name || ''} onChange={(e) => setForm((prev) => ({ ...prev, teacher_name: e.target.value }))} />
               </label>
 
               {form.booking_type === 'external' && (
                 <>
                   <label className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">申请人</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.applicant')}</span>
                     <Input value={form.applicant_name || ''} onChange={(e) => setForm((prev) => ({ ...prev, applicant_name: e.target.value }))} />
                   </label>
                   <label className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">联系方式</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.contact')}</span>
                     <Input value={form.applicant_contact || ''} onChange={(e) => setForm((prev) => ({ ...prev, applicant_contact: e.target.value }))} />
                   </label>
                 </>
               )}
 
               <label className="space-y-1 md:col-span-2">
-                <span className="text-xs font-medium text-muted-foreground">备注</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.notes')}</span>
                 <Input value={form.notes || ''} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} />
               </label>
 
               <div className="md:col-span-4 flex justify-end">
                 <Button type="submit" disabled={saving}>
-                  {saving ? '保存中...' : '添加到 Time Table'}
+                  {saving ? t('admin.classrooms.saving') : t('admin.classrooms.addToTable')}
                 </Button>
               </div>
             </form>
@@ -244,83 +246,87 @@ export default function AdminClassroomsPage() {
         </Card>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {rooms.map((room) => (
-            <Card key={room.key}>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock3 className="h-5 w-5 text-primary" />
-                  {room.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <p className="text-sm text-muted-foreground">加载中...</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[720px] text-sm">
-                      <thead>
-                        <tr className="border-b text-left text-muted-foreground">
-                          <th className="py-2 pr-3 font-medium">星期</th>
-                          <th className="py-2 pr-3 font-medium">时间</th>
-                          <th className="py-2 pr-3 font-medium">用途</th>
-                          <th className="py-2 pr-3 font-medium">类型</th>
-                          <th className="py-2 pr-3 font-medium">状态</th>
-                          <th className="py-2 pr-3 font-medium">操作</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedBookings.filter((item) => item.room === room.key).map((item) => (
-                          <tr key={item.id} className="border-b last:border-0 align-top">
-                            <td className="py-3 pr-3 font-medium">{weekdays[item.day_of_week]}</td>
-                            <td className="py-3 pr-3 whitespace-nowrap">{item.start_time} - {item.end_time}</td>
-                            <td className="py-3 pr-3">
-                              <div className="font-medium">{item.title}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {item.teacher_name || item.applicant_name || '未填写负责人'}
-                                {item.applicant_contact ? ` · ${item.applicant_contact}` : ''}
-                              </div>
-                              {item.notes && <div className="text-xs text-muted-foreground mt-1">{item.notes}</div>}
-                            </td>
-                            <td className="py-3 pr-3">{typeLabel(item.booking_type)}</td>
-                            <td className="py-3 pr-3">
-                              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                item.status === 'confirmed'
-                                  ? 'bg-emerald-50 text-emerald-700'
-                                  : item.status === 'pending'
-                                    ? 'bg-amber-50 text-amber-700'
-                                    : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {statusLabel(item.status)}
-                              </span>
-                            </td>
-                            <td className="py-3 pr-3">
-                              <div className="flex gap-2">
-                                {item.status !== 'confirmed' && (
-                                  <Button size="sm" variant="outline" onClick={() => updateStatus(item, 'confirmed')} title="通过">
-                                    <CheckCircle2 className="h-4 w-4" />
+          {roomKeys.map((room) => {
+            const roomBookings = sortedBookings.filter((item) => item.room === room);
+
+            return (
+              <Card key={room}>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock3 className="h-5 w-5 text-primary" />
+                    {roomLabel(room)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <p className="text-sm text-muted-foreground">{t('admin.common.loading')}</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[720px] text-sm">
+                        <thead>
+                          <tr className="border-b text-left text-muted-foreground">
+                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.weekday')}</th>
+                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.time')}</th>
+                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.title')}</th>
+                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.type')}</th>
+                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.status')}</th>
+                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.actions')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {roomBookings.map((item) => (
+                            <tr key={item.id} className="border-b last:border-0 align-top">
+                              <td className="py-3 pr-3 font-medium">{weekdays[item.day_of_week]}</td>
+                              <td className="py-3 pr-3 whitespace-nowrap">{item.start_time} - {item.end_time}</td>
+                              <td className="py-3 pr-3">
+                                <div className="font-medium">{item.title}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {item.teacher_name || item.applicant_name || t('admin.classrooms.noOwner')}
+                                  {item.applicant_contact ? ` / ${item.applicant_contact}` : ''}
+                                </div>
+                                {item.notes && <div className="text-xs text-muted-foreground mt-1">{item.notes}</div>}
+                              </td>
+                              <td className="py-3 pr-3">{typeLabel(item.booking_type)}</td>
+                              <td className="py-3 pr-3">
+                                <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                                  item.status === 'confirmed'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : item.status === 'pending'
+                                      ? 'bg-amber-50 text-amber-700'
+                                      : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {statusLabel(item.status)}
+                                </span>
+                              </td>
+                              <td className="py-3 pr-3">
+                                <div className="flex gap-2">
+                                  {item.status !== 'confirmed' && (
+                                    <Button size="sm" variant="outline" onClick={() => updateStatus(item, 'confirmed')} title={t('admin.classrooms.approve')}>
+                                      <CheckCircle2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="outline" onClick={() => removeBooking(item)} title={t('admin.common.delete')}>
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
-                                )}
-                                <Button size="sm" variant="outline" onClick={() => removeBooking(item)} title="删除">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {sortedBookings.filter((item) => item.room === room.key).length === 0 && (
-                          <tr>
-                            <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                              暂无教室使用记录
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          {roomBookings.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                                {t('admin.classrooms.empty')}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </main>
     </div>

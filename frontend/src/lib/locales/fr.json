@@ -2,94 +2,94 @@
   "common": {
     "appName": "Mulan Dance Studio",
     "nav": {
-      "home": "Home",
-      "about": "About",
-      "programs": "Programs",
+      "home": "Accueil",
+      "about": "À propos",
+      "programs": "Programmes",
       "performances": "Événements",
-      "news": "News",
+      "news": "Actualités",
       "schedule": "Horaire",
       "classrooms": "Location",
-      "classes": "Classes",
+      "classes": "Cours",
       "contact": "Contact"
     },
     "buttons": {
-      "learnMore": "Learn More",
-      "register": "Register Now",
-      "subscribe": "Subscribe",
-      "viewAll": "View All",
-      "submit": "Submit",
-      "back": "Back",
-      "close": "Close",
-      "openMenu": "Open Menu",
-      "closeMenu": "Close Menu"
+      "learnMore": "En savoir plus",
+      "register": "Inscrivez-vous",
+      "subscribe": "S’abonner",
+      "viewAll": "Tout voir",
+      "submit": "Envoyer",
+      "back": "Retour",
+      "close": "Fermer",
+      "openMenu": "Ouvrir le menu",
+      "closeMenu": "Fermer le menu"
     },
     "footer": {
-      "quickLinks": "Quick Links",
-      "programs": "Programs",
-      "performances": "Performances",
-      "events": "Events",
-      "contact": "Contact Us",
+      "quickLinks": "Liens rapides",
+      "programs": "Programmes",
+      "performances": "Spectacles",
+      "events": "Événements",
+      "contact": "Contactez-nous",
       "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
       "phone": "343-777-1766",
       "email": "info@mulandance.com",
-      "followUs": "Follow Us",
-      "newsletter": "Newsletter",
-      "newsletterPlaceholder": "Enter your email",
-      "newsletterButton": "Subscribe",
-      "newsletterSuccess": "Thank you for subscribing!",
-      "copyright": "All rights reserved.",
-      "privacyPolicy": "Privacy Policy",
-      "termsOfService": "Terms of Service",
-      "accessibility": "Accessibility"
+      "followUs": "Suivez-nous",
+      "newsletter": "Infolettre",
+      "newsletterPlaceholder": "Entrez votre courriel",
+      "newsletterButton": "S’abonner",
+      "newsletterSuccess": "Merci pour votre inscription !",
+      "copyright": "Tous droits réservés.",
+      "privacyPolicy": "Politique de confidentialité",
+      "termsOfService": "Conditions d’utilisation",
+      "accessibility": "Accessibilité"
     },
     "hero": {
-      "tagline": "Where Movement Becomes Art",
-      "subtitle": "学中乐、学中思、学中悟 — Ottawa Chinese Dance Studio for All Ages"
+      "tagline": "Quand le mouvement devient art",
+      "subtitle": "Apprendre dans la joie, la réflexion et la compréhension - studio de danse chinoise à Ottawa pour tous les âges"
     },
     "sections": {
-      "ourPrograms": "Our Programs",
-      "upcomingEvents": "Upcoming Events",
-      "testimonials": "Testimonials",
-      "latestNews": "Latest News",
-      "whyChooseUs": "Why Choose Us",
-      "featuredPerformances": "Featured Performances"
+      "ourPrograms": "Nos programmes",
+      "upcomingEvents": "Événements à venir",
+      "testimonials": "Témoignages",
+      "latestNews": "Dernières actualités",
+      "whyChooseUs": "Pourquoi nous choisir",
+      "featuredPerformances": "Spectacles en vedette"
     },
     "features": {
-      "worldClassFaculty": "World-Class Faculty",
-      "allLevels": "All Levels Welcome",
-      "performanceOpportunities": "Performance Opportunities",
-      "examPreparation": "Exam Preparation"
+      "worldClassFaculty": "Professeurs d’excellence",
+      "allLevels": "Tous les niveaux sont bienvenus",
+      "performanceOpportunities": "Occasions de spectacle",
+      "examPreparation": "Préparation aux examens"
     },
     "accessibility": {
-      "skipToContent": "Skip to main content",
-      "skipToNavigation": "Skip to navigation",
-      "mainContent": "Main content",
+      "skipToContent": "Aller au contenu principal",
+      "skipToNavigation": "Aller à la navigation",
+      "mainContent": "Contenu principal",
       "navigation": "Navigation",
-      "search": "Search",
-      "language": "Language",
+      "search": "Recherche",
+      "language": "Langue",
       "menu": "Menu",
-      "close": "Close",
-      "expand": "Expand",
-      "collapse": "Collapse",
-      "previous": "Previous",
-      "next": "Next",
-      "loading": "Loading...",
-      "error": "An error occurred",
-      "required": "Required field",
-      "formSubmitted": "Form submitted successfully"
+      "close": "Fermer",
+      "expand": "Développer",
+      "collapse": "Réduire",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "loading": "Chargement...",
+      "error": "Une erreur est survenue",
+      "required": "Champ obligatoire",
+      "formSubmitted": "Formulaire envoyé avec succès"
     },
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "save": "Save",
-    "add": "Add",
-    "edit": "Edit",
-    "back": "Back",
-    "loading": "Loading...",
-    "logout": "Logout",
-    "success": "Success",
-    "error": "Error",
-    "yes": "Yes",
-    "no": "No",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "back": "Retour",
+    "loading": "Chargement...",
+    "logout": "Déconnexion",
+    "success": "Succès",
+    "error": "Erreur",
+    "yes": "Oui",
+    "no": "Non",
     "weekdays": {
       "short": [
         "Dim",
@@ -144,73 +144,73 @@
       ]
     },
     "programs": {
-      "title": "Our Programs",
-      "subtitle": "Comprehensive dance training for every age and level in Ottawa",
-      "chinese": "Classical Chinese Dance",
-      "chineseDesc": "Heritage of Chinese culture and tradition, inherited from China's intangible cultural heritage",
-      "folk": "Chinese Folk Dance",
-      "folkDesc": "Rich ethnic dance styles from across China's diverse regions",
+      "title": "Nos programmes",
+      "subtitle": "Formation complète en danse pour chaque âge et chaque niveau à Ottawa",
+      "chinese": "Danse classique chinoise",
+      "chineseDesc": "Héritage de la culture et des traditions chinoises, transmis à partir du patrimoine culturel immatériel de la Chine",
+      "folk": "Danse folklorique chinoise",
+      "folkDesc": "Styles de danse ethnique riches provenant des diverses régions de Chine",
       "ballet": "Ballet",
-      "balletDesc": "Solid foundation with systematic training — the basis for all dance disciplines",
-      "contemporary": "Contemporary",
-      "contemporaryDesc": "Creative Chinese-style modern dance that encourages deep thinking",
+      "balletDesc": "Une base solide avec une formation systématique, fondement de toutes les disciplines de danse",
+      "contemporary": "Danse contemporaine",
+      "contemporaryDesc": "Danse moderne de style chinois qui encourage une réflexion approfondie",
       "jazz": "Jazz",
-      "jazzDesc": "Fashionable commercial and performance jazz with Chinese style",
+      "jazzDesc": "Jazz commercial et scénique moderne avec une touche chinoise",
       "hiphop": "Hip-Hop",
-      "hiphopDesc": "Trendy street dance training with our popular instructor Teacher Yezi"
+      "hiphopDesc": "Formation en danse urbaine avec notre professeure très appréciée, Yezi"
     },
     "stats": {
-      "students": "Students",
-      "years": "Years of Excellence",
-      "performances": "Annual Performances",
-      "teachers": "Professional Teachers"
+      "students": "élèves",
+      "years": "Années d’excellence",
+      "performances": "Spectacles annuels",
+      "teachers": "Professeurs professionnels"
     },
     "events": {
-      "title": "Season Performances",
-      "subtitle": "Join us for student showcases, competitions, and special events",
-      "viewAll": "Learn About All Events"
+      "title": "Spectacles de saison",
+      "subtitle": "Joignez-vous à nous pour les spectacles étudiants, concours et événements spéciaux",
+      "viewAll": "Découvrir tous les événements"
     },
     "testimonials": {
-      "title": "What Our Students Say",
-      "subtitle": "Hear from our dance community",
-      "viewAll": "Read More Stories",
+      "title": "Ce que disent nos élèves",
+      "subtitle": "Écoutez notre communauté de danse",
+      "viewAll": "Lire plus de témoignages",
       "tangtang": "Tangtang (糖糖)",
       "tangtangQuote": "I love music, and dance helps me feel and express music better, making me more confident. In Teacher Bao's class, she always encourages me to overcome challenges and master the basics of dance.",
-      "tangtangAff": "Mulan Student, Ages 5-8",
+      "tangtangAff": "élève de Mulan, 5 à 8 ans",
       "tangtang2": "Tangtang (糖糖)",
       "tangtang2Quote": "I love food, music, dance, art, and reading. Teacher Bao's classes inspire me to keep going, and I often sing along while practicing the moves she taught us.",
-      "tangtang2Aff": "Young Dancer, Mulan Dance Studio",
+      "tangtang2Aff": "Jeune danseuse, Mulan Dance Studio",
       "gege": "Gege (格格)",
       "gegeQuote": "I love dance, I love Mulan, and I love Teacher Bao even more. Following Teacher Bao for many years, I love how ballet forms the foundation for all dance styles, and especially the Chinese-style contemporary and jazz that deepen my understanding of dance as an art.",
-      "gegeAff": "Long-time Student, Mulan Dance Studio",
+      "gegeAff": "élève de longue date, Mulan Dance Studio",
       "gege2": "Gege (格格)",
       "gege2Quote": "加油我的小妹妹们，你们一定也会爱上舞蹈，爱上Mulan，爱上鲍老师的。",
-      "gege2Aff": "Mulan Dance Studio Student"
+      "gege2Aff": "élève de Mulan Dance Studio"
     },
     "news": {
-      "title": "Latest News",
-      "subtitle": "Updates from Mulan Dance Studio",
-      "viewAll": "View All News"
+      "title": "Dernières actualités",
+      "subtitle": "Nouvelles de Mulan Dance Studio",
+      "viewAll": "Voir toutes les actualités"
     },
     "cta": {
-      "title": "Join the Mulan Dance Family",
+      "title": "Rejoignez la famille Mulan Dance",
       "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
-      "register": "Register Now",
-      "contact": "Contact Us"
+      "register": "Inscrivez-vous",
+      "contact": "Contactez-nous"
     }
   },
   "about": {
-    "title": "About Us",
-    "intro_intro": "Mulan Dance Studio was founded by Teacher Bao Junwei in 2021 in Ottawa, Canada, specializing in early childhood dance education and professional youth training.",
-    "intro_created": "Founded in 2021 by Teacher Bao Junwei in Ottawa, Canada.",
-    "intro_experience": "Drawing on Teacher Bao's many years of experience in children's dance education and leading students to compete at the highest national dance competitions, we've developed a unique teaching model and philosophy.",
+    "title": "À propos",
+    "intro_intro": "Mulan Dance Studio a été fondé par la professeure Bao Junwei en 2021 à Ottawa, au Canada, avec une spécialisation en danse pour la petite enfance et en formation professionnelle des jeunes.",
+    "intro_created": "Fondé en 2021 par la professeure Bao Junwei à Ottawa, Canada.",
+    "intro_experience": "Grâce aux nombreuses années d’expérience de la professeure Bao en enseignement de la danse aux enfants et en préparation de concours nationaux de haut niveau, nous avons développé un modèle et une philosophie pédagogiques uniques.",
     "philosophy": {
-      "title": "Teaching Philosophy",
-      "heading": "Learn Through Joy, Learn Through Thinking, Learn Through Understanding",
-      "desc": "Under this teaching philosophy, students not only learn solid dance fundamentals, but also experience the joy that dance brings. Through dance as an art form, students can discover and feel the charm of China's 5,000 years of culture, freely exploring the world of dance art."
+      "title": "Philosophie d’enseignement",
+      "heading": "Apprendre dans la joie, la réflexion et la compréhension",
+      "desc": "Grâce à cette philosophie, les élèves acquièrent non seulement de solides bases techniques, mais découvrent aussi la joie que procure la danse. À travers cet art, ils explorent librement la richesse de 5 000 ans de culture chinoise."
     },
     "goals": {
-      "title": "Our Goals",
+      "title": "Nos objectifs",
       "items": [
         "Cultivate students' comprehensive dance literacy",
         "Understand various dance styles and performance modes",
@@ -220,14 +220,14 @@
       ]
     },
     "history": {
-      "title": "Our History",
-      "founded": "Founded in 2021 by Teacher Bao Junwei"
+      "title": "Notre histoire",
+      "founded": "Fondé en 2021 par la professeure Bao Junwei"
     },
     "leadership": {
-      "title": "Our Faculty",
-      "founder": "Teacher Bao Junwei",
-      "founderRole": "Founder & Principal Instructor",
-      "founderDesc": "Founder of Mulan Dance Studio with many years of children's dance education experience. Specializes in Classical Chinese Dance, Chinese Folk Dance, Ballet, and Contemporary. Creator of the \"Learn Through Joy, Think, and Understand\" teaching philosophy. Known for inspiring students to overcome challenges and build confidence while integrating traditional Chinese culture into dance teaching.",
+      "title": "Notre équipe pédagogique",
+      "founder": "Professeure Bao Junwei",
+      "founderRole": "Fondatrice et professeure principale",
+      "founderDesc": "Fondatrice de Mulan Dance Studio, forte de nombreuses années d’expérience en enseignement de la danse aux enfants. Elle se spécialise en danse classique chinoise, danse folklorique chinoise, ballet et danse contemporaine.",
       "kayley": "Kayley",
       "kayleyRole": "Choreography / Jazz / K-Pop / Hip-Hop Instructor",
       "kayleyDesc": "One of Ottawa's most dynamic dance instructors with extensive competition and performance experience.",
@@ -256,7 +256,7 @@
       ]
     },
     "vision": {
-      "title": "Our Vision",
+      "title": "Notre vision",
       "items": [
         "Become a benchmark in Chinese-language dance education in Ottawa",
         "Help Chinese-speaking children overseas receive systematic professional dance education",
@@ -266,114 +266,115 @@
       ]
     },
     "contact": {
-      "title": "Contact Us",
+      "title": "Contactez-nous",
       "form": {
-        "name": "Your Name",
-        "namePlaceholder": "Your full name",
-        "email": "Email Address",
-        "emailPlaceholder": "your@email.com",
-        "subject": "Subject",
+        "name": "Votre nom",
+        "namePlaceholder": "Votre nom complet",
+        "email": "Adresse courriel",
+        "emailPlaceholder": "votre@courriel.com",
+        "subject": "Sujet",
         "message": "Message",
-        "messagePlaceholder": "What would you like to know?",
-        "submit": "Send Message",
-        "success": "Thank you for your message. We will respond within 2 business days."
+        "messagePlaceholder": "Que souhaitez-vous savoir ?",
+        "submit": "Envoyer le message",
+        "success": "Merci pour votre message. Nous répondrons dans un délai de deux jours ouvrables."
       }
     },
     "joinUs": {
-      "title": "Join Our Family",
-      "subtitle": "Whether you are a complete beginner or already have dance experience, Mulan Dance Studio has a program and stage for you."
+      "title": "Rejoignez notre famille",
+      "subtitle": "Que vous soyez débutant ou déjà expérimenté, Mulan Dance Studio a un programme et une scène pour vous."
     }
   },
   "performance": {
-    "title": "Performances",
-    "allTitle": "All Performances",
-    "allSubtitle": "Browse student showcases, competitions, and special performance events.",
-    "badge": "Performance",
-    "readMore": "View Details",
-    "noPerformances": "No performances found",
-    "currentSeason": "Current Season",
-    "seasonSubtle": "Annual Student Showcase + Xiaohe Fengchi Competition",
+    "title": "Spectacles",
+    "allTitle": "Tous les spectacles",
+    "allSubtitle": "Parcourez les spectacles étudiants, concours et événements spéciaux.",
+    "badge": "Spectacle",
+    "readMore": "Voir les détails",
+    "noPerformances": "Aucun spectacle trouvé",
+    "currentSeason": "Saison en cours",
+    "seasonSubtle": "Spectacle annuel des élèves + concours Xiaohe Fengchi",
     "seasonDesc": "Mulan Dance Studio holds annual student showcases where every student has the opportunity to shine on their own stage, plus participation in the highest-level children's dance competition in China.",
     "showcase": {
-      "title": "Annual Student Showcase",
+      "title": "Spectacle annuel des élèves",
       "desc": "Held every mid-year or end of year, every student has the chance to showcase their talent on the dedicated stage. Students learn from each other, inspiring interest in dance. Outstanding students receive the title of \"Little Dance King\" at Mulan Dance Studio.",
-      "date": "June / December",
-      "venue": "Grand Theatre, Ottawa"
+      "date": "Juin / Décembre",
+      "venue": "Grand Théâtre, Ottawa"
     },
     "xiaohe": {
-      "title": "Xiaohe Fengchi Children's Dance Competition",
+      "title": "Concours de danse pour enfants Xiaohe Fengchi",
       "desc": "The highest-level children's dance competition in China. Mulan Dance Studio students have achieved outstanding results, providing our students with a high-level competitive and exhibition stage.",
-      "date": "Varies",
-      "venue": "Various locations in China"
+      "date": "Variable",
+      "venue": "Divers lieux en Chine"
     },
     "summer": {
-      "title": "Summer Camp Demo Performance",
+      "title": "Présentation du camp d’été",
       "desc": "Summer camp graduation showcase, presenting what students have accomplished after a week of intensive training.",
-      "date": "August",
+      "date": "Août",
       "venue": "Mulan Dance Studio"
     }
   },
   "programs": {
-    "title": "Programs",
-    "subtitle": "Comprehensive dance training for every age and level",
+    "title": "Programmes",
+    "subtitle": "Formation complète en danse pour chaque âge et chaque niveau",
     "levels": {
-      "children": "Children (Ages 3-12)",
-      "teens": "Teens (Ages 13-17)",
-      "parents": "Parents (Ages 18+)",
-      "summer": "Summer Camps (Ages 5-17)"
+      "title": "Niveaux des programmes",
+      "children": "Enfants (3 à 12 ans)",
+      "teens": "Adolescents (13 à 17 ans)",
+      "parents": "Adultes (18 ans et plus)",
+      "summer": "Camps d’été (5 à 17 ans)"
     },
     "ballet": {
       "title": "Ballet",
       "description": "Our ballet program provides a solid foundation with systematic training, using ballet as the basis for all other dance disciplines.",
       "features": {
-        "radSyllabus": "Solid Ballet Fundamentals",
-        "exams": "Systematic Training",
-        "performances": "Annual Showcase",
-        "crossTraining": "Foundation for All Dance Styles"
+        "radSyllabus": "Bases solides en ballet",
+        "exams": "Formation systématique",
+        "performances": "Spectacle annuel",
+        "crossTraining": "Fondement pour tous les styles de danse"
       }
     },
     "contemporary": {
-      "title": "Contemporary",
+      "title": "Contemporain",
       "description": "Creative Chinese-style modern dance that encourages deep thinking, integrating traditional Chinese cultural elements into contemporary movement.",
       "features": {
-        "technique": "Modern Technique",
-        "improvisation": "Chinese Style Creativity",
-        "choreography": "Choreographic Lab",
-        "performances": "Season Performances"
+        "technique": "Technique moderne",
+        "improvisation": "Créativité de style chinois",
+        "choreography": "Laboratoire chorégraphique",
+        "performances": "Spectacles de saison"
       }
     },
     "chinese": {
-      "title": "Classical Chinese Dance",
+      "title": "Danse classique chinoise",
       "description": "Classical Chinese dance rich in Chinese cultural heritage, inheriting and passing on traditional Chinese dance art through systematic training.",
       "features": {
-        "classical": "Classical Chinese Dance",
-        "folk": "Ethnic Folk Dance",
-        "acrobatics": "Dance Acrobatics (flexibility)",
-        "cultural": "Cultural Context"
+        "classical": "Danse classique chinoise",
+        "folk": "Danse folklorique ethnique",
+        "acrobatics": "Acrobaties de danse (souplesse)",
+        "cultural": "Contexte culturel"
       }
     },
     "jazz": {
       "title": "Jazz",
       "description": "Fashionable commercial and performance jazz with a distinctive Chinese style, helping students understand the art of dance through a blend of Western and Eastern influences.",
       "features": {
-        "broadway": "Broadway Jazz",
-        "commercial": "Commercial Jazz",
-        "lyrical": "Chinese-Style Jazz",
-        "performances": "Performance Opportunities"
+        "broadway": "Jazz Broadway",
+        "commercial": "Jazz commercial",
+        "lyrical": "Jazz de style chinois",
+        "performances": "Occasions de spectacle"
       }
     },
     "hiphop": {
       "title": "Hip-Hop",
       "description": "Trendy street dance training class led by our popular instructor Teacher Yezi, one of Ottawa's most beloved dance teachers. Learn everything from foundational moves to complex choreography.",
       "features": {
-        "fundamentals": "Fundamentals",
-        "choreography": "Choreography",
-        "freestyle": "Freestyle & Improv",
-        "styles": "Various Styles Covered"
+        "fundamentals": "Bases",
+        "choreography": "Chorégraphie",
+        "freestyle": "Freestyle et improvisation",
+        "styles": "Styles variés"
       }
     },
     "summer": {
-      "title": "Summer Camp",
+      "title": "Camp d’été",
       "description": "Intensive dance programs during school holidays for ages 5-17. A one-week immersive dance experience covering ballet, Chinese dance, contemporary, jazz, and more.",
       "features": {
         "youngDancers": "Young Dancers Camp",
@@ -383,49 +384,49 @@
       }
     },
     "pricing": {
-      "title": "Pricing",
-      "subtitle": "Investment in your dance journey",
-      "monthly": "Monthly",
-      "term": "Per Term",
-      "annual": "Annual",
-      "financialAid": "Financial Aid Available",
-      "siblingDiscount": "Sibling Discount Available",
-      "freeIntro": "Free Introductory Class"
+      "title": "Tarifs",
+      "subtitle": "Un investissement dans votre parcours de danse",
+      "monthly": "Mensuel",
+      "term": "Par session",
+      "annual": "Annuel",
+      "financialAid": "Aide financière disponible",
+      "siblingDiscount": "Rabais pour frères et sœurs",
+      "freeIntro": "Cours d’essai gratuit"
     },
     "register": {
-      "title": "Register",
-      "subtitle": "Begin your dance journey today",
+      "title": "Inscription",
+      "subtitle": "Commencez votre parcours de danse aujourd’hui",
       "form": {
-        "studentName": "Student Name",
+        "studentName": "Nom de l’élève",
         "studentNamePlaceholder": "Enter student's full name",
-        "parentName": "Parent/Guardian Name",
+        "parentName": "Nom du parent/tuteur",
         "parentNamePlaceholder": "Enter parent/guardian name (optional)",
-        "email": "Email",
+        "email": "Courriel",
         "emailPlaceholder": "your@email.com",
-        "phone": "Phone",
+        "phone": "Téléphone",
         "phonePlaceholder": "Enter phone number (optional)",
-        "age": "Age",
+        "age": "âge",
         "agePlaceholder": "Enter age (optional)",
-        "program": "Program",
-        "selectProgram": "Select a program",
-        "experience": "Previous Experience",
+        "program": "Programme",
+        "selectProgram": "Sélectionnez un programme",
+        "experience": "Expérience précédente",
         "experiencePlaceholder": "Any previous dance experience? (optional)",
         "message": "Message",
         "messagePlaceholder": "Any questions or special requirements? (optional)",
-        "submit": "Register Now"
+        "submit": "Inscrivez-vous"
       }
     }
   },
   "performances": {
-    "title": "Performances",
-    "currentSeason": "Current Season",
-    "archive": "Archive",
-    "tickets": "Tickets",
-    "subscribe": "Subscribe",
+    "title": "Spectacles",
+    "currentSeason": "Saison en cours",
+    "archive": "Archives",
+    "tickets": "Billets",
+    "subscribe": "S’abonner",
     "season": {
-      "title": "2025/2026 Season",
-      "subtitle": "Student showcases and special events",
-      "tickets": "Get Tickets",
+      "title": "Saison 2025/2026",
+      "subtitle": "Spectacles étudiants et événements spéciaux",
+      "tickets": "Obtenir des billets",
       "productions": {
         "showcase": {
           "title": "Annual Student Showcase",
@@ -444,11 +445,11 @@
   },
   "classes": {
     "title": "Classes",
-    "schedule": "Class Schedule",
-    "pricing": "Pricing",
-    "register": "Register",
-    "absencePolicy": "Absence & Makeup Policy",
-    "faqs": "Frequently Asked Questions",
+    "schedule": "Horaire des cours",
+    "pricing": "Tarifs",
+    "register": "Inscription",
+    "absencePolicy": "Politique d’absence",
+    "faqs": "FAQ",
     "scheduleTable": {
       "day": "Day",
       "time": "Time",
@@ -458,10 +459,10 @@
       "capacity": "Capacity"
     },
     "schedulePage": {
-      "badge": "Calendrier des cours",
-      "description": "Consultez les horaires, niveaux, âges recommandés et lieux par jour de la semaine. Les places sont confirmées lors de l’inscription.",
-      "calendarTitle": "Calendrier hebdomadaire",
-      "calendarHint": "Les cours sont classés par heure du lundi au dimanche. Les jours vides n’ont pas de cours public affiché.",
+      "badge": "Horaire",
+      "description": "Consultez l’horaire hebdomadaire des cours, les lieux et les règles de l’école.",
+      "calendarTitle": "Calendrier des cours",
+      "calendarHint": "Les cours sont regroupés par jour pour faciliter la consultation.",
       "slotCount": "{count} créneaux",
       "dayCount": "{count} cours",
       "noCourse": "Aucun cours",
@@ -470,11 +471,14 @@
   },
   "portal": {
     "title": "Student Portal",
-    "login": "Login",
-    "register": "Register",
-    "dashboard": "Dashboard",
+    "login": "Connexion",
+    "register": "Créer un compte",
+    "dashboard": "Tableau de bord",
     "email": "Email",
-    "password": "Password"
+    "password": "Password",
+    "logout": "Déconnexion",
+    "forgotPassword": "Mot de passe oublié",
+    "resetPassword": "Réinitialiser le mot de passe"
   },
   "footer": {
     "quickLinks": "Quick Links",
@@ -485,7 +489,16 @@
     "address": "2527 Baseline Rd, Ottawa, ON K2C 0E3",
     "phone": "343-777-1766",
     "email": "info@mulandance.com",
-    "followUs": "Follow Us"
+    "followUs": "Follow Us",
+    "donate": "Faire un don",
+    "membership": "Adhésion",
+    "sponsorship": "Commandite",
+    "volunteer": "Bénévolat",
+    "careers": "Carrières",
+    "resources": "Ressources",
+    "alumni": "Anciens élèves",
+    "rentals": "Location",
+    "accessibility": "Accessibilité"
   },
   "error": {
     "title": "Page Not Found",
@@ -504,7 +517,18 @@
     "contactUs": {
       "label": "Contact Us",
       "desc": "Reach out and we'll help you find your way"
-    }
+    },
+    "notFound": "Page introuvable",
+    "serverError": "Erreur du serveur",
+    "goHome": "Retour à l’accueil",
+    "tryAgain": "Réessayer",
+    "contactSupport": "Contacter le soutien",
+    "pageNotFound": "La page que vous recherchez est introuvable",
+    "somethingWentWrong": "Une erreur est survenue",
+    "loadingFailed": "Échec du chargement",
+    "networkError": "Erreur réseau",
+    "unauthorized": "Non autorisé",
+    "forbidden": "Accès interdit"
   },
   "admin": {
     "login": {
@@ -653,84 +677,146 @@
       "title": "News"
     },
     "tabs": {
-      "newsArticles": "News Articles",
-      "performance": "Performance",
-      "registration": "Registration"
+      "newsArticles": "Articles",
+      "categories": "Catégories",
+      "tags": "Étiquettes",
+      "programs": "Programmes",
+      "schedules": "Horaires",
+      "performance": "Événements et spectacles",
+      "registration": "Inscriptions",
+      "faculty": "Professeurs",
+      "classrooms": "Salles",
+      "settings": "Paramètres système"
     },
     "performances": {
-      "calendarTitle": "Performance Calendar",
-      "dashboardTitle": "Performance",
-      "dashboardSubtitle": "Manage performance pages, homepage highlights, and event listings.",
-      "listTitle": "All Performances",
-      "newPerformance": "New Performance",
-      "totalPerformances": "Total Performances",
-      "homepage": "Homepage",
-      "upcoming": "Upcoming",
-      "past": "Past",
-      "recentPerformances": "Recent Performances",
-      "viewAll": "View All",
-      "searchPlaceholder": "Search by title...",
-      "editorSubtitleNew": "Create a performance page with date, venue, image, and description.",
-      "editorSubtitleEdit": "Edit this performance page and homepage visibility.",
-      "addTitle": "Add Performance",
-      "editTitle": "Edit Performance",
-      "allTitle": "All Performances",
-      "selectedDate": "Selected Date",
-      "all": "All",
-      "create": "Create",
-      "save": "Save",
-      "clear": "Clear",
-      "loadFailed": "Failed to load performances",
-      "saveFailed": "Failed to save performance",
-      "deleteFailed": "Failed to delete performance",
-      "statusFailed": "Failed to update performance status",
-      "deleteConfirm": "Delete \"{title}\"?",
-      "published": "Published",
-      "hidden": "Hidden",
-      "switchHide": "Click to hide this performance",
-      "switchPublish": "Click to publish this performance",
-      "view": "View",
-      "emptyAll": "No performances yet.",
-      "emptySelected": "No performances on this date.",
-      "totalCount": "{count} performances total",
-      "selectedCount": "{count} performances on selected date",
-      "moreCount": "+{count} more",
+      "calendarTitle": "Calendrier des spectacles",
+      "dashboardTitle": "Événements et spectacles",
+      "dashboardSubtitle": "Gérez les pages d'événements, les mises en avant de l'accueil et les listes de spectacles.",
+      "listTitle": "Tous les spectacles",
+      "newPerformance": "Nouveau spectacle",
+      "totalPerformances": "Total des spectacles",
+      "homepage": "Accueil",
+      "upcoming": "À venir",
+      "past": "Passés",
+      "recentPerformances": "Spectacles récents",
+      "viewAll": "Tout voir",
+      "searchPlaceholder": "Rechercher par titre...",
+      "editorSubtitleNew": "Créez une page avec date, lieu, image et description.",
+      "editorSubtitleEdit": "Modifiez cette page et sa visibilité sur l'accueil.",
+      "addTitle": "Ajouter un spectacle",
+      "editTitle": "Modifier le spectacle",
+      "allTitle": "Tous les spectacles",
+      "selectedDate": "Date sélectionnée",
+      "all": "Tous",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "clear": "Effacer",
+      "loadFailed": "Impossible de charger les spectacles",
+      "saveFailed": "Impossible d'enregistrer le spectacle",
+      "deleteFailed": "Impossible de supprimer le spectacle",
+      "statusFailed": "Impossible de mettre à jour le statut",
+      "deleteConfirm": "Supprimer \"{title}\" ?",
+      "published": "Publié",
+      "hidden": "Masqué",
+      "switchHide": "Cliquer pour masquer ce spectacle",
+      "switchPublish": "Cliquer pour publier ce spectacle",
+      "view": "Voir",
+      "emptyAll": "Aucun spectacle pour le moment.",
+      "emptySelected": "Aucun spectacle à cette date.",
+      "totalCount": "{count} spectacles au total",
+      "selectedCount": "{count} spectacles à la date sélectionnée",
+      "moreCount": "+{count} de plus",
       "weekdays": {
-        "sun": "Sun",
-        "mon": "Mon",
-        "tue": "Tue",
-        "wed": "Wed",
-        "thu": "Thu",
-        "fri": "Fri",
-        "sat": "Sat"
+        "sun": "Dim",
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam"
       },
       "fields": {
-        "title": "Title",
+        "title": "Titre",
         "slug": "Slug",
         "description": "Description",
-        "start": "Start",
-        "end": "End",
-        "venue": "Venue",
-        "coverImage": "Cover Image URL",
-        "showOnHomepage": "Show on homepage"
+        "start": "Début",
+        "end": "Fin",
+        "venue": "Lieu",
+        "coverImage": "URL de l'image de couverture",
+        "showOnHomepage": "Afficher sur l'accueil"
+      }
+    },
+    "classrooms": {
+      "title": "Horaire des salles",
+      "subtitle": "Gérez les attributions internes des professeurs et les demandes externes pour chaque salle.",
+      "addTitle": "Ajouter une réservation de salle",
+      "addToTable": "Ajouter à l'horaire",
+      "saving": "Enregistrement...",
+      "loadFailed": "Impossible de charger les réservations",
+      "saveFailed": "Impossible d'enregistrer la réservation",
+      "updateFailed": "Impossible de mettre à jour la réservation",
+      "deleteFailed": "Impossible de supprimer la réservation",
+      "deleteConfirm": "Supprimer \"{title}\" ?",
+      "approve": "Approuver",
+      "empty": "Aucune réservation de salle pour le moment.",
+      "noOwner": "Aucun responsable indiqué",
+      "rooms": {
+        "large": "Grande salle",
+        "small": "Petite salle"
+      },
+      "types": {
+        "internal": "Attribution interne",
+        "external": "Demande externe"
+      },
+      "status": {
+        "pending": "En attente",
+        "confirmed": "Confirmé",
+        "rejected": "Refusé"
+      },
+      "weekdays": {
+        "sun": "Dim",
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam"
+      },
+      "fields": {
+        "room": "Salle",
+        "type": "Type",
+        "title": "Cours / utilisation",
+        "weekday": "Jour",
+        "start": "Début",
+        "end": "Fin",
+        "time": "Heure",
+        "owner": "Professeur / responsable",
+        "applicant": "Demandeur",
+        "contact": "Contact",
+        "notes": "Notes",
+        "status": "Statut",
+        "actions": "Actions"
       }
     },
     "registrations": {
-      "title": "Registration Management",
-      "underConstruction": "This feature is under construction."
+      "title": "Gestion des inscriptions",
+      "underConstruction": "Cette fonctionnalité est en cours de construction."
     }
   },
   "news": {
-    "title": "Latest News & Updates",
-    "subtitle": "Stay informed with the latest from Mulan Dance Studio",
-    "readMore": "Read More",
-    "backToNews": "Back to News",
-    "allCategories": "All Categories",
-    "filterByCategory": "Filter by Category",
-    "noArticles": "No articles found",
-    "publishedAt": "Published on",
-    "by": "by",
-    "loading": "Loading articles..."
+    "title": "Dernières actualités",
+    "subtitle": "Restez informé des nouvelles de Mulan Dance Studio",
+    "readMore": "Lire la suite",
+    "backToNews": "Retour aux actualités",
+    "allCategories": "Toutes les catégories",
+    "filterByCategory": "Filtrer par catégorie",
+    "noArticles": "Aucun article trouvé",
+    "publishedAt": "Publié le",
+    "by": "par",
+    "loading": "Loading articles...",
+    "admin": {
+      "title": "Actualités"
+    }
   },
   "performanceTimeline": {
     "badge": "Chronologie",
@@ -760,11 +846,22 @@
     "calendarHint": "Seules les affectations internes et locations externes confirmées sont affichées.",
     "available": "Disponible",
     "confirmedCount": "{count} créneaux confirmés",
-    "emptyRoom": "Aucune location ou classe confirmée.",
+    "emptyRoom": "Aucune réservation confirmée pour cette salle.",
     "ownerFallback": "Réservé",
     "loadFailed": "Impossible de charger le calendrier de location",
     "submitSuccess": "Demande envoyée. Une fois confirmée, elle apparaîtra dans le calendrier public.",
+    "receiptSent": "Demande envoyée. Une copie de votre réponse a été envoyée à {email}.",
+    "receiptNotRequested": "Demande envoyée. Aucun reçu par courriel n'a été envoyé, car le champ contact ne contient pas d'adresse courriel.",
+    "receiptNotConfigured": "Demande envoyée. L'envoi de courriels n'est pas encore configuré, donc aucun reçu n'a été envoyé.",
+    "receiptFailed": "Demande envoyée, mais le reçu par courriel n'a pas pu être envoyé. Veuillez conserver les détails soumis.",
     "submitFailed": "Échec de l’envoi. Veuillez réessayer plus tard.",
+    "requiredFields": "Veuillez remplir l'usage, le demandeur et le contact avant d'envoyer.",
+    "contactLimitExceeded": "Ce contact a atteint le nombre maximal de demandes de location.",
+    "captcha": "Vérification humaine",
+    "captchaPlaceholder": "Réponse",
+    "captchaRequired": "Veuillez répondre à la vérification humaine avant d'envoyer.",
+    "captchaFailed": "La vérification humaine a échoué. Répondez à la nouvelle question puis renvoyez.",
+    "refreshCaptcha": "Changer",
     "formTitle": "Formulaire de location",
     "introTitle": "Envoyer une demande",
     "introText": "Les demandes sont envoyées à la page admin des salles pour examen, confirmation ou suppression. Les créneaux confirmés apparaissent dans le calendrier public.",
@@ -793,6 +890,84 @@
         "label": "Petite salle",
         "description": "Idéale pour cours privés, petites répétitions, auditions et pratique calme."
       }
+    }
+  },
+  "registerPage": {
+    "opening": "Ouverture du lien d’inscription...",
+    "manualHint": "Si la page ne s’ouvre pas automatiquement, cliquez sur le bouton ci-dessous pour continuer l’inscription.",
+    "openLink": "Ouvrir le lien d’inscription",
+    "notConfigured": "Le lien d’inscription n’est pas encore configuré. Veuillez réessayer plus tard.",
+    "loadFailed": "Impossible de charger le lien d’inscription"
+  },
+  "performanceDetail": {
+    "backHome": "Retour à l’accueil",
+    "notFoundTitle": "Spectacle introuvable",
+    "notFoundText": "Le spectacle que vous cherchez n’existe pas ou a été retiré.",
+    "moreSoon": "Plus de détails à venir.",
+    "details": "Détails du spectacle"
+  },
+  "legal": {
+    "lastUpdated": "Dernière mise à jour : 24 mai 2026",
+    "privacy": {
+      "sections": [
+        {
+          "title": "Informations que nous recueillons",
+          "text": "Nous recueillons les renseignements que vous fournissez directement, comme votre nom, votre adresse courriel, votre numéro de téléphone et vos renseignements de paiement lorsque vous vous inscrivez à des cours ou nous contactez."
+        },
+        {
+          "title": "Utilisation de vos informations",
+          "text": "Nous utilisons ces informations pour fournir nos services, traiter les inscriptions et paiements, communiquer avec vous au sujet des cours et événements, envoyer des infolettres avec votre consentement et assurer la sécurité des élèves."
+        },
+        {
+          "title": "Partage des informations",
+          "text": "Nous ne vendons, n’échangeons ni ne louons vos renseignements personnels à des tiers. Nous pouvons partager certaines informations avec des partenaires qui nous aident à exploiter le site et les services, ou lorsque la loi l’exige."
+        },
+        {
+          "title": "Sécurité des données",
+          "text": "Nous appliquons des mesures de sécurité appropriées pour protâger vos renseignements personnels contre l’accès non autorisé, la modification, la divulgation ou la destruction."
+        },
+        {
+          "title": "Vos droits",
+          "text": "Vous avez le droit d’accéder à vos renseignements personnels, de les corriger ou de demander leur suppression. Contactez-nous à info@mulandance.com pour exercer ces droits."
+        },
+        {
+          "title": "Contact",
+          "text": "Pour toute question au sujet de cette politique de confidentialité, contactez-nous à info@mulandance.com."
+        }
+      ]
+    },
+    "terms": {
+      "title": "Conditions d’utilisation",
+      "sections": [
+        {
+          "title": "Acceptation des conditions",
+          "text": "En accédant au site Web et aux services de Mulan Dance Studio, vous acceptez d’être lié par les présentes conditions d’utilisation. Si vous n’êtes pas d’accord, veuillez ne pas utiliser nos services."
+        },
+        {
+          "title": "Inscription",
+          "text": "Vous devez fournir des renseignements exacts et complets lors de la création d’un compte. Vous êtes responsable de la sécurité de vos identifiants et de toutes les activités liées à votre compte."
+        },
+        {
+          "title": "Inscriptions et paiements",
+          "text": "L’inscription aux cours dépend des places disponibles. Les frais ne sont pas remboursables après les 14 premiers jours d’une session. Les demandes d’annulation doivent être soumises par écrit."
+        },
+        {
+          "title": "Code de conduite",
+          "text": "Tous les élèves, parents et visiteurs doivent respecter notre code de conduite, notamment le respect du personnel et des autres élèves, les règles du studio et un environnement sûr et accueillant."
+        },
+        {
+          "title": "Propriété intellectuelle",
+          "text": "Tout le contenu de ce site, y compris les textes, images, vidéos et chorégraphies, appartient à Mulan Dance Studio et est protégé par les lois sur le droit d’auteur."
+        },
+        {
+          "title": "Limitation de responsabilité",
+          "text": "Mulan Dance Studio n’est pas responsable des blessures pouvant survenir lors des activités de danse. Les participants prennent part aux cours et spectacles à leurs propres risques."
+        },
+        {
+          "title": "Contact",
+          "text": "Pour toute question concernant ces conditions, contactez-nous à info@mulandance.com."
+        }
+      ]
     }
   }
 }

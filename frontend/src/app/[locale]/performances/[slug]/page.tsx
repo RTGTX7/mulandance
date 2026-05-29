@@ -5,10 +5,12 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { performanceApi, type PerformanceItem } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslations } from '@/components/ui/i18n-client';
 import { ArrowLeft, CalendarDays, Clock, MapPin } from 'lucide-react';
-import { dateLocaleFor, isChineseLocale } from '@/lib/i18n';
+import { dateLocaleFor } from '@/lib/i18n';
 
 export default function PerformanceDetailPage() {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
@@ -29,7 +31,6 @@ export default function PerformanceDetailPage() {
 
   const start = performance ? new Date(performance.start_date) : null;
   const end = performance ? new Date(performance.end_date) : null;
-  const chinese = isChineseLocale(locale);
   const dateLocale = dateLocaleFor(locale);
   const dateText = start?.toLocaleDateString(dateLocale, {
     year: 'numeric',
@@ -53,7 +54,7 @@ export default function PerformanceDetailPage() {
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            {chinese ? '返回首页' : 'Back to Home'}
+            {t('performanceDetail.backHome')}
           </Button>
         </div>
       </header>
@@ -71,16 +72,10 @@ export default function PerformanceDetailPage() {
           </div>
         ) : error || !performance ? (
           <div className="text-center py-16">
-            <h2 className="text-2xl font-bold mb-2">
-              {chinese ? '未找到演出' : 'Performance Not Found'}
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              {chinese
-                ? '这个演出不存在或已被移除。'
-                : 'The performance you are looking for does not exist or has been removed.'}
-            </p>
+            <h2 className="text-2xl font-bold mb-2">{t('performanceDetail.notFoundTitle')}</h2>
+            <p className="text-muted-foreground mb-4">{t('performanceDetail.notFoundText')}</p>
             <Button onClick={() => router.push(`/${locale}`)}>
-              {chinese ? '返回首页' : 'Back to Home'}
+              {t('performanceDetail.backHome')}
             </Button>
           </div>
         ) : (
@@ -126,17 +121,17 @@ export default function PerformanceDetailPage() {
               </div>
             ) : (
               <p className="text-muted-foreground italic mb-12">
-                {chinese ? '更多内容即将更新。' : 'More details coming soon.'}
+                {t('performanceDetail.moreSoon')}
               </p>
             )}
 
             <Card className="bg-muted/30 border-dashed">
               <CardContent className="py-4 text-sm text-muted-foreground">
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <span>{chinese ? '演出信息' : 'Performance details'}</span>
+                  <span>{t('performanceDetail.details')}</span>
                   <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}`)}>
                     <ArrowLeft className="h-4 w-4 mr-1" />
-                    {chinese ? '返回首页' : 'Back to Home'}
+                    {t('performanceDetail.backHome')}
                   </Button>
                 </div>
               </CardContent>

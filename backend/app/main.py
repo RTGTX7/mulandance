@@ -367,6 +367,31 @@ def _migrate_programs_if_needed():
         conn.close()
 
 
+def _migrate_system_settings_if_needed():
+    """Add newer settings columns to existing SQLite databases."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        table_exists = conn.execute(text(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='system_settings'"
+        )).fetchone()
+        if table_exists is None:
+            return
+
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(system_settings)")).fetchall()}
+        if "outbound_email" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN outbound_email VARCHAR(255) DEFAULT ''"))
+        if "classroom_request_limit_per_contact" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN classroom_request_limit_per_contact INTEGER DEFAULT 0"))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"System settings migration failed: {e}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
 def _seed_news_taxonomy_if_needed():
     """Ensure the default news categories and tags exist."""
     from sqlalchemy import text
@@ -654,6 +679,7 @@ async def startup_event():
     
     _ensure_data_directories()
     _ensure_database_tables()
+    _migrate_system_settings_if_needed()
     _migrate_programs_if_needed()
     _seed_news_taxonomy_if_needed()
     _seed_course_schedule_if_needed()
