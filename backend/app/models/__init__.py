@@ -294,6 +294,7 @@ class SystemSettings(Base):
     instagram_url = Column(String(1000), default="")
     facebook_url = Column(String(1000), default="")
     tiktok_url = Column(String(1000), default="")
+    homepage_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

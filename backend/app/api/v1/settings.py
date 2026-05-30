@@ -1,5 +1,8 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -8,6 +11,8 @@ from app.models import RegistrationSettings, SystemSettings, User
 from app.schemas.settings import (
     RegistrationLinks,
     RegistrationLinksUpdate,
+    HomepageSettings,
+    HomepageSettingsUpdate,
     SystemSettingsResponse,
     SystemSettingsUpdate,
 )
@@ -75,6 +80,7 @@ def _to_response(settings: RegistrationSettings) -> RegistrationLinks:
 
 
 def _get_or_create_system_settings(db: Session) -> SystemSettings:
+    _ensure_system_settings_columns(db)
     settings = db.query(SystemSettings).filter(SystemSettings.id == 1).first()
     if settings:
         return settings
@@ -84,6 +90,14 @@ def _get_or_create_system_settings(db: Session) -> SystemSettings:
     db.commit()
     db.refresh(settings)
     return settings
+
+
+def _ensure_system_settings_columns(db: Session) -> None:
+    inspector = inspect(db.bind)
+    columns = {column["name"] for column in inspector.get_columns("system_settings")}
+    if "homepage_json" not in columns:
+        db.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
+        db.commit()
 
 
 def _system_to_response(settings: SystemSettings) -> SystemSettingsResponse:
@@ -114,6 +128,63 @@ def _system_to_response(settings: SystemSettings) -> SystemSettingsResponse:
         facebook_url=settings.facebook_url or "",
         tiktok_url=settings.tiktok_url or "",
     )
+
+
+def _homepage_defaults() -> HomepageSettings:
+    return HomepageSettings(
+        hero_slides=[
+            {
+                "badge": "木兰舞蹈工作室",
+                "title": "让舞动成为艺术",
+                "subtitle": "学中乐、学中思、学中悟 - 木兰舞蹈工作室",
+                "primary": {"label": "探索课程", "href": "/programs"},
+                "secondary": {"label": "观看宣传片", "href": "https://www.youtube.com/@mulandancestudio21"},
+                "overlay": "from-primary/90 via-primary/70 to-primary/40",
+                "is_active": True,
+            },
+            {
+                "badge": "演出季",
+                "title": "2025/2026 演出季",
+                "subtitle": "年度学员专场秀 + 小荷风采少儿舞蹈大赛",
+                "primary": {"label": "了解演出", "href": "/performances"},
+                "secondary": {"label": "观看YouTube", "href": "https://www.youtube.com/@mulandancestudio21"},
+                "overlay": "from-primary/95 via-primary/80 to-purple-900/60",
+                "is_active": True,
+            },
+            {
+                "badge": "夏令营",
+                "title": "2026 暑期舞蹈夏令营",
+                "subtitle": "适合5-17岁学员的一周沉浸式舞蹈体验",
+                "primary": {"label": "立即报名", "href": "/classes/register"},
+                "secondary": {"label": "了解详情", "href": "/programs/summer-camps"},
+                "overlay": "from-violet-800 via-purple-800 to-primary/80",
+                "is_active": True,
+            },
+        ],
+        stats=[
+            {"value": "200+", "label": "学员"},
+            {"value": "5+", "label": "年教学经验"},
+            {"value": "100+", "label": "演出次数"},
+            {"value": "5+", "label": "专业教师"},
+        ],
+        cta={
+            "title": "加入木兰舞蹈大家庭",
+            "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
+            "note": "工作室期待你加入这个温暖的大家庭。",
+            "primary": {"label": "立即报名", "href": "/classes/register"},
+            "secondary": {"label": "联系我们", "href": "/about/contact"},
+        },
+    )
+
+
+def _homepage_to_response(settings: SystemSettings) -> HomepageSettings:
+    if not settings.homepage_json:
+        return _homepage_defaults()
+
+    try:
+        return HomepageSettings.model_validate(json.loads(settings.homepage_json))
+    except (TypeError, json.JSONDecodeError, ValueError):
+        return _homepage_defaults()
 
 
 @router.get("/registration-links", response_model=RegistrationLinks)
@@ -159,3 +230,23 @@ def update_site_settings(
     db.commit()
     db.refresh(settings)
     return _system_to_response(settings)
+
+
+@router.get("/homepage", response_model=HomepageSettings)
+def get_homepage_settings(db: Session = Depends(get_db)):
+    settings = _get_or_create_system_settings(db)
+    return _homepage_to_response(settings)
+
+
+@router.put("/homepage", response_model=HomepageSettings)
+def update_homepage_settings(
+    payload: HomepageSettingsUpdate,
+    user: User = Depends(require_admin_or_editor),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    settings.homepage_json = payload.model_dump_json()
+
+    db.commit()
+    db.refresh(settings)
+    return _homepage_to_response(settings)

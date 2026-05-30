@@ -10,7 +10,17 @@ import { Button } from '@/components/ui/button';
 import { isAuthenticated, clearAuthToken, settingsApi, type SystemSettings } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
-const navSections = [
+type NavSection = {
+  key: string;
+  labelKey: string;
+  href?: string;
+  links: Array<{
+    labelKey: string;
+    href: string;
+  }>;
+};
+
+const navSections: NavSection[] = [
   {
     key: 'about',
     labelKey: 'common.nav.about',

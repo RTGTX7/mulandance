@@ -1,0 +1,393 @@
+'use client';
+
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  HomepageSettings,
+  HomepageHeroSlide,
+  homepageApi,
+  isAuthenticated,
+  uploadApi,
+} from '@/lib/api';
+import { cn } from '@/lib/utils';
+import { Eye, ImagePlus, Loader2, Plus, Save, Trash2, Video } from 'lucide-react';
+
+const emptySlide: HomepageHeroSlide = {
+  badge: '木兰舞蹈工作室',
+  title: '',
+  subtitle: '',
+  primary: { label: '探索课程', href: '/programs' },
+  secondary: { label: '观看宣传片', href: 'https://www.youtube.com/@mulandancestudio21' },
+  image_url: '',
+  overlay: 'from-primary/90 via-primary/70 to-primary/40',
+  is_active: true,
+};
+
+const defaultHomepage: HomepageSettings = {
+  hero_slides: [emptySlide],
+  stats: [
+    { value: '200+', label: '学员' },
+    { value: '5+', label: '年教学经验' },
+    { value: '100+', label: '演出次数' },
+    { value: '5+', label: '专业教师' },
+  ],
+  cta: {
+    title: '加入木兰舞蹈大家庭',
+    subtitle: '2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766',
+    note: '工作室期待你加入这个温暖的大家庭。',
+    primary: { label: '立即报名', href: '/classes/register' },
+    secondary: { label: '联系我们', href: '/about/contact' },
+  },
+};
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
+
+function isVideoFile(file: File) {
+  return file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(file.name);
+}
+
+function Toggle({
+  checked,
+  onCheckedChange,
+  label,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={checked}
+      onClick={() => onCheckedChange(!checked)}
+      className={cn(
+        'inline-flex h-8 items-center gap-2 rounded-full border px-2.5 text-sm font-medium transition-colors',
+        checked ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'
+      )}
+    >
+      <span className={cn('relative inline-flex h-4 w-7 rounded-full', checked ? 'bg-emerald-500' : 'bg-slate-300')}>
+        <span className={cn('absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform', checked ? 'translate-x-[14px]' : 'translate-x-0.5')} />
+      </span>
+      {label}
+    </button>
+  );
+}
+
+export default function AdminHomepagePage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
+  const [form, setForm] = useState<HomepageSettings>(defaultHomepage);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push(`/${locale}/admin/login`);
+      return;
+    }
+
+    homepageApi
+      .get()
+      .then((settings) => {
+        setForm({ ...defaultHomepage, ...settings });
+        setError('');
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : '首页内容加载失败'))
+      .finally(() => setLoading(false));
+  }, [router, locale]);
+
+  function setSlide(index: number, patch: Partial<HomepageHeroSlide>) {
+    setForm((current) => ({
+      ...current,
+      hero_slides: current.hero_slides.map((slide, slideIndex) =>
+        slideIndex === index ? { ...slide, ...patch } : slide
+      ),
+    }));
+  }
+
+  function setSlideButton(index: number, key: 'primary' | 'secondary', field: 'label' | 'href', value: string) {
+    setForm((current) => ({
+      ...current,
+      hero_slides: current.hero_slides.map((slide, slideIndex) =>
+        slideIndex === index
+          ? { ...slide, [key]: { ...slide[key], [field]: value } }
+          : slide
+      ),
+    }));
+  }
+
+  function addSlide() {
+    setForm((current) => ({
+      ...current,
+      hero_slides: [...current.hero_slides, { ...emptySlide }],
+    }));
+  }
+
+  function removeSlide(index: number) {
+    setForm((current) => ({
+      ...current,
+      hero_slides: current.hero_slides.filter((_, slideIndex) => slideIndex !== index),
+    }));
+  }
+
+  function setStat(index: number, field: 'value' | 'label', value: string) {
+    setForm((current) => ({
+      ...current,
+      stats: current.stats.map((stat, statIndex) =>
+        statIndex === index ? { ...stat, [field]: value } : stat
+      ),
+    }));
+  }
+
+  function setCta<K extends keyof HomepageSettings['cta']>(key: K, value: HomepageSettings['cta'][K]) {
+    setForm((current) => ({ ...current, cta: { ...current.cta, [key]: value } }));
+  }
+
+  function setCtaButton(key: 'primary' | 'secondary', field: 'label' | 'href', value: string) {
+    setForm((current) => ({
+      ...current,
+      cta: {
+        ...current.cta,
+        [key]: { ...current.cta[key], [field]: value },
+      },
+    }));
+  }
+
+  async function uploadSlideMedia(index: number, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingIndex(index);
+    setError('');
+    try {
+      const uploaded = isVideoFile(file)
+        ? await uploadApi.video(file)
+        : await uploadApi.image(file);
+      setSlide(index, { image_url: uploaded.url });
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '媒体上传失败');
+    } finally {
+      setUploadingIndex(null);
+      event.target.value = '';
+    }
+  }
+
+  async function saveHomepage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage('');
+    setError('');
+
+    try {
+      const saved = await homepageApi.update(form);
+      setForm({ ...defaultHomepage, ...saved });
+      setMessage('首页内容已保存');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-muted/30">
+      <header className="sticky top-0 z-10 border-b bg-card">
+        <div className="mx-auto max-w-7xl px-4 py-4">
+          <AdminSectionTabs />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        <form onSubmit={saveHomepage} className="space-y-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">首页编辑</h1>
+              <p className="mt-1 text-sm text-muted-foreground">编辑首页轮播、背景图片、统计数字和底部行动按钮。</p>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => window.open(`/${locale}`, '_blank')}>
+                <Eye className="mr-2 h-4 w-4" />
+                预览首页
+              </Button>
+              <Button type="submit" disabled={loading || saving || uploadingIndex !== null}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                保存首页
+              </Button>
+            </div>
+          </div>
+
+          {(error || message) && (
+            <div className={cn('rounded-md border px-3 py-2 text-sm', error ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>
+              {error || message}
+            </div>
+          )}
+
+          {loading ? (
+            <Card>
+              <CardContent className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                正在加载首页内容...
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-slate-900">首页轮播</h2>
+                  <Button type="button" variant="outline" onClick={addSlide}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    添加轮播
+                  </Button>
+                </div>
+
+                {form.hero_slides.map((slide, index) => (
+                  <Card key={index}>
+                    <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+                      <CardTitle className="text-base">轮播 {index + 1}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Toggle
+                          checked={slide.is_active}
+                          onCheckedChange={(checked) => setSlide(index, { is_active: checked })}
+                          label={slide.is_active ? '显示' : '隐藏'}
+                        />
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeSlide(index)} className="text-red-600 hover:bg-red-50 hover:text-red-700">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 lg:grid-cols-[1fr_280px]">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-sm font-medium">小标签</span>
+                          <Input value={slide.badge} onChange={(e) => setSlide(index, { badge: e.target.value })} />
+                        </label>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-sm font-medium">主标题</span>
+                          <Input value={slide.title} onChange={(e) => setSlide(index, { title: e.target.value })} />
+                        </label>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-sm font-medium">副标题</span>
+                          <Textarea rows={2} value={slide.subtitle} onChange={(e) => setSlide(index, { subtitle: e.target.value })} />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-sm font-medium">主按钮文字</span>
+                          <Input value={slide.primary.label} onChange={(e) => setSlideButton(index, 'primary', 'label', e.target.value)} />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-sm font-medium">主按钮链接</span>
+                          <Input value={slide.primary.href} onChange={(e) => setSlideButton(index, 'primary', 'href', e.target.value)} />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-sm font-medium">次按钮文字</span>
+                          <Input value={slide.secondary.label} onChange={(e) => setSlideButton(index, 'secondary', 'label', e.target.value)} />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-sm font-medium">次按钮链接</span>
+                          <Input value={slide.secondary.href} onChange={(e) => setSlideButton(index, 'secondary', 'href', e.target.value)} />
+                        </label>
+                        <label className="space-y-1 md:col-span-2">
+                          <span className="text-sm font-medium">背景媒体 URL</span>
+                          <Input value={slide.image_url} onChange={(e) => setSlide(index, { image_url: e.target.value })} placeholder="图片、GIF 或视频 URL" />
+                        </label>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="aspect-video overflow-hidden rounded-md border bg-slate-100">
+                          {slide.image_url && isVideoUrl(slide.image_url) ? (
+                            <video src={slide.image_url} className="h-full w-full object-cover" controls muted playsInline />
+                          ) : slide.image_url ? (
+                            <img src={slide.image_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">未设置媒体</div>
+                          )}
+                        </div>
+                        <Button asChild type="button" variant="outline" disabled={uploadingIndex === index}>
+                          <label className="w-full cursor-pointer">
+                            {uploadingIndex === index ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : isVideoUrl(slide.image_url) ? (
+                              <Video className="mr-2 h-4 w-4" />
+                            ) : (
+                              <ImagePlus className="mr-2 h-4 w-4" />
+                            )}
+                            上传图片 / GIF / 视频
+                            <input type="file" accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime,.mov" className="hidden" onChange={(event) => uploadSlideMedia(index, event)} />
+                          </label>
+                        </Button>
+                        <label className="block space-y-1">
+                          <span className="text-sm font-medium">遮罩颜色</span>
+                          <Input value={slide.overlay} onChange={(e) => setSlide(index, { overlay: e.target.value })} />
+                        </label>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </section>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>统计数字</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-4">
+                  {form.stats.map((stat, index) => (
+                    <div key={index} className="grid gap-2">
+                      <Input value={stat.value} onChange={(e) => setStat(index, 'value', e.target.value)} placeholder="200+" />
+                      <Input value={stat.label} onChange={(e) => setStat(index, 'label', e.target.value)} placeholder="学员" />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>底部行动区</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-1 md:col-span-2">
+                    <span className="text-sm font-medium">标题</span>
+                    <Input value={form.cta.title} onChange={(e) => setCta('title', e.target.value)} />
+                  </label>
+                  <label className="space-y-1 md:col-span-2">
+                    <span className="text-sm font-medium">副标题</span>
+                    <Input value={form.cta.subtitle} onChange={(e) => setCta('subtitle', e.target.value)} />
+                  </label>
+                  <label className="space-y-1 md:col-span-2">
+                    <span className="text-sm font-medium">补充文字</span>
+                    <Textarea rows={3} value={form.cta.note} onChange={(e) => setCta('note', e.target.value)} />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-sm font-medium">主按钮文字</span>
+                    <Input value={form.cta.primary.label} onChange={(e) => setCtaButton('primary', 'label', e.target.value)} />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-sm font-medium">主按钮链接</span>
+                    <Input value={form.cta.primary.href} onChange={(e) => setCtaButton('primary', 'href', e.target.value)} />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-sm font-medium">次按钮文字</span>
+                    <Input value={form.cta.secondary.label} onChange={(e) => setCtaButton('secondary', 'label', e.target.value)} />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-sm font-medium">次按钮链接</span>
+                    <Input value={form.cta.secondary.href} onChange={(e) => setCtaButton('secondary', 'href', e.target.value)} />
+                  </label>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </form>
+      </main>
+    </div>
+  );
+}

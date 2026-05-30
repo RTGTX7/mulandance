@@ -28,6 +28,11 @@ class ClassroomCaptchaResponse(BaseModel):
     token: str
 
 
+class ClassroomCaptchaVerify(BaseModel):
+    token: str
+    answer: str
+
+
 class ClassroomBookingUpdate(BaseModel):
     room: Optional[str] = Field(default=None, pattern="^(large|small)$")
     booking_type: Optional[str] = Field(default=None, pattern="^(internal|external)$")

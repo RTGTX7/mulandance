@@ -677,6 +677,7 @@
       "title": "News"
     },
     "tabs": {
+      "homepage": "Accueil",
       "newsArticles": "Articles",
       "categories": "Catégories",
       "tags": "Étiquettes",

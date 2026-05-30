@@ -4,6 +4,8 @@ import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Phone, MapPin, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { homepageApi, type HomepageCta } from '@/lib/api';
 
 function XiaohongshuIcon() {
   return (
@@ -16,6 +18,27 @@ function XiaohongshuIcon() {
 export function CTABanner() {
   const t = useTranslations();
   const locale = useLocale();
+  const [customCta, setCustomCta] = useState<HomepageCta | null>(null);
+
+  useEffect(() => {
+    homepageApi
+      .get()
+      .then((settings) => setCustomCta(settings.cta))
+      .catch(() => {});
+  }, []);
+
+  const localHref = (path: string) => {
+    if (!path) return `/${locale}`;
+    if (path.startsWith('http')) return path;
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return `/${locale}/${cleanPath}`;
+  };
+
+  const title = customCta?.title || t('home.cta.title');
+  const subtitle = customCta?.subtitle || t('home.cta.subtitle');
+  const note = customCta?.note || t('about.joinUs.subtitle');
+  const primaryHref = localHref(customCta?.primary?.href || '/classes/register');
+  const secondaryHref = localHref(customCta?.secondary?.href || '/about/contact');
 
   return (
     <section className="py-20 bg-gradient-to-br from-primary via-purple-800 to-primary/90 text-white relative overflow-hidden">
@@ -25,30 +48,30 @@ export function CTABanner() {
       </div>
 
       <div className="container relative z-10 text-center">
-        <h2 className="heading-xl mb-4 text-white">{t('home.cta.title')}</h2>
+        <h2 className="heading-xl mb-4 text-white">{title}</h2>
         <p className="text-lg md:text-xl text-white/80 mb-6 max-w-2xl mx-auto">
-          {t('home.cta.subtitle')}
+          {subtitle}
         </p>
         <p className="text-body text-white/60 mb-10 max-w-xl mx-auto">
-          {t('about.joinUs.subtitle')}
+          {note}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href={`/${locale}/classes/register`}>
+          <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined}>
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 !px-8 text-base font-semibold shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             >
-              {t('home.cta.register')}
+              {customCta?.primary?.label || t('home.cta.register')}
             </Button>
           </Link>
-          <Link href="/about/contact">
+          <Link href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined}>
             <Button 
               size="lg" 
               variant="outline"
               className="border-2 border-white bg-white text-primary hover:bg-white/90 hover:border-white !px-8 text-base font-semibold shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             >
-              {t('home.cta.contact')}
+              {customCta?.secondary?.label || t('home.cta.contact')}
             </Button>
           </Link>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,8 +41,22 @@ function interpolate(template: string, values: Record<string, string | number>) 
   );
 }
 
+function findTimeConflict(bookings: ClassroomBooking[], form: ClassroomBookingBody) {
+  return bookings.find(
+    (item) =>
+      item.status === 'confirmed' &&
+      item.room === form.room &&
+      item.day_of_week === form.day_of_week &&
+      item.start_time < form.end_time &&
+      item.end_time > form.start_time
+  );
+}
+
 export default function ClassroomsPage() {
   const t = useTranslations();
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
   const rawWeekdays = t.raw('common.weekdays.short') as string[] | undefined;
   const weekdays = useMemo(
     () => rawWeekdays || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -75,26 +90,8 @@ export default function ClassroomsPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const loadFailedMessage = t('classroomsPage.loadFailed');
-  const submitFailedMessage = t('classroomsPage.submitFailed');
-  const submitSuccessMessage = t('classroomsPage.submitSuccess');
   const requiredMessage = t('classroomsPage.requiredFields');
   const captchaRequiredMessage = t('classroomsPage.captchaRequired');
-
-  function receiptMessage(status: string, email?: string) {
-    if (status === 'sent' && email) {
-      return interpolate(t('classroomsPage.receiptSent'), { email });
-    }
-    if (status === 'not_requested') {
-      return t('classroomsPage.receiptNotRequested');
-    }
-    if (status === 'not_configured') {
-      return t('classroomsPage.receiptNotConfigured');
-    }
-    if (status === 'failed') {
-      return t('classroomsPage.receiptFailed');
-    }
-    return submitSuccessMessage;
-  }
 
   function roomLabel(room: ClassroomRoom) {
     return rooms.find((item) => item.key === room)?.label || room;
@@ -158,6 +155,8 @@ export default function ClassroomsPage() {
     }));
   }, [bookings, visibleRooms]);
 
+  const selectedConflict = useMemo(() => findTimeConflict(bookings, form), [bookings, form]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -177,32 +176,27 @@ export default function ClassroomsPage() {
         setError(requiredMessage);
         return;
       }
+      const conflict = findTimeConflict(bookings, cleanedForm);
+      if (conflict) {
+        setError(
+          `${roomLabel(cleanedForm.room)} ${weekdays[cleanedForm.day_of_week]} ${conflict.start_time}-${conflict.end_time} 已被占用，请选择其他时间。`
+        );
+        return;
+      }
       if (!captcha?.token || !captchaAnswer.trim()) {
         setError(captchaRequiredMessage);
         return;
       }
 
-      const response = await classroomApi.create({
-        ...cleanedForm,
-        booking_type: 'external',
-        status: 'pending',
-        captcha_token: captcha.token,
-        captcha_answer: captchaAnswer.trim(),
+      await classroomApi.verifyCaptcha({
+        token: captcha.token,
+        answer: captchaAnswer.trim(),
       });
-      setForm({ ...initialForm, room: form.room });
-      refreshCaptcha();
-      setMessage(receiptMessage(response.receipt_status, response.receipt_email));
+      sessionStorage.setItem('classroom_request_basic', JSON.stringify(cleanedForm));
+      router.push(`/${locale}/classrooms/request`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : submitFailedMessage;
-      if (
-        message.includes('Captcha') ||
-        message.includes('captcha')
-      ) {
-        refreshCaptcha();
-        setError(t('classroomsPage.captchaFailed'));
-      } else {
-        setError(message.includes('rental request limit') ? t('classroomsPage.contactLimitExceeded') : message);
-      }
+      refreshCaptcha();
+      setError(err instanceof Error ? err.message : t('classroomsPage.captchaFailed'));
     } finally {
       setSaving(false);
     }
@@ -344,8 +338,8 @@ export default function ClassroomsPage() {
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <CalendarDays className="h-8 w-8 text-purple-600" />
             <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t('classroomsPage.introTitle')}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {t('classroomsPage.introText')}
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                先填写时间、教室和联系方式。下一页会继续收集人数、用途细节和设备需求，完成后才会发送到后台。
             </p>
             <div className="mt-5 space-y-3 text-sm text-slate-600">
               {[
@@ -479,6 +473,13 @@ export default function ClassroomsPage() {
                   />
                 </label>
 
+                {selectedConflict && (
+                  <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {roomLabel(form.room)} {weekdays[form.day_of_week]} {selectedConflict.start_time}-{selectedConflict.end_time} 已被占用：
+                    {selectedConflict.title}。请选择其他时间段。
+                  </div>
+                )}
+
                 <label className="space-y-1 md:col-span-2">
                   <span className="text-sm font-medium text-slate-700">
                     {t('classroomsPage.captcha')} <span className="text-red-500">*</span>
@@ -508,7 +509,7 @@ export default function ClassroomsPage() {
                 )}
 
                 <div className="md:col-span-2 flex justify-end">
-                  <Button type="submit" disabled={saving}>
+                  <Button type="submit" disabled={saving || Boolean(selectedConflict)}>
                     <Send className="mr-2 h-4 w-4" />
                     {saving ? t('classroomsPage.submitting') : t('classroomsPage.submit')}
                   </Button>

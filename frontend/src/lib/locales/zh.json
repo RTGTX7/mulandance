@@ -677,6 +677,7 @@
       "no": "否"
     },
     "tabs": {
+      "homepage": "首页",
       "newsArticles": "新闻文章",
       "categories": "分类",
       "tags": "标签",

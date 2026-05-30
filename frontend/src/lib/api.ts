@@ -435,6 +435,27 @@ export const uploadApi = {
 
     return response.json();
   },
+  video: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/api/v1/upload/video`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      const errorMsg = getErrorMessage(error);
+      console.error('[Video Upload Error]', response.status, errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    return response.json();
+  },
   file: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const token = getAuthToken();
@@ -503,6 +524,46 @@ export interface SystemSettings {
   facebook_url: string;
   tiktok_url: string;
 }
+
+export interface HomepageButton {
+  label: string;
+  href: string;
+}
+
+export interface HomepageHeroSlide {
+  badge: string;
+  title: string;
+  subtitle: string;
+  primary: HomepageButton;
+  secondary: HomepageButton;
+  image_url: string;
+  overlay: string;
+  is_active: boolean;
+}
+
+export interface HomepageStat {
+  value: string;
+  label: string;
+}
+
+export interface HomepageCta {
+  title: string;
+  subtitle: string;
+  note: string;
+  primary: HomepageButton;
+  secondary: HomepageButton;
+}
+
+export interface HomepageSettings {
+  hero_slides: HomepageHeroSlide[];
+  stats: HomepageStat[];
+  cta: HomepageCta;
+}
+
+export const homepageApi = {
+  get: () => api.get<HomepageSettings>('/v1/settings/homepage'),
+  update: (body: HomepageSettings) => api.put<HomepageSettings>('/v1/settings/homepage', body),
+};
 
 // ====================================================================
 // Faculty API helpers
@@ -645,6 +706,8 @@ export const classroomApi = {
   create: (body: ClassroomBookingBody) =>
     api.post<ClassroomBookingCreateResponse>('/v1/classrooms/bookings', body),
   captcha: () => api.get<ClassroomCaptcha>('/v1/classrooms/captcha'),
+  verifyCaptcha: (body: { token: string; answer: string }) =>
+    api.post<{ valid: boolean }>('/v1/classrooms/captcha/verify', body),
   update: (id: string, body: Partial<ClassroomBookingBody>) =>
     api.put<ClassroomBooking>(`/v1/classrooms/bookings/${id}`, body),
   remove: (id: string) =>

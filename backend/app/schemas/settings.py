@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel, Field
 
 
@@ -44,4 +46,43 @@ class SystemSettingsResponse(SystemSettingsBase):
 
 
 class SystemSettingsUpdate(SystemSettingsBase):
+    pass
+
+
+class HomepageButton(BaseModel):
+    label: str = Field(default="", max_length=100)
+    href: str = Field(default="", max_length=1000)
+
+
+class HomepageHeroSlide(BaseModel):
+    badge: str = Field(default="", max_length=100)
+    title: str = Field(default="", max_length=200)
+    subtitle: str = Field(default="", max_length=500)
+    primary: HomepageButton = Field(default_factory=HomepageButton)
+    secondary: HomepageButton = Field(default_factory=HomepageButton)
+    image_url: str = Field(default="", max_length=1000)
+    overlay: str = Field(default="from-primary/90 via-primary/70 to-primary/40", max_length=200)
+    is_active: bool = True
+
+
+class HomepageStat(BaseModel):
+    value: str = Field(default="", max_length=50)
+    label: str = Field(default="", max_length=100)
+
+
+class HomepageCta(BaseModel):
+    title: str = Field(default="", max_length=200)
+    subtitle: str = Field(default="", max_length=500)
+    note: str = Field(default="", max_length=500)
+    primary: HomepageButton = Field(default_factory=HomepageButton)
+    secondary: HomepageButton = Field(default_factory=HomepageButton)
+
+
+class HomepageSettings(BaseModel):
+    hero_slides: List[HomepageHeroSlide] = Field(default_factory=list)
+    stats: List[HomepageStat] = Field(default_factory=list)
+    cta: HomepageCta = Field(default_factory=HomepageCta)
+
+
+class HomepageSettingsUpdate(HomepageSettings):
     pass

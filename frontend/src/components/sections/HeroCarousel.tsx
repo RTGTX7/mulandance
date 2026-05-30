@@ -5,6 +5,11 @@ import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { homepageApi, type HomepageHeroSlide } from '@/lib/api';
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
 
 export function HeroCarousel() {
   const t = useTranslations();
@@ -12,42 +17,52 @@ export function HeroCarousel() {
 
   // Helper to add locale prefix to href
   const href = (path: string) => {
+    if (!path) return `/${locale}`;
+    if (path.startsWith('http')) return path;
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
     return `/${locale}/${cleanPath}`;
   };
 
-  const slides = [
+  const defaultSlides: HomepageHeroSlide[] = [
     {
+      badge: t('common.appName'),
       title: t('home.hero.slides.0.title'),
       subtitle: t('home.hero.slides.0.subtitle'),
-      cta1: t('home.hero.slides.0.cta1'),
-      cta2: t('home.hero.slides.0.cta2'),
-      cta1Href: href('programs'),
-      cta2Href: 'https://www.youtube.com/@mulandancestudio21',
-      bgGradient: 'from-primary/90 via-primary/70 to-primary/40',
+      primary: { label: t('home.hero.slides.0.cta1'), href: '/programs' },
+      secondary: { label: t('home.hero.slides.0.cta2'), href: 'https://www.youtube.com/@mulandancestudio21' },
+      image_url: '',
+      overlay: 'from-primary/90 via-primary/70 to-primary/40',
+      is_active: true,
     },
     {
+      badge: t('common.appName'),
       title: t('home.hero.slides.1.title'),
       subtitle: t('home.hero.slides.1.subtitle'),
-      cta1: t('home.hero.slides.1.cta1'),
-      cta2: t('home.hero.slides.1.cta2'),
-      cta1Href: href('performances'),
-      cta2Href: 'https://www.youtube.com/@mulandancestudio21',
-      bgGradient: 'from-primary/95 via-primary/80 to-purple-900/60',
+      primary: { label: t('home.hero.slides.1.cta1'), href: '/performances' },
+      secondary: { label: t('home.hero.slides.1.cta2'), href: 'https://www.youtube.com/@mulandancestudio21' },
+      image_url: '',
+      overlay: 'from-primary/95 via-primary/80 to-purple-900/60',
+      is_active: true,
     },
     {
+      badge: t('common.appName'),
       title: t('home.hero.slides.2.title'),
       subtitle: t('home.hero.slides.2.subtitle'),
-      cta1: t('home.hero.slides.2.cta1'),
-      cta2: t('home.hero.slides.2.cta2'),
-      cta1Href: href('classes/register'),
-      cta2Href: href('programs/summer-camps'),
-      bgGradient: 'from-violet-800 via-purple-800 to-primary/80',
+      primary: { label: t('home.hero.slides.2.cta1'), href: '/classes/register' },
+      secondary: { label: t('home.hero.slides.2.cta2'), href: '/programs/summer-camps' },
+      image_url: '',
+      overlay: 'from-violet-800 via-purple-800 to-primary/80',
+      is_active: true,
     },
   ];
 
   const [current, setCurrent] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [customSlides, setCustomSlides] = useState<HomepageHeroSlide[] | null>(null);
+
+  const slides = (customSlides?.filter((item) => item.is_active) || defaultSlides).filter(
+    (item) => item.title || item.subtitle
+  );
 
   const goTo = useCallback(
     (index: number) => {
@@ -68,11 +83,28 @@ export function HeroCarousel() {
   }, [current, goTo, slides.length]);
 
   useEffect(() => {
+    homepageApi
+      .get()
+      .then((settings) => {
+        const activeSlides = settings.hero_slides.filter((item) => item.is_active);
+        if (activeSlides.length > 0) setCustomSlides(activeSlides);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (current >= slides.length) setCurrent(0);
+  }, [current, slides.length]);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
     const timer = setInterval(next, 6000);
     return () => clearInterval(timer);
-  }, [next]);
+  }, [next, slides.length]);
 
-  const slide = slides[current];
+  const slide = slides[current] || defaultSlides[0];
+  const primaryHref = href(slide.primary?.href || '/programs');
+  const secondaryHref = href(slide.secondary?.href || 'https://www.youtube.com/@mulandancestudio21');
 
   return (
     <section
@@ -80,8 +112,26 @@ export function HeroCarousel() {
       aria-label={t('common.sections.featuredPerformances')}
     >
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${slide.bgGradient} transition-all duration-700`}
+        className={`absolute inset-0 bg-gradient-to-br ${slide.overlay || defaultSlides[0].overlay} transition-all duration-700`}
       />
+      {slide.image_url && (
+        isVideoUrl(slide.image_url) ? (
+          <video
+            key={slide.image_url}
+            className="absolute inset-0 h-full w-full object-cover opacity-45 transition-opacity duration-700"
+            src={slide.image_url}
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-45 transition-all duration-700"
+            style={{ backgroundImage: `url(${slide.image_url})` }}
+          />
+        )
+      )}
 
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_50%)]" />
@@ -95,7 +145,7 @@ export function HeroCarousel() {
           }`}
         >
           <span className="inline-block px-3 py-1 mb-6 text-xs font-semibold tracking-wider uppercase rounded-full bg-white/20 backdrop-blur-sm">
-            {t('common.appName')}
+            {slide.badge || t('common.appName')}
           </span>
           <h1 className="heading-xl text-white mb-4 leading-tight">
             {slide.title}
@@ -104,26 +154,27 @@ export function HeroCarousel() {
             {slide.subtitle}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href={slide.cta1Href}>
+            <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined}>
               <Button 
                 size="lg" 
                 className="bg-white text-primary hover:bg-white/90 !px-8 transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
-                {slide.cta1}
+                {slide.primary?.label || t('home.hero.slides.0.cta1')}
               </Button>
             </Link>
-            <Link href={slide.cta2Href} target={slide.cta2Href.startsWith('http') ? '_blank' : undefined}>
+            <Link href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined}>
               <Button
                 size="lg"
                 className="bg-white/95 text-primary hover:bg-white !px-8 font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
                 <Play className="mr-2 h-4 w-4" />
-                {slide.cta2}
+                {slide.secondary?.label || t('home.hero.slides.0.cta2')}
               </Button>
             </Link>
           </div>
         </div>
 
+        {slides.length > 1 && (
         <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-3">
           <button
             onClick={prev}
@@ -152,6 +203,7 @@ export function HeroCarousel() {
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+        )}
       </div>
     </section>
   );

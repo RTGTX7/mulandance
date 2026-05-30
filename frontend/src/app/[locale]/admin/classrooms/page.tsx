@@ -1,147 +1,82 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   ClassroomBooking,
-  ClassroomBookingBody,
-  ClassroomBookingStatus,
-  ClassroomBookingType,
   ClassroomRoom,
   classroomApi,
   isAuthenticated,
 } from '@/lib/api';
-import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { useTranslations } from '@/components/ui/i18n-client';
-import { CalendarClock, CheckCircle2, Clock3, DoorOpen, Trash2 } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, DoorOpen, Inbox } from 'lucide-react';
 
 const roomKeys: ClassroomRoom[] = ['large', 'small'];
-const weekdayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 
-const initialForm: ClassroomBookingBody = {
-  room: 'large',
-  booking_type: 'internal',
-  status: 'confirmed',
-  title: '',
-  teacher_name: '',
-  applicant_name: '',
-  applicant_contact: '',
-  day_of_week: 1,
-  start_time: '17:00',
-  end_time: '18:00',
-  notes: '',
-};
+function roomLabel(room: ClassroomRoom) {
+  return room === 'large' ? '大教室' : '小教室';
+}
 
-export default function AdminClassroomsPage() {
-  const t = useTranslations();
+export default function AdminClassroomsDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
   const [bookings, setBookings] = useState<ClassroomBooking[]>([]);
-  const [form, setForm] = useState<ClassroomBookingBody>(initialForm);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  const weekdays = weekdayKeys.map((key) => t(`admin.classrooms.weekdays.${key}`));
-  const sortedBookings = useMemo(
-    () =>
-      [...bookings].sort((a, b) =>
-        a.day_of_week - b.day_of_week ||
-        a.start_time.localeCompare(b.start_time) ||
-        a.room.localeCompare(b.room)
-      ),
-    [bookings]
-  );
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push(`/${locale}/admin/login`);
       return;
     }
-    loadBookings();
-  }, [router, locale]);
 
-  function roomLabel(room: ClassroomRoom) {
-    return t(`admin.classrooms.rooms.${room}`);
-  }
-
-  function statusLabel(status: ClassroomBookingStatus) {
-    return t(`admin.classrooms.status.${status}`);
-  }
-
-  function typeLabel(type: ClassroomBookingType) {
-    return t(`admin.classrooms.types.${type}`);
-  }
-
-  function loadBookings() {
-    setLoading(true);
     classroomApi
       .list()
       .then(setBookings)
-      .catch((err) => setError(err instanceof Error ? err.message : t('admin.classrooms.loadFailed')))
+      .catch((err) => setError(err instanceof Error ? err.message : '加载教室使用记录失败'))
       .finally(() => setLoading(false));
-  }
+  }, [locale, router]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setError('');
-    try {
-      const body: ClassroomBookingBody = {
-        ...form,
-        status: form.booking_type === 'external' ? 'pending' : 'confirmed',
-      };
-      await classroomApi.create(body);
-      setForm({ ...initialForm, room: form.room });
-      loadBookings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('admin.classrooms.saveFailed'));
-    } finally {
-      setSaving(false);
-    }
-  }
+  const pending = bookings.filter((item) => item.status === 'pending');
+  const confirmed = bookings.filter((item) => item.status === 'confirmed');
+  const externalConfirmed = confirmed.filter((item) => item.booking_type === 'external');
+  const internalConfirmed = confirmed.filter((item) => item.booking_type === 'internal');
 
-  async function updateStatus(item: ClassroomBooking, status: ClassroomBookingStatus) {
-    setError('');
-    try {
-      await classroomApi.update(item.id, { status });
-      loadBookings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('admin.classrooms.updateFailed'));
-    }
-  }
-
-  async function removeBooking(item: ClassroomBooking) {
-    if (!window.confirm(t('admin.classrooms.deleteConfirm').replace('{title}', item.title))) return;
-    setError('');
-    try {
-      await classroomApi.remove(item.id);
-      loadBookings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('admin.classrooms.deleteFailed'));
-    }
-  }
+  const calendarDays = useMemo(() => {
+    return displayOrder.map((day) => ({
+      day,
+      label: weekdayLabels[day],
+      bookings: confirmed
+        .filter((item) => item.day_of_week === day)
+        .sort((a, b) =>
+          a.start_time.localeCompare(b.start_time) ||
+          a.end_time.localeCompare(b.end_time) ||
+          a.room.localeCompare(b.room)
+        ),
+    }));
+  }, [confirmed]);
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="bg-card border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <header className="sticky top-0 z-10 border-b bg-card">
+        <div className="mx-auto max-w-7xl px-4 py-4">
           <AdminSectionTabs />
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
             <DoorOpen className="h-6 w-6 text-primary" />
-            {t('admin.classrooms.title')}
+            教室使用时间表
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {t('admin.classrooms.subtitle')}
+          <p className="mt-1 text-sm text-muted-foreground">
+            审核外部租借申请，并用日历查看已经通过的教室使用安排。
           </p>
         </div>
 
@@ -151,183 +86,104 @@ export default function AdminClassroomsPage() {
           </div>
         )}
 
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="cursor-pointer hover:border-amber-300" onClick={() => router.push(`/${locale}/admin/classrooms/requests`)}>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Inbox className="h-4 w-4" />
+                待审核申请
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-amber-600">{loading ? '...' : pending.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-emerald-300" onClick={() => router.push(`/${locale}/admin/classrooms/approved`)}>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4" />
+                已通过申请
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-emerald-600">{loading ? '...' : confirmed.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-purple-300" onClick={() => router.push(`/${locale}/admin/classrooms/internal`)}>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Clock3 className="h-4 w-4" />
+                内部申请
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-primary">
+                {loading ? '...' : internalConfirmed.length}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <CalendarClock className="h-5 w-5" />
-              {t('admin.classrooms.addTitle')}
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              已通过申请周历
             </CardTitle>
+            <div className="flex gap-3 text-xs text-muted-foreground">
+              <span>外部申请 {externalConfirmed.length}</span>
+              <span>内部排期 {internalConfirmed.length}</span>
+            </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.room')}</span>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.room}
-                  onChange={(e) => setForm((prev) => ({ ...prev, room: e.target.value as ClassroomRoom }))}
-                >
-                  {roomKeys.map((room) => (
-                    <option key={room} value={room}>{roomLabel(room)}</option>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">加载中...</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-lg border">
+                  {calendarDays.map((day) => (
+                    <div key={day.day} className="min-h-[300px] border-r last:border-r-0">
+                      <div className="border-b bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900">
+                        {day.label}
+                      </div>
+                      <div className="space-y-2 p-3">
+                        {day.bookings.length === 0 ? (
+                          <div className="rounded-md border border-dashed px-3 py-8 text-center text-xs text-slate-400">
+                            暂无通过申请
+                          </div>
+                        ) : (
+                          day.bookings.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() =>
+                                router.push(`/${locale}/admin/classrooms/approved?id=${item.id}`)
+                              }
+                              className={`w-full rounded-md border px-3 py-2 text-left text-xs leading-5 transition-colors hover:border-primary/40 ${
+                                item.room === 'large'
+                                  ? 'border-purple-200 bg-purple-50 text-purple-900'
+                                  : 'border-amber-200 bg-amber-50 text-amber-900'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 font-semibold">
+                                <span>{roomLabel(item.room)}</span>
+                                <span>{item.start_time}-{item.end_time}</span>
+                              </div>
+                              <div className="mt-1 truncate font-medium text-slate-950">{item.title}</div>
+                              <div className="truncate text-slate-600">
+                                {item.teacher_name || item.applicant_name || '未填写负责人'}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
                   ))}
-                </select>
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.type')}</span>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.booking_type}
-                  onChange={(e) => setForm((prev) => ({ ...prev, booking_type: e.target.value as ClassroomBookingType }))}
-                >
-                  <option value="internal">{typeLabel('internal')}</option>
-                  <option value="external">{typeLabel('external')}</option>
-                </select>
-              </label>
-
-              <label className="space-y-1 md:col-span-2">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.title')}</span>
-                <Input required value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.weekday')}</span>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={form.day_of_week}
-                  onChange={(e) => setForm((prev) => ({ ...prev, day_of_week: Number(e.target.value) }))}
-                >
-                  {weekdays.map((day, index) => (
-                    <option key={day} value={index}>{day}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.start')}</span>
-                <Input type="time" required value={form.start_time} onChange={(e) => setForm((prev) => ({ ...prev, start_time: e.target.value }))} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.end')}</span>
-                <Input type="time" required value={form.end_time} onChange={(e) => setForm((prev) => ({ ...prev, end_time: e.target.value }))} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.owner')}</span>
-                <Input value={form.teacher_name || ''} onChange={(e) => setForm((prev) => ({ ...prev, teacher_name: e.target.value }))} />
-              </label>
-
-              {form.booking_type === 'external' && (
-                <>
-                  <label className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.applicant')}</span>
-                    <Input value={form.applicant_name || ''} onChange={(e) => setForm((prev) => ({ ...prev, applicant_name: e.target.value }))} />
-                  </label>
-                  <label className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.contact')}</span>
-                    <Input value={form.applicant_contact || ''} onChange={(e) => setForm((prev) => ({ ...prev, applicant_contact: e.target.value }))} />
-                  </label>
-                </>
-              )}
-
-              <label className="space-y-1 md:col-span-2">
-                <span className="text-xs font-medium text-muted-foreground">{t('admin.classrooms.fields.notes')}</span>
-                <Input value={form.notes || ''} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} />
-              </label>
-
-              <div className="md:col-span-4 flex justify-end">
-                <Button type="submit" disabled={saving}>
-                  {saving ? t('admin.classrooms.saving') : t('admin.classrooms.addToTable')}
-                </Button>
+                </div>
               </div>
-            </form>
+            )}
           </CardContent>
         </Card>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {roomKeys.map((room) => {
-            const roomBookings = sortedBookings.filter((item) => item.room === room);
-
-            return (
-              <Card key={room}>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Clock3 className="h-5 w-5 text-primary" />
-                    {roomLabel(room)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <p className="text-sm text-muted-foreground">{t('admin.common.loading')}</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[720px] text-sm">
-                        <thead>
-                          <tr className="border-b text-left text-muted-foreground">
-                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.weekday')}</th>
-                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.time')}</th>
-                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.title')}</th>
-                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.type')}</th>
-                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.status')}</th>
-                            <th className="py-2 pr-3 font-medium">{t('admin.classrooms.fields.actions')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {roomBookings.map((item) => (
-                            <tr key={item.id} className="border-b last:border-0 align-top">
-                              <td className="py-3 pr-3 font-medium">{weekdays[item.day_of_week]}</td>
-                              <td className="py-3 pr-3 whitespace-nowrap">{item.start_time} - {item.end_time}</td>
-                              <td className="py-3 pr-3">
-                                <div className="font-medium">{item.title}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {item.teacher_name || item.applicant_name || t('admin.classrooms.noOwner')}
-                                  {item.applicant_contact ? ` / ${item.applicant_contact}` : ''}
-                                </div>
-                                {item.notes && <div className="text-xs text-muted-foreground mt-1">{item.notes}</div>}
-                              </td>
-                              <td className="py-3 pr-3">{typeLabel(item.booking_type)}</td>
-                              <td className="py-3 pr-3">
-                                <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                  item.status === 'confirmed'
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : item.status === 'pending'
-                                      ? 'bg-amber-50 text-amber-700'
-                                      : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                  {statusLabel(item.status)}
-                                </span>
-                              </td>
-                              <td className="py-3 pr-3">
-                                <div className="flex gap-2">
-                                  {item.status !== 'confirmed' && (
-                                    <Button size="sm" variant="outline" onClick={() => updateStatus(item, 'confirmed')} title={t('admin.classrooms.approve')}>
-                                      <CheckCircle2 className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                  <Button size="sm" variant="outline" onClick={() => removeBooking(item)} title={t('admin.common.delete')}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                          {roomBookings.length === 0 && (
-                            <tr>
-                              <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                                {t('admin.classrooms.empty')}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
       </main>
     </div>
   );

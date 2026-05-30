@@ -17,6 +17,7 @@ router = APIRouter()
 UPLOAD_ROOT = Path(settings.NEWS_FILES_DIR).parent / "uploads"
 IMAGE_UPLOAD_BASE = UPLOAD_ROOT / "images" / "editor"
 FILE_UPLOAD_BASE = UPLOAD_ROOT / "files"
+VIDEO_UPLOAD_BASE = UPLOAD_ROOT / "videos" / "homepage"
 
 
 def _get_year_month() -> tuple[str, str]:
@@ -36,6 +37,13 @@ def _get_upload_dir() -> Path:
 def _get_file_upload_dir() -> tuple[Path, str, str]:
     year, month = _get_year_month()
     upload_dir = FILE_UPLOAD_BASE / year / month
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    return upload_dir, year, month
+
+
+def _get_video_upload_dir() -> tuple[Path, str, str]:
+    year, month = _get_year_month()
+    upload_dir = VIDEO_UPLOAD_BASE / year / month
     upload_dir.mkdir(parents=True, exist_ok=True)
     return upload_dir, year, month
 
@@ -113,6 +121,53 @@ async def upload_image(file: UploadFile = File(...)):
         "path": relative_path,
         "content_type": file.content_type,
         "size": len(file_contents)
+    }
+
+
+@router.post("/video")
+async def upload_video(file: UploadFile = File(...)):
+    """Upload a homepage/background video and return its URL.
+
+    Accepted video types: MP4, WEBM, OGG, MOV.
+    Files are saved to data/uploads/videos/homepage/YYYY/MM/.
+    """
+    allowed_types = {
+        "video/mp4",
+        "video/webm",
+        "video/ogg",
+        "video/quicktime",
+    }
+    allowed_exts = {".mp4", ".webm", ".ogg", ".mov"}
+
+    ext = Path(file.filename or "video.mp4").suffix.lower()
+    if file.content_type not in allowed_types and ext not in allowed_exts:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid video type: {file.content_type or ext}. Allowed: MP4, WEBM, OGG, MOV",
+        )
+
+    file_contents = await file.read()
+    if len(file_contents) > 80 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Video size exceeds 80MB limit")
+
+    upload_dir, year, month = _get_video_upload_dir()
+    if ext not in allowed_exts:
+        ext = ".mp4"
+
+    safe_name = _safe_original_name(file.filename or "video")
+    filename = f"{safe_name}-{uuid.uuid4().hex[:12]}{ext}"
+    relative_path = f"videos/homepage/{year}/{month}/{filename}"
+    file_path = upload_dir / filename
+    with open(file_path, "wb") as f:
+        f.write(file_contents)
+
+    public_url = f"http://localhost:8000/static/uploads/{relative_path}"
+    return {
+        "url": public_url,
+        "filename": filename,
+        "path": relative_path,
+        "content_type": file.content_type,
+        "size": len(file_contents),
     }
 
 

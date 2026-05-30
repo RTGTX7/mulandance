@@ -388,6 +388,8 @@ def _migrate_system_settings_if_needed():
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN program_pricing_json TEXT DEFAULT ''"))
         if "classroom_pricing_json" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN classroom_pricing_json TEXT DEFAULT ''"))
+        if "homepage_json" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
         conn.commit()
     except Exception as e:
         logger.error(f"System settings migration failed: {e}", exc_info=True)

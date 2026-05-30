@@ -10,11 +10,13 @@ import {
   DollarSign,
   DoorOpen,
   FileText,
+  Home,
   Settings,
   UsersRound,
 } from 'lucide-react';
 
 const tabs = [
+  { key: 'homepage', labelKey: 'admin.tabs.homepage', icon: Home, href: '/admin/homepage' },
   { key: 'dashboard', labelKey: 'admin.tabs.newsArticles', icon: FileText, href: '/admin/dashboard' },
   { key: 'performances', labelKey: 'admin.tabs.performance', icon: CalendarDays, href: '/admin/performances' },
   { key: 'programs', labelKey: 'admin.tabs.programs', icon: BookOpen, href: '/admin/programs' },

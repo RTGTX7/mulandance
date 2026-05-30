@@ -2,6 +2,8 @@
 
 import { useTranslations } from '@/components/ui/i18n-client';
 import { Users, Award, CalendarDays, Users as TeacherIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { homepageApi, type HomepageStat } from '@/lib/api';
 
 const stats = [
   {
@@ -28,6 +30,27 @@ const stats = [
 
 export function StatsSection() {
   const t = useTranslations();
+  const [customStats, setCustomStats] = useState<HomepageStat[] | null>(null);
+  const displayStats = useMemo(() => {
+    if (!customStats?.length) {
+      return stats.map((stat) => ({ ...stat, label: t(stat.labelKey) }));
+    }
+
+    return customStats.slice(0, 4).map((stat, index) => ({
+      icon: stats[index]?.icon || Users,
+      value: stat.value,
+      label: stat.label,
+    }));
+  }, [customStats, t]);
+
+  useEffect(() => {
+    homepageApi
+      .get()
+      .then((settings) => {
+        if (settings.stats.length > 0) setCustomStats(settings.stats);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section className="py-16 md:py-20 bg-gradient-to-r from-primary to-purple-700 text-white relative overflow-hidden">
@@ -39,15 +62,15 @@ export function StatsSection() {
 
       <div className="container relative z-10">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
-          {stats.map((stat) => {
+          {displayStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.labelKey} className="text-center group">
+              <div key={`${stat.label}-${index}`} className="text-center group">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/15 backdrop-blur-sm mb-4 group-hover:bg-white/25 group-hover:scale-110 transition-all duration-300">
                   <Icon className="h-7 w-7 text-secondary" />
                 </div>
                 <p className="text-3xl md:text-4xl font-bold mb-2 text-white">{stat.value}</p>
-                <p className="text-sm md:text-base text-white/80 font-medium">{t(stat.labelKey)}</p>
+                <p className="text-sm md:text-base text-white/80 font-medium">{stat.label}</p>
               </div>
             );
           })}
