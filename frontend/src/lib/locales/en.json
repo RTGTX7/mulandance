@@ -686,6 +686,7 @@
       "registration": "Registration",
       "faculty": "Faculty",
       "classrooms": "Classrooms",
+      "pricing": "Pricing",
       "settings": "System Settings"
     },
     "performances": {
@@ -844,6 +845,9 @@
     "description": "View confirmed large-room and small-room time slots. External rental requests can be submitted below and confirmed by an administrator.",
     "calendarTitle": "Studio Calendar",
     "calendarHint": "Only confirmed internal assignments and external rentals are shown.",
+    "navSchedule": "Rental Schedule",
+    "navBook": "Book",
+    "navPricing": "Pricing",
     "available": "Available",
     "confirmedCount": "{count} confirmed slots",
     "emptyRoom": "No confirmed rentals or classes.",
@@ -867,6 +871,7 @@
     "introText": "Submitted requests go to the admin classroom page for review, confirmation, or removal. Confirmed slots appear on the public calendar.",
     "tipRoom": "Choose the large room or small room",
     "tipPending": "Requests are pending by default",
+    "tipPaymentRequired": "Submitting a rental request form does not guarantee a room; only completing the payment would reserve a room.",
     "tipNotes": "Include headcount, purpose, and equipment needs in the notes",
     "room": "Room",
     "weekday": "Day",
@@ -881,6 +886,15 @@
     "notesPlaceholder": "Headcount, purpose, equipment needs, etc.",
     "submitting": "Submitting...",
     "submit": "Submit Request",
+    "pricingTitle": "Rental Pricing",
+    "pricingSubtitle": "Review studio rental rates before submitting a booking request.",
+    "pricingHourly": "Hourly",
+    "pricingHalfDay": "Half day",
+    "pricingFullDay": "Full day",
+    "pricingNotesTitle": "Before You Book",
+    "pricingNoteRequest": "Submitting a rental request form does not guarantee a room.",
+    "pricingNotePayment": "Only completing the payment reserves a room.",
+    "pricingNoteCleaning": "Additional cleaning, equipment, or staffing needs may affect the final price.",
     "rooms": {
       "large": {
         "label": "Large Room",

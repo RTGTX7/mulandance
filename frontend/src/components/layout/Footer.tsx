@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { useEffect, useState } from 'react';
 import { Facebook, Instagram, Mail, MapPin, Music2, Phone, Youtube } from 'lucide-react';
@@ -25,6 +26,8 @@ const defaultSettings: SystemSettings = {
   contact_address: '',
   outbound_email: '',
   classroom_request_limit_per_contact: 0,
+  program_pricing_json: '',
+  classroom_pricing_json: '',
   youtube_url: 'https://www.youtube.com/@mulandancestudio21',
   xiaohongshu_url: 'https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476',
   instagram_url: '',
@@ -86,9 +89,9 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="RedNote"
-                  className="rounded-sm text-xs font-bold text-muted-foreground transition-colors hover:text-secondary"
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/70 transition-colors hover:bg-secondary"
                 >
-                  RED
+                  <Image src="/xiaohongshu-icon.svg" alt="" width={16} height={16} />
                 </a>
               )}
             </div>

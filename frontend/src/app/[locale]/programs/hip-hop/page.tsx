@@ -121,7 +121,7 @@ export default function HipHopPage() {
                   {t('programs.register.form.submit')}
                 </Button>
               </Link>
-              <Link href="/classes/pricing">
+              <Link href={`/${locale}/programs/pricing`}>
                 <Button variant="outline" size="lg">
                   {t('programs.pricing.title')}
                 </Button>

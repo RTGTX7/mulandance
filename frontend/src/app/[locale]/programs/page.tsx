@@ -120,7 +120,7 @@ export default function ProgramsPage() {
                 {t('programs.register.form.submit')}
               </Button>
             </Link>
-            <Link href={`/${locale}/classes/pricing`}>
+            <Link href={`/${locale}/programs/pricing`}>
               <Button variant="outline" size="lg">
                 {t('programs.pricing.title')}
               </Button>

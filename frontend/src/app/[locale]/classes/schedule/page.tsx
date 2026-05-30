@@ -6,7 +6,7 @@ import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { CourseScheduleItem, SchoolPolicy, scheduleApi } from '@/lib/api';
+import { CourseScheduleItem, SchoolPolicy, isAuthenticated, scheduleApi } from '@/lib/api';
 import { CalendarDays, Clock3, MapPin } from 'lucide-react';
 
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
@@ -38,7 +38,12 @@ export default function SchedulePage() {
   const [policy, setPolicy] = useState<SchoolPolicy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [authenticated, setAuthenticated] = useState(false);
   const loadFailedMessage = t('classes.schedulePage.loadFailed');
+
+  useEffect(() => {
+    setAuthenticated(isAuthenticated());
+  }, []);
 
   useEffect(() => {
     Promise.all([scheduleApi.list(), scheduleApi.policy()])
@@ -111,11 +116,12 @@ export default function SchedulePage() {
                 <Badge variant="outline">
                   {interpolate(t('classes.schedulePage.slotCount'), { count: items.length })}
                 </Badge>
-                {locations.slice(0, 2).map((location) => (
-                  <Badge key={location} variant="outline" className="max-w-[260px] truncate">
-                    {location}
-                  </Badge>
-                ))}
+                {authenticated &&
+                  locations.slice(0, 2).map((location) => (
+                    <Badge key={location} variant="outline" className="max-w-[260px] truncate">
+                      {location}
+                    </Badge>
+                  ))}
               </div>
             </div>
 
@@ -153,10 +159,12 @@ export default function SchedulePage() {
                                 {item.description}
                               </p>
                             )}
-                            <div className="mt-3 flex items-start gap-1.5 leading-5 text-slate-500">
-                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                              <span>{item.location}</span>
-                            </div>
+                            {authenticated && item.location && (
+                              <div className="mt-3 flex items-start gap-1.5 leading-5 text-slate-500">
+                                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <span>{item.location}</span>
+                              </div>
+                            )}
                           </article>
                         ))
                       )}

@@ -106,6 +106,8 @@ def _system_to_response(settings: SystemSettings) -> SystemSettingsResponse:
         contact_address=settings.contact_address or "",
         outbound_email=settings.outbound_email or "",
         classroom_request_limit_per_contact=settings.classroom_request_limit_per_contact or 0,
+        program_pricing_json=settings.program_pricing_json or "",
+        classroom_pricing_json=settings.classroom_pricing_json or "",
         youtube_url=settings.youtube_url or "",
         xiaohongshu_url=settings.xiaohongshu_url or "",
         instagram_url=settings.instagram_url or "",

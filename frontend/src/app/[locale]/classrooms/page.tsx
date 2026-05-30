@@ -220,7 +220,7 @@ export default function ClassroomsPage() {
       <main className="section-padding bg-slate-100">
         <div className="container space-y-8">
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+        <section id="schedule" className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-950">
@@ -340,7 +340,7 @@ export default function ClassroomsPage() {
           ))}
         </section>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+        <section id="book" className="scroll-mt-24 grid grid-cols-1 gap-6 lg:grid-cols-[0.85fr_1.15fr]">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <CalendarDays className="h-8 w-8 text-purple-600" />
             <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t('classroomsPage.introTitle')}</h2>
@@ -348,8 +348,13 @@ export default function ClassroomsPage() {
               {t('classroomsPage.introText')}
             </p>
             <div className="mt-5 space-y-3 text-sm text-slate-600">
-              {[t('classroomsPage.tipRoom'), t('classroomsPage.tipPending'), t('classroomsPage.tipNotes')].map((tip) => (
-                <div key={tip} className="flex items-start gap-2">
+              {[
+                t('classroomsPage.tipRoom'),
+                t('classroomsPage.tipPending'),
+                t('classroomsPage.tipPaymentRequired'),
+                t('classroomsPage.tipNotes'),
+              ].map((tip) => (
+                <div key={tip} className="flex items-start gap-2 leading-6">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
                   {tip}
                 </div>

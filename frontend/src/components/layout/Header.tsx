@@ -21,6 +21,15 @@ const navSections = [
     ],
   },
   {
+    key: 'performances',
+    labelKey: 'common.nav.performances',
+    links: [
+      { labelKey: 'performanceTimeline.title', href: '/performances' },
+      { labelKey: 'performanceTimeline.upcoming', href: '/performances#upcoming' },
+      { labelKey: 'performanceTimeline.archive', href: '/performances#archive' },
+    ],
+  },
+  {
     key: 'programs',
     labelKey: 'common.nav.programs',
     links: [
@@ -31,16 +40,16 @@ const navSections = [
       { labelKey: 'home.programs.jazz', href: '/programs#jazz' },
       { labelKey: 'home.programs.hiphop', href: '/programs#hiphop' },
       { labelKey: 'programs.summer.title', href: '/programs/summer-camps' },
+      { labelKey: 'programs.pricing.title', href: '/programs/pricing' },
     ],
   },
   {
-    key: 'performances',
-    labelKey: 'common.nav.performances',
-    href: '/performances',
+    key: 'rentals',
+    labelKey: 'common.nav.classrooms',
     links: [
-      { labelKey: 'performanceTimeline.title', href: '/performances' },
-      { labelKey: 'performanceTimeline.upcoming', href: '/performances#upcoming' },
-      { labelKey: 'performanceTimeline.archive', href: '/performances#archive' },
+      { labelKey: 'classroomsPage.navSchedule', href: '/classrooms#schedule' },
+      { labelKey: 'classroomsPage.navBook', href: '/classrooms#book' },
+      { labelKey: 'classroomsPage.navPricing', href: '/classrooms/pricing' },
     ],
   },
 ];
@@ -64,6 +73,8 @@ const defaultSettings: SystemSettings = {
   contact_address: '',
   outbound_email: '',
   classroom_request_limit_per_contact: 0,
+  program_pricing_json: '',
+  classroom_pricing_json: '',
   youtube_url: '',
   xiaohongshu_url: '',
   instagram_url: '',
@@ -144,7 +155,7 @@ export function Header() {
           >
             {t('common.nav.home')}
           </Link>
-           {navSections.map((section) => (
+          {navSections.map((section) => (
             <div
               key={section.key}
               className="relative group"
@@ -162,6 +173,7 @@ export function Header() {
                 </Link>
               ) : (
                 <button
+                  type="button"
                   className={cn(
                     'flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md',
                     activeDropdown === section.key && 'text-foreground bg-accent/50'
@@ -194,12 +206,6 @@ export function Header() {
             className="whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
           >
             {t('common.nav.schedule', { defaultMessage: 'Schedule' })}
-          </Link>
-          <Link
-            href={href('/classrooms')}
-            className="whitespace-nowrap px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-md"
-          >
-            {t('common.nav.classrooms', { defaultMessage: 'Rentals' })}
           </Link>
           <Link
             href={href('/news')}
@@ -293,13 +299,6 @@ export function Header() {
               onClick={() => setMobileOpen(false)}
             >
               {t('common.nav.news')}
-            </Link>
-            <Link
-              href={href('/classrooms')}
-              className="block px-3 py-2 text-sm font-semibold text-foreground"
-              onClick={() => setMobileOpen(false)}
-            >
-              {t('common.nav.classrooms', { defaultMessage: 'Rentals' })}
             </Link>
             <div className="pt-4">
               <a

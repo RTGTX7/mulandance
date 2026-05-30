@@ -686,6 +686,7 @@
       "registration": "报名",
       "faculty": "教师",
       "classrooms": "教室使用",
+      "pricing": "价格设置",
       "settings": "系统设置"
     },
     "performances": {
@@ -844,6 +845,9 @@
     "description": "查看大教室、小教室已经确认的使用时段。外部租借可以在页面下方提交申请，管理员审核后再确认。",
     "calendarTitle": "教室周历",
     "calendarHint": "只显示后台已经确认的内部排课和外部租借。",
+    "navSchedule": "租借日历",
+    "navBook": "申请租借",
+    "navPricing": "租借价格",
     "available": "可申请",
     "confirmedCount": "{count} 个已确认时段",
     "emptyRoom": "暂无已确认租借或排课。",
@@ -867,6 +871,7 @@
     "introText": "填写申请后会进入后台“教室使用”页面，管理员可以审核、确认或删除。确认后该时段会自动出现在公开日历。",
     "tipRoom": "可选择大教室或小教室",
     "tipPending": "申请默认进入待审核状态",
+    "tipPaymentRequired": "提交租借申请表不代表已经保证有教室；只有完成付款后，教室才会被正式预留。",
     "tipNotes": "请在备注中写明活动人数、用途和特殊设备需求",
     "room": "教室",
     "weekday": "星期",
@@ -881,6 +886,15 @@
     "notesPlaceholder": "人数、用途、设备需求等",
     "submitting": "提交中...",
     "submit": "提交申请",
+    "pricingTitle": "租借价格",
+    "pricingSubtitle": "提交租借申请前，可以先查看教室租借价格。",
+    "pricingHourly": "按小时",
+    "pricingHalfDay": "半天",
+    "pricingFullDay": "全天",
+    "pricingNotesTitle": "申请前说明",
+    "pricingNoteRequest": "提交租借申请表不代表已经保证有教室。",
+    "pricingNotePayment": "只有完成付款后，教室才会被正式预留。",
+    "pricingNoteCleaning": "额外清洁、设备或工作人员需求可能影响最终价格。",
     "rooms": {
       "large": {
         "label": "大教室",

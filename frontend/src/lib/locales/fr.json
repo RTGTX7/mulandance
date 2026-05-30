@@ -686,6 +686,7 @@
       "registration": "Inscriptions",
       "faculty": "Professeurs",
       "classrooms": "Salles",
+      "pricing": "Tarifs",
       "settings": "Paramètres système"
     },
     "performances": {
@@ -844,6 +845,9 @@
     "description": "Consultez les créneaux confirmés pour la grande et la petite salle. Les demandes externes peuvent être envoyées ci-dessous puis confirmées par un administrateur.",
     "calendarTitle": "Calendrier des salles",
     "calendarHint": "Seules les affectations internes et locations externes confirmées sont affichées.",
+    "navSchedule": "Calendrier",
+    "navBook": "Réserver",
+    "navPricing": "Tarifs",
     "available": "Disponible",
     "confirmedCount": "{count} créneaux confirmés",
     "emptyRoom": "Aucune réservation confirmée pour cette salle.",
@@ -867,6 +871,7 @@
     "introText": "Les demandes sont envoyées à la page admin des salles pour examen, confirmation ou suppression. Les créneaux confirmés apparaissent dans le calendrier public.",
     "tipRoom": "Choisissez la grande ou la petite salle",
     "tipPending": "Les demandes sont en attente par défaut",
+    "tipPaymentRequired": "L'envoi d'un formulaire de location ne garantit pas une salle; seule la finalisation du paiement réserve une salle.",
     "tipNotes": "Indiquez le nombre de personnes, l’usage et les besoins matériels",
     "room": "Salle",
     "weekday": "Jour",
@@ -881,6 +886,15 @@
     "notesPlaceholder": "Nombre de personnes, usage, besoins matériels, etc.",
     "submitting": "Envoi...",
     "submit": "Envoyer",
+    "pricingTitle": "Tarifs de location",
+    "pricingSubtitle": "Consultez les tarifs avant d'envoyer une demande de réservation.",
+    "pricingHourly": "À l'heure",
+    "pricingHalfDay": "Demi-journée",
+    "pricingFullDay": "Journée complète",
+    "pricingNotesTitle": "Avant de réserver",
+    "pricingNoteRequest": "L'envoi d'un formulaire de location ne garantit pas une salle.",
+    "pricingNotePayment": "Seule la finalisation du paiement réserve une salle.",
+    "pricingNoteCleaning": "Le nettoyage, le matériel ou le personnel supplémentaire peuvent modifier le prix final.",
     "rooms": {
       "large": {
         "label": "Grande salle",

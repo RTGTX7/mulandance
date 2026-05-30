@@ -495,6 +495,8 @@ export interface SystemSettings {
   contact_address: string;
   outbound_email: string;
   classroom_request_limit_per_contact: number;
+  program_pricing_json: string;
+  classroom_pricing_json: string;
   youtube_url: string;
   xiaohongshu_url: string;
   instagram_url: string;

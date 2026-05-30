@@ -7,6 +7,7 @@ import {
   BookOpen,
   CalendarDays,
   ClipboardList,
+  DollarSign,
   DoorOpen,
   FileText,
   Settings,
@@ -21,6 +22,7 @@ const tabs = [
   { key: 'registrations', labelKey: 'admin.tabs.registration', icon: ClipboardList, href: '/admin/registrations' },
   { key: 'faculty', labelKey: 'admin.tabs.faculty', icon: UsersRound, href: '/admin/faculty' },
   { key: 'classrooms', labelKey: 'admin.tabs.classrooms', icon: DoorOpen, href: '/admin/classrooms' },
+  { key: 'pricing', labelKey: 'admin.tabs.pricing', icon: DollarSign, href: '/admin/pricing' },
   { key: 'settings', labelKey: 'admin.tabs.settings', icon: Settings, href: '/admin/settings' },
 ];
 

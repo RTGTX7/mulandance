@@ -30,6 +30,8 @@ class SystemSettingsBase(BaseModel):
     contact_address: str = ""
     outbound_email: str = Field(default="", max_length=255)
     classroom_request_limit_per_contact: int = Field(default=0, ge=0, le=999)
+    program_pricing_json: str = ""
+    classroom_pricing_json: str = ""
     youtube_url: str = Field(default="https://www.youtube.com/@mulandancestudio21", max_length=1000)
     xiaohongshu_url: str = Field(default="https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476", max_length=1000)
     instagram_url: str = Field(default="", max_length=1000)

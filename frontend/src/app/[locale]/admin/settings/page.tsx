@@ -30,6 +30,8 @@ const defaultSettings: SystemSettings = {
   contact_address: '',
   outbound_email: '',
   classroom_request_limit_per_contact: 0,
+  program_pricing_json: '',
+  classroom_pricing_json: '',
   youtube_url: 'https://www.youtube.com/@mulandancestudio21',
   xiaohongshu_url: 'https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476',
   instagram_url: '',
