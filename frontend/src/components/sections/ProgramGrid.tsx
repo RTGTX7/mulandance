@@ -26,8 +26,8 @@ export function ProgramGrid() {
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
 
   useEffect(() => {
-    programApi.list().then(setPrograms).catch(() => setPrograms([]));
-  }, []);
+    programApi.list(locale).then(setPrograms).catch(() => setPrograms([]));
+  }, [locale]);
 
   const visiblePrograms = useMemo(
     () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)).slice(0, 6),

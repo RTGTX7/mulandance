@@ -46,6 +46,7 @@ class PerformanceBase(BaseModel):
     venue: Optional[str] = None
     cover_image: Optional[str] = None
     is_current: bool = True
+    translations: dict = {}
 
 
 class PerformanceCreate(PerformanceBase):
@@ -61,6 +62,7 @@ class PerformanceUpdate(BaseModel):
     venue: Optional[str] = None
     cover_image: Optional[str] = None
     is_current: Optional[bool] = None
+    translations: Optional[dict] = None
 
 
 class PerformanceResponse(PerformanceBase):

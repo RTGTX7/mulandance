@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 def _ensure_data_directories():
     """Ensure all data directories exist and are not wiped by code changes."""
-    base_dir = Path(settings.NEWS_FILES_DIR).parent
+    base_dir = Path(settings.DATA_DIR)
     dirs = {
-        "news": base_dir / "news",
-        "uploads": base_dir / "uploads",
+        "news": Path(settings.NEWS_FILES_DIR),
+        "uploads": Path(settings.UPLOADS_DIR),
         "pages": base_dir / "pages",
         "backups": base_dir / "backups",
     }
@@ -390,9 +390,61 @@ def _migrate_system_settings_if_needed():
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN classroom_pricing_json TEXT DEFAULT ''"))
         if "homepage_json" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
+        if "ai_enabled" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_enabled INTEGER DEFAULT 0"))
+        if "ai_provider" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_provider VARCHAR(100) DEFAULT 'openai_compatible'"))
+        if "ai_api_base_url" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_api_base_url VARCHAR(1000) DEFAULT 'https://api.openai.com/v1'"))
+        if "ai_api_key" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_api_key TEXT DEFAULT ''"))
+        if "ai_model" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_model VARCHAR(200) DEFAULT ''"))
+        if "ai_timeout_seconds" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_timeout_seconds INTEGER DEFAULT 60"))
         conn.commit()
     except Exception as e:
         logger.error(f"System settings migration failed: {e}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _migrate_admin_roles_if_needed():
+    """Collapse legacy backend roles into super_admin/admin."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        table_exists = conn.execute(text(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+        )).fetchone()
+        if table_exists is None:
+            return
+
+        super_count = conn.execute(text(
+            "SELECT COUNT(*) FROM users WHERE role = 'super_admin'"
+        )).scalar()
+        if super_count == 0:
+            first_admin = conn.execute(text("""
+                SELECT id FROM users
+                WHERE role IN ('admin', 'editor', 'faculty')
+                ORDER BY
+                    CASE WHEN email = 'admin@mulandance.com' THEN 0 ELSE 1 END,
+                    created_at ASC
+                LIMIT 1
+            """)).fetchone()
+            if first_admin:
+                conn.execute(text(
+                    "UPDATE users SET role = 'super_admin' WHERE id = :id"
+                ), {"id": first_admin[0]})
+
+        conn.execute(text(
+            "UPDATE users SET role = 'admin' WHERE role IN ('editor', 'faculty')"
+        ))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Admin role migration failed: {e}", exc_info=True)
         conn.rollback()
     finally:
         conn.close()
@@ -685,6 +737,7 @@ async def startup_event():
     
     _ensure_data_directories()
     _ensure_database_tables()
+    _migrate_admin_roles_if_needed()
     _migrate_system_settings_if_needed()
     _migrate_programs_if_needed()
     _seed_news_taxonomy_if_needed()
@@ -696,6 +749,7 @@ async def startup_event():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_HOSTS.split(","),
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -704,7 +758,7 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 # Mount static files for uploaded images
-UPLOADS_DIR = Path(settings.NEWS_FILES_DIR).parent / "uploads"
+UPLOADS_DIR = Path(settings.UPLOADS_DIR)
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 

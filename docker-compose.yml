@@ -1,61 +1,56 @@
-version: '3.9'
-
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - nextjs
-      - fastapi
-    restart: unless-stopped
-
-  nextjs:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    environment:
-      - DATABASE_URL=postgresql://dance_user:dance_pass@postgres:5432/dance_org
-      - API_URL=http://fastapi:8000
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=change_me_in_production
-      - NEXTAUTH_URL=http://localhost:3000
-    depends_on:
-      - fastapi
-    restart: unless-stopped
-
-  fastapi:
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./.env
     environment:
-      - DATABASE_URL=postgresql://dance_user:dance_pass@postgres:5432/dance_org
-      - SECRET_KEY=change_me_in_production
-      - ALLOWED_HOSTS=http://localhost:3000
-      - NEWS_FILES_DIR=/app/data/news
-      - USE_FILE_STORAGE=true
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      SECRET_KEY: ${SECRET_KEY:-change_me_to_a_long_random_secret}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/app.db}
+      DATA_DIR: ${DATA_DIR:-/app/data}
+      NEWS_FILES_DIR: ${NEWS_FILES_DIR:-/app/data/news}
+      UPLOADS_DIR: ${UPLOADS_DIR:-/app/data/uploads}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-http://localhost:3000,http://127.0.0.1:3000}
+      USE_FILE_STORAGE: ${USE_FILE_STORAGE:-true}
+      AI_MAX_URLS: ${AI_MAX_URLS:-10}
+      AI_MAX_IMAGES_PER_URL: ${AI_MAX_IMAGES_PER_URL:-5}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-openai_compatible}
+      AI_API_BASE_URL: ${AI_API_BASE_URL:-https://api.openai.com/v1}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-60}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
     volumes:
-      - ./backend/data:/app/data
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      - POSTGRES_DB=dance_org
-      - POSTGRES_USER=dance_user
-      - POSTGRES_PASSWORD=dance_pass
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./backend/alembic/initial.sql:/docker-entrypoint-initdb.d/00-initial.sql
+      - ${HOST_DATA_DIR:-./data}:/app/data
     ports:
-      - '5432:5432'
+      - "${BACKEND_PORT:-8000}:8000"
     restart: unless-stopped
 
-volumes:
-  pgdata:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped

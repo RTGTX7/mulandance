@@ -10,7 +10,9 @@ from app.api.v1 import (
     classrooms,
     faculty,
     schedules,
+    backups,
     settings as site_settings,
+    ai,
 )
 
 api_router = APIRouter()
@@ -25,4 +27,6 @@ api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(classrooms.router, prefix="/classrooms", tags=["classrooms"])
 api_router.include_router(faculty.router, prefix="/faculty", tags=["faculty"])
 api_router.include_router(schedules.router, prefix="/schedules", tags=["schedules"])
+api_router.include_router(backups.router, prefix="/backups", tags=["backups"])
 api_router.include_router(site_settings.router, prefix="/settings", tags=["settings"])
+api_router.include_router(ai.router, prefix="/ai", tags=["ai"])

@@ -14,7 +14,7 @@ from app.core.config import settings
 router = APIRouter()
 
 # Upload storage directory: data/uploads/images/editor/
-UPLOAD_ROOT = Path(settings.NEWS_FILES_DIR).parent / "uploads"
+UPLOAD_ROOT = Path(settings.UPLOADS_DIR)
 IMAGE_UPLOAD_BASE = UPLOAD_ROOT / "images" / "editor"
 FILE_UPLOAD_BASE = UPLOAD_ROOT / "files"
 VIDEO_UPLOAD_BASE = UPLOAD_ROOT / "videos" / "homepage"
@@ -54,6 +54,11 @@ def _safe_original_name(filename: str) -> str:
     return clean[:80] or "file"
 
 
+def _public_upload_url(relative_path: str) -> str:
+    base = (settings.PUBLIC_BASE_URL or "http://localhost:8000").rstrip("/")
+    return f"{base}/static/uploads/{relative_path}"
+
+
 # Ensure StaticFiles mount exists
 _STATIC_MOUNTED = False
 
@@ -63,8 +68,6 @@ def ensure_static_mount(app) -> None:
     global _STATIC_MOUNTED
     if not _STATIC_MOUNTED:
         UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
-        if not hasattr(app, "mounts") and app.mounts:
-            pass
         app.mount("/static/uploads", StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
         _STATIC_MOUNTED = True
 
@@ -113,7 +116,7 @@ async def upload_image(file: UploadFile = File(...)):
         f.write(file_contents)
     
     # Build the public URL
-    public_url = f"http://localhost:8000/static/uploads/{relative_path}"
+    public_url = _public_upload_url(relative_path)
     
     return {
         "url": public_url,
@@ -161,7 +164,7 @@ async def upload_video(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(file_contents)
 
-    public_url = f"http://localhost:8000/static/uploads/{relative_path}"
+    public_url = _public_upload_url(relative_path)
     return {
         "url": public_url,
         "filename": filename,
@@ -213,7 +216,7 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(file_contents)
 
-    public_url = f"http://localhost:8000/static/uploads/{relative_path}"
+    public_url = _public_upload_url(relative_path)
     return {
         "url": public_url,
         "filename": filename,

@@ -23,11 +23,11 @@ export default function PerformanceDetailPage() {
   useEffect(() => {
     if (!slug) return;
 
-    performanceApi.getBySlug(slug)
+    performanceApi.getBySlug(slug, locale)
       .then(setPerformance)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [locale, slug]);
 
   const start = performance ? new Date(performance.start_date) : null;
   const end = performance ? new Date(performance.end_date) : null;

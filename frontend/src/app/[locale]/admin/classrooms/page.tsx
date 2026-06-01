@@ -7,24 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   ClassroomBooking,
-  ClassroomRoom,
   classroomApi,
   isAuthenticated,
 } from '@/lib/api';
+import { adminUiText } from '@/lib/admin-i18n';
 import { CalendarDays, CheckCircle2, Clock3, DoorOpen, Inbox } from 'lucide-react';
 
-const roomKeys: ClassroomRoom[] = ['large', 'small'];
-const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
-
-function roomLabel(room: ClassroomRoom) {
-  return room === 'large' ? '大教室' : '小教室';
-}
 
 export default function AdminClassroomsDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const labels = adminUiText(locale);
+  const text = labels.resources.classrooms;
   const [bookings, setBookings] = useState<ClassroomBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,9 +32,9 @@ export default function AdminClassroomsDashboardPage() {
     }
 
     classroomApi
-      .list()
+      .list({ locale })
       .then(setBookings)
-      .catch((err) => setError(err instanceof Error ? err.message : '加载教室使用记录失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : text.loadFailed))
       .finally(() => setLoading(false));
   }, [locale, router]);
 
@@ -50,7 +46,7 @@ export default function AdminClassroomsDashboardPage() {
   const calendarDays = useMemo(() => {
     return displayOrder.map((day) => ({
       day,
-      label: weekdayLabels[day],
+      label: text.weekdays[day],
       bookings: confirmed
         .filter((item) => item.day_of_week === day)
         .sort((a, b) =>
@@ -59,7 +55,7 @@ export default function AdminClassroomsDashboardPage() {
           a.room.localeCompare(b.room)
         ),
     }));
-  }, [confirmed]);
+  }, [confirmed, text.weekdays]);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -73,10 +69,10 @@ export default function AdminClassroomsDashboardPage() {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
             <DoorOpen className="h-6 w-6 text-primary" />
-            教室使用时间表
+            {text.title}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            审核外部租借申请，并用日历查看已经通过的教室使用安排。
+            {text.subtitle}
           </p>
         </div>
 
@@ -91,7 +87,7 @@ export default function AdminClassroomsDashboardPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Inbox className="h-4 w-4" />
-                待审核申请
+                {text.pending}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -102,7 +98,7 @@ export default function AdminClassroomsDashboardPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4" />
-                已通过申请
+                {text.approved}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -113,7 +109,7 @@ export default function AdminClassroomsDashboardPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Clock3 className="h-4 w-4" />
-                内部申请
+                {text.internal}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -128,16 +124,16 @@ export default function AdminClassroomsDashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-primary" />
-              已通过申请周历
+              {text.weeklyCalendar}
             </CardTitle>
             <div className="flex gap-3 text-xs text-muted-foreground">
-              <span>外部申请 {externalConfirmed.length}</span>
-              <span>内部排期 {internalConfirmed.length}</span>
+              <span>{text.externalCount.replace('{count}', String(externalConfirmed.length))}</span>
+              <span>{text.internalCount.replace('{count}', String(internalConfirmed.length))}</span>
             </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-sm text-muted-foreground">加载中...</p>
+              <p className="text-sm text-muted-foreground">{labels.resources.listLoading}</p>
             ) : (
               <div className="overflow-x-auto">
                 <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-lg border">
@@ -149,7 +145,7 @@ export default function AdminClassroomsDashboardPage() {
                       <div className="space-y-2 p-3">
                         {day.bookings.length === 0 ? (
                           <div className="rounded-md border border-dashed px-3 py-8 text-center text-xs text-slate-400">
-                            暂无通过申请
+                            {text.noApproved}
                           </div>
                         ) : (
                           day.bookings.map((item) => (
@@ -166,12 +162,12 @@ export default function AdminClassroomsDashboardPage() {
                               }`}
                             >
                               <div className="flex items-center justify-between gap-2 font-semibold">
-                                <span>{roomLabel(item.room)}</span>
+                                <span>{text.rooms[item.room]}</span>
                                 <span>{item.start_time}-{item.end_time}</span>
                               </div>
                               <div className="mt-1 truncate font-medium text-slate-950">{item.title}</div>
                               <div className="truncate text-slate-600">
-                                {item.teacher_name || item.applicant_name || '未填写负责人'}
+                                {item.teacher_name || item.applicant_name || text.ownerMissing}
                               </div>
                             </button>
                           ))

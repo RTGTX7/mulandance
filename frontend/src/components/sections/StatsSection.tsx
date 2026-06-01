@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Users, Award, CalendarDays, Users as TeacherIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { homepageApi, type HomepageStat } from '@/lib/api';
@@ -30,6 +30,7 @@ const stats = [
 
 export function StatsSection() {
   const t = useTranslations();
+  const locale = useLocale();
   const [customStats, setCustomStats] = useState<HomepageStat[] | null>(null);
   const displayStats = useMemo(() => {
     if (!customStats?.length) {
@@ -45,12 +46,12 @@ export function StatsSection() {
 
   useEffect(() => {
     homepageApi
-      .get()
+      .get(locale)
       .then((settings) => {
         if (settings.stats.length > 0) setCustomStats(settings.stats);
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   return (
     <section className="py-16 md:py-20 bg-gradient-to-r from-primary to-purple-700 text-white relative overflow-hidden">

@@ -39,6 +39,7 @@ class SystemSettingsBase(BaseModel):
     instagram_url: str = Field(default="", max_length=1000)
     facebook_url: str = Field(default="", max_length=1000)
     tiktok_url: str = Field(default="", max_length=1000)
+    translations: dict = {}
 
 
 class SystemSettingsResponse(SystemSettingsBase):
@@ -86,3 +87,48 @@ class HomepageSettings(BaseModel):
 
 class HomepageSettingsUpdate(HomepageSettings):
     pass
+
+
+class HomepageSettingsBundle(BaseModel):
+    zh: HomepageSettings = Field(default_factory=HomepageSettings)
+    en: HomepageSettings = Field(default_factory=HomepageSettings)
+    fr: HomepageSettings = Field(default_factory=HomepageSettings)
+
+
+class HomepageSettingsBundleUpdate(HomepageSettingsBundle):
+    pass
+
+
+class SchoolPolicyContent(BaseModel):
+    title: str = Field(default="", max_length=200)
+    body_markdown: str = ""
+
+
+class SchoolPolicyBundle(BaseModel):
+    zh: SchoolPolicyContent = Field(default_factory=SchoolPolicyContent)
+    en: SchoolPolicyContent = Field(default_factory=SchoolPolicyContent)
+    fr: SchoolPolicyContent = Field(default_factory=SchoolPolicyContent)
+
+
+class SchoolPolicyBundleUpdate(SchoolPolicyBundle):
+    pass
+
+
+class AiProviderSettings(BaseModel):
+    enabled: bool = False
+    provider: str = Field(default="openai_compatible", max_length=100)
+    api_base_url: str = Field(default="https://api.openai.com/v1", max_length=1000)
+    model: str = Field(default="", max_length=200)
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    api_key_set: bool = False
+    api_key_masked: str = ""
+
+
+class AiProviderSettingsUpdate(BaseModel):
+    enabled: bool = False
+    provider: str = Field(default="openai_compatible", max_length=100)
+    api_base_url: str = Field(default="https://api.openai.com/v1", max_length=1000)
+    model: str = Field(default="", max_length=200)
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    api_key: str | None = Field(default=None, max_length=4000)
+    clear_api_key: bool = False

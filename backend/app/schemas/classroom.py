@@ -16,6 +16,7 @@ class ClassroomBookingBase(BaseModel):
     start_time: str = Field(pattern=r"^\d{2}:\d{2}$")
     end_time: str = Field(pattern=r"^\d{2}:\d{2}$")
     notes: Optional[str] = None
+    translations: dict = {}
 
 
 class ClassroomBookingCreate(ClassroomBookingBase):
@@ -45,6 +46,7 @@ class ClassroomBookingUpdate(BaseModel):
     start_time: Optional[str] = Field(default=None, pattern=r"^\d{2}:\d{2}$")
     end_time: Optional[str] = Field(default=None, pattern=r"^\d{2}:\d{2}$")
     notes: Optional[str] = None
+    translations: Optional[dict] = None
 
 
 class ClassroomBookingResponse(ClassroomBookingBase):

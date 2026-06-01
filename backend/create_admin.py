@@ -1,39 +1,41 @@
-"""Create admin user with proper bcrypt hash."""
-import sqlite3
-import uuid
-from passlib.context import CryptContext
+"""Create or reset the local development super admin account."""
 
-import os
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dance_org.db")
+from app.core.database import SessionLocal
+from app.core.security import get_password_hash, verify_password
+from app.models import User, UserProfile
+
+
+ADMIN_EMAIL = "admin@mulandance.com"
+ADMIN_PASSWORD = "admin123"
+
 
 def main():
-    ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    
-    # Delete existing admin with this email
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("DELETE FROM users WHERE email = ?", ("admin@mulandance.com",))
-    conn.commit()
-    
-    # Generate proper bcrypt hash
-    password = "admin123"
-    hashed = ctx.hash(password)
-    print(f"Generated hash: {hashed}")
-    
-    # Create admin user
-    user_id = str(uuid.uuid4())
-    conn.execute(
-        "INSERT INTO users (id, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)",
-        (user_id, "admin@mulandance.com", hashed, "admin", 1)
-    )
-    conn.commit()
-    
-    # Verify password works
-    verify_result = ctx.verify(password, hashed)
-    print(f"Password verification: {verify_result}")
-    print(f"Admin user created: admin@mulandance.com / admin123")
-    print(f"User ID: {user_id}")
-    
-    conn.close()
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == ADMIN_EMAIL).first()
+        if not user:
+            user = User(email=ADMIN_EMAIL)
+            db.add(user)
+            db.flush()
+
+        user.password_hash = get_password_hash(ADMIN_PASSWORD)
+        user.role = "super_admin"
+        user.is_active = True
+
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        if not profile:
+            profile = UserProfile(user_id=user.id, first_name="Admin", last_name="User")
+            db.add(profile)
+
+        db.commit()
+        db.refresh(user)
+
+        print(f"Super admin ready: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
+        print(f"Password verification: {verify_password(ADMIN_PASSWORD, user.password_hash)}")
+        print(f"User ID: {user.id}")
+    finally:
+        db.close()
+
 
 if __name__ == "__main__":
     main()

@@ -6,6 +6,7 @@ from pathlib import Path
 from app.core.config import settings
 from app.api.v1.settings import require_admin_or_editor
 from app.core.database import get_db
+from app.core.translations import ensure_text_column, localized_payload, set_translation_bundle, translation_bundle
 from app.models import CourseScheduleItem, SchoolPolicy, User
 from app.schemas.schedule import (
     CourseScheduleItemCreate,
@@ -18,6 +19,7 @@ from app.schemas.schedule import (
 
 router = APIRouter()
 POLICY_FILE = Path(settings.NEWS_FILES_DIR).parent / "pages" / "school-policy.md"
+TRANSLATABLE_FIELDS = ("title", "description", "location")
 
 
 def _ordered(query):
@@ -26,6 +28,22 @@ def _ordered(query):
         CourseScheduleItem.order_index.asc(),
         CourseScheduleItem.start_time.asc(),
     )
+
+
+def _schedule_response(item: CourseScheduleItem, locale: str | None = None, include_translations: bool = False) -> CourseScheduleItemResponse:
+    data = {
+        "id": item.id,
+        "day_of_week": item.day_of_week,
+        "start_time": item.start_time,
+        "end_time": item.end_time,
+        "is_active": bool(item.is_active),
+        "order_index": item.order_index or 0,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+        "translations": translation_bundle(item) if include_translations else {},
+    }
+    data.update(localized_payload(item, TRANSLATABLE_FIELDS, locale))
+    return CourseScheduleItemResponse(**data)
 
 
 def _get_or_create_policy(db: Session) -> SchoolPolicy:
@@ -54,12 +72,15 @@ def _write_policy_file(body_markdown: str) -> None:
 @router.get("/classes", response_model=List[CourseScheduleItemResponse])
 def list_schedule_items(
     include_inactive: bool = Query(False),
+    locale: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
+    ensure_text_column(db, "course_schedule_items")
     query = db.query(CourseScheduleItem)
     if not include_inactive:
         query = query.filter(CourseScheduleItem.is_active == True)  # noqa: E712
-    return _ordered(query).all()
+    items = _ordered(query).all()
+    return [_schedule_response(item, locale, include_translations=include_inactive) for item in items]
 
 
 @router.post("/classes", response_model=CourseScheduleItemResponse)
@@ -68,14 +89,18 @@ def create_schedule_item(
     user: User = Depends(require_admin_or_editor),
     db: Session = Depends(get_db),
 ):
+    ensure_text_column(db, "course_schedule_items")
     if payload.start_time >= payload.end_time:
         raise HTTPException(status_code=400, detail="End time must be after start time")
 
-    item = CourseScheduleItem(**payload.model_dump())
+    data = payload.model_dump()
+    translations = data.pop("translations", None)
+    item = CourseScheduleItem(**data)
+    set_translation_bundle(item, translations)
     db.add(item)
     db.commit()
     db.refresh(item)
-    return item
+    return _schedule_response(item, include_translations=True)
 
 
 @router.put("/classes/{item_id}", response_model=CourseScheduleItemResponse)
@@ -85,19 +110,24 @@ def update_schedule_item(
     user: User = Depends(require_admin_or_editor),
     db: Session = Depends(get_db),
 ):
+    ensure_text_column(db, "course_schedule_items")
     item = db.query(CourseScheduleItem).filter(CourseScheduleItem.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Schedule item not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    translations = updates.pop("translations", None)
+    for field, value in updates.items():
         setattr(item, field, value)
+    if translations is not None:
+        set_translation_bundle(item, translations)
 
     if item.start_time >= item.end_time:
         raise HTTPException(status_code=400, detail="End time must be after start time")
 
     db.commit()
     db.refresh(item)
-    return item
+    return _schedule_response(item, include_translations=True)
 
 
 @router.delete("/classes/{item_id}")

@@ -8,14 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  type AiDraft,
   FacultyMember,
   FacultyMemberBody,
   facultyApi,
   isAuthenticated,
   uploadApi,
 } from '@/lib/api';
+import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { Edit2, ImagePlus, Loader2, Save, Trash2, UsersRound, X } from 'lucide-react';
+import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
+
+type ContentLocale = 'zh' | 'en' | 'fr';
 
 const emptyForm: FacultyMemberBody = {
   name: '',
@@ -31,9 +36,13 @@ const emptyForm: FacultyMemberBody = {
 function VisibilitySwitch({
   checked,
   onCheckedChange,
+  visibleLabel,
+  hiddenLabel,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  visibleLabel: string;
+  hiddenLabel: string;
 }) {
   return (
     <button
@@ -53,7 +62,7 @@ function VisibilitySwitch({
           )}
         />
       </span>
-      {checked ? '前台显示' : '隐藏'}
+      {checked ? visibleLabel : hiddenLabel}
     </button>
   );
 }
@@ -62,8 +71,12 @@ export default function AdminFacultyPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const labels = adminUiText(locale);
+  const text = labels.resources.faculty;
+  const languageOptions = adminContentLanguageOptions(locale);
   const [members, setMembers] = useState<FacultyMember[]>([]);
   const [form, setForm] = useState<FacultyMemberBody>(emptyForm);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,6 +87,10 @@ export default function AdminFacultyPage() {
     () => [...members].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
     [members]
   );
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -88,7 +105,7 @@ export default function AdminFacultyPage() {
     facultyApi
       .adminList()
       .then(setMembers)
-      .catch((err) => setError(err instanceof Error ? err.message : '加载教师失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : text.loadFailed))
       .finally(() => setLoading(false));
   }
 
@@ -109,13 +126,68 @@ export default function AdminFacultyPage() {
       achievements: member.achievements || '',
       is_active: member.is_active,
       order_index: member.order_index || 0,
+      translations: member.translations || {},
+    });
+  }
+
+  function localizedField(key: keyof FacultyMemberBody) {
+    if (contentLocale === 'zh') return String(form[key] ?? '');
+    return form.translations?.[contentLocale]?.[String(key)] ?? '';
+  }
+
+  function setLocalizedField(key: keyof FacultyMemberBody, value: string) {
+    if (contentLocale === 'zh') {
+      setForm((current) => ({ ...current, [key]: value }));
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      name: key === 'name' && !current.name ? value : current.name,
+      translations: {
+        ...(current.translations || {}),
+        [contentLocale]: {
+          ...(current.translations?.[contentLocale] || {}),
+          [String(key)]: value,
+        },
+      },
+    }));
+  }
+
+  function applyAiDrafts(drafts: AiDraft[]) {
+    setForm((current) => {
+      const next = { ...current, translations: { ...(current.translations || {}) } };
+      drafts.forEach((draft) => {
+        const fields = draft.fields || {};
+        if (draft.locale === 'zh') {
+          next.name = fields.name ?? next.name;
+          next.role = fields.role ?? next.role;
+          next.bio = fields.bio ?? next.bio;
+          next.specialties = fields.specialties ?? next.specialties;
+          next.achievements = fields.achievements ?? next.achievements;
+          return;
+        }
+        const localeKey = draft.locale as ContentLocale;
+        next.translations = {
+          ...(next.translations || {}),
+          [localeKey]: {
+            ...(next.translations?.[localeKey] || {}),
+            ...(fields.name ? { name: fields.name } : {}),
+            ...(fields.role ? { role: fields.role } : {}),
+            ...(fields.bio ? { bio: fields.bio } : {}),
+            ...(fields.specialties ? { specialties: fields.specialties } : {}),
+            ...(fields.achievements ? { achievements: fields.achievements } : {}),
+          },
+        };
+        if (!next.name && fields.name) next.name = fields.name;
+      });
+      return next;
     });
   }
 
   async function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form.name.trim()) {
-      setError('教师姓名必填');
+      setError(text.nameRequired);
       return;
     }
 
@@ -142,7 +214,7 @@ export default function AdminFacultyPage() {
       resetForm();
       loadMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : labels.common.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -158,7 +230,7 @@ export default function AdminFacultyPage() {
       const uploaded = await uploadApi.image(file);
       setForm((current) => ({ ...current, photo_url: uploaded.url }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : '上传照片失败');
+      setError(err instanceof Error ? err.message : text.uploadFailed);
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -166,14 +238,14 @@ export default function AdminFacultyPage() {
   }
 
   async function removeMember(member: FacultyMember) {
-    if (!window.confirm(`删除教师“${member.name}”吗？`)) return;
+    if (!window.confirm(text.deleteConfirm.replace('{name}', member.name))) return;
     setError('');
     try {
       await facultyApi.remove(member.id);
       if (editingId === member.id) resetForm();
       loadMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : text.deleteFailed);
     }
   }
 
@@ -190,7 +262,7 @@ export default function AdminFacultyPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UsersRound className="h-5 w-5 text-primary" />
-              {editingId ? '编辑教师' : '新增教师'}
+              {editingId ? text.editTitle : text.newTitle}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -201,29 +273,55 @@ export default function AdminFacultyPage() {
                 </div>
               )}
 
+              <div className="flex flex-wrap gap-2">
+                {languageOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={contentLocale === option.value ? 'default' : 'outline'}
+                    onClick={() => setContentLocale(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+
+              <AiLocaleSyncPanel
+                module="faculty"
+                sourceLocale={contentLocale}
+                fields={{
+                  name: localizedField('name'),
+                  role: localizedField('role'),
+                  bio: localizedField('bio'),
+                  specialties: localizedField('specialties'),
+                  achievements: localizedField('achievements'),
+                }}
+                onApply={applyAiDrafts}
+              />
+
               <label className="block space-y-1">
-                <span className="text-sm font-medium">姓名</span>
-                <Input value={form.name} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} />
+                <span className="text-sm font-medium">{text.name}</span>
+                <Input value={localizedField('name')} onChange={(e) => setLocalizedField('name', e.target.value)} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium">职位 / 授课方向</span>
+                <span className="text-sm font-medium">{text.role}</span>
                 <Input
-                  value={form.role || ''}
-                  onChange={(e) => setForm((current) => ({ ...current, role: e.target.value }))}
-                  placeholder="例如：Ballet / Jazz 教师"
+                  value={localizedField('role')}
+                  onChange={(e) => setLocalizedField('role', e.target.value)}
+                  placeholder={text.rolePlaceholder}
                 />
               </label>
 
               <div className="space-y-2">
-                <span className="text-sm font-medium">照片</span>
+                <span className="text-sm font-medium">{text.photo}</span>
                 <div className="flex items-center gap-3">
                   <div className="h-20 w-20 overflow-hidden rounded-md border bg-slate-100">
                     {form.photo_url ? (
-                      <img src={form.photo_url} alt={form.name || '教师照片'} className="h-full w-full object-cover" />
+                      <img src={form.photo_url} alt={form.name || text.photo} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                        无照片
+                        {text.noPhoto}
                       </div>
                     )}
                   </div>
@@ -231,51 +329,51 @@ export default function AdminFacultyPage() {
                     <Button asChild type="button" variant="outline" disabled={uploading}>
                       <label className="cursor-pointer">
                         {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
-                        上传照片
+                        {text.uploadPhoto}
                         <input type="file" accept="image/*" className="hidden" onChange={uploadPhoto} />
                       </label>
                     </Button>
                     <Input
                       value={form.photo_url || ''}
                       onChange={(e) => setForm((current) => ({ ...current, photo_url: e.target.value }))}
-                      placeholder="或粘贴照片 URL"
+                      placeholder={text.pastePhotoUrl}
                     />
                   </div>
                 </div>
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium">简介</span>
+                <span className="text-sm font-medium">{text.bio}</span>
                 <Textarea
                   rows={5}
-                  value={form.bio || ''}
-                  onChange={(e) => setForm((current) => ({ ...current, bio: e.target.value }))}
+                  value={localizedField('bio')}
+                  onChange={(e) => setLocalizedField('bio', e.target.value)}
                 />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium">擅长方向</span>
+                <span className="text-sm font-medium">{text.specialties}</span>
                 <Textarea
                   rows={3}
-                  value={form.specialties || ''}
-                  onChange={(e) => setForm((current) => ({ ...current, specialties: e.target.value }))}
-                  placeholder="每行一个，例如：Ballet"
+                  value={localizedField('specialties')}
+                  onChange={(e) => setLocalizedField('specialties', e.target.value)}
+                  placeholder={text.specialtiesPlaceholder}
                 />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium">经历 / 成就</span>
+                <span className="text-sm font-medium">{text.achievements}</span>
                 <Textarea
                   rows={4}
-                  value={form.achievements || ''}
-                  onChange={(e) => setForm((current) => ({ ...current, achievements: e.target.value }))}
-                  placeholder="每行一个"
+                  value={localizedField('achievements')}
+                  onChange={(e) => setLocalizedField('achievements', e.target.value)}
+                  placeholder={text.onePerLine}
                 />
               </label>
 
               <div className="flex items-center justify-between gap-3">
                 <label className="space-y-1">
-                  <span className="text-sm font-medium">排序</span>
+                  <span className="text-sm font-medium">{labels.common.sort}</span>
                   <Input
                     type="number"
                     className="w-24"
@@ -286,18 +384,20 @@ export default function AdminFacultyPage() {
                 <VisibilitySwitch
                   checked={form.is_active}
                   onCheckedChange={(checked) => setForm((current) => ({ ...current, is_active: checked }))}
+                  visibleLabel={labels.resources.visibleOnSite}
+                  hiddenLabel={labels.resources.hidden}
                 />
               </div>
 
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving || uploading}>
                   {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  保存
+                  {labels.common.save}
                 </Button>
                 {editingId && (
                   <Button type="button" variant="outline" onClick={resetForm}>
                     <X className="mr-2 h-4 w-4" />
-                    取消
+                    {labels.resources.cancel}
                   </Button>
                 )}
               </div>
@@ -307,17 +407,17 @@ export default function AdminFacultyPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>教师列表</CardTitle>
+            <CardTitle>{text.list}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                加载中...
+                {labels.resources.listLoading}
               </div>
             ) : sortedMembers.length === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-                还没有教师资料。左侧新增后，前台教师页面会自动显示。
+                {text.empty}
               </div>
             ) : (
               <div className="space-y-3">
@@ -341,11 +441,11 @@ export default function AdminFacultyPage() {
                             member.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
                           )}
                         >
-                          {member.is_active ? '显示' : '隐藏'}
+                          {member.is_active ? labels.resources.show : labels.resources.hidden}
                         </span>
                       </div>
-                      <p className="truncate text-sm text-muted-foreground">{member.role || '未填写职位'}</p>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">{member.bio || '未填写简介'}</p>
+                      <p className="truncate text-sm text-muted-foreground">{member.role || text.missingRole}</p>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{member.bio || text.missingBio}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button type="button" variant="ghost" size="icon" onClick={() => editMember(member)}>

@@ -12,6 +12,7 @@ from typing import List, Optional
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.translations import ensure_text_column, localized_payload, set_translation_bundle, translation_bundle
 from app.models import ClassroomBooking, SystemSettings
 from app.schemas.classroom import (
     ClassroomCaptchaResponse,
@@ -26,6 +27,7 @@ from app.services.email import email_enabled, extract_email, send_classroom_book
 
 router = APIRouter()
 CAPTCHA_MAX_AGE_SECONDS = 10 * 60
+TRANSLATABLE_FIELDS = ("title", "teacher_name", "notes")
 
 
 def _clean_text(value: Optional[str]) -> Optional[str]:
@@ -110,6 +112,25 @@ def _get_system_settings(db: Session) -> SystemSettings:
     return settings or SystemSettings(id=1)
 
 
+def _booking_response(booking: ClassroomBooking, locale: str | None = None, include_translations: bool = False) -> ClassroomBookingResponse:
+    data = {
+        "id": booking.id,
+        "room": booking.room,
+        "booking_type": booking.booking_type,
+        "status": booking.status,
+        "applicant_name": booking.applicant_name,
+        "applicant_contact": booking.applicant_contact,
+        "day_of_week": booking.day_of_week,
+        "start_time": booking.start_time,
+        "end_time": booking.end_time,
+        "created_at": booking.created_at,
+        "updated_at": booking.updated_at,
+        "translations": translation_bundle(booking) if include_translations else {},
+    }
+    data.update(localized_payload(booking, TRANSLATABLE_FIELDS, locale))
+    return ClassroomBookingResponse(**data)
+
+
 def _enforce_contact_request_limit(db: Session, contact: Optional[str]):
     settings = _get_system_settings(db)
     limit = settings.classroom_request_limit_per_contact or 0
@@ -162,18 +183,21 @@ def verify_classroom_captcha(payload: ClassroomCaptchaVerify):
 def list_classroom_bookings(
     room: Optional[str] = Query(None, pattern="^(large|small)$"),
     status: Optional[str] = Query(None, pattern="^(pending|confirmed|rejected)$"),
+    locale: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
+    ensure_text_column(db, "classroom_bookings")
     query = db.query(ClassroomBooking)
     if room:
         query = query.filter(ClassroomBooking.room == room)
     if status:
         query = query.filter(ClassroomBooking.status == status)
-    return query.order_by(
+    bookings = query.order_by(
         ClassroomBooking.day_of_week.asc(),
         ClassroomBooking.start_time.asc(),
         ClassroomBooking.room.asc(),
     ).all()
+    return [_booking_response(booking, locale, include_translations=status is None) for booking in bookings]
 
 
 @router.post("/bookings", response_model=ClassroomBookingCreateResponse)
@@ -181,10 +205,12 @@ def create_classroom_booking(
     booking_data: ClassroomBookingCreate,
     db: Session = Depends(get_db),
 ):
+    ensure_text_column(db, "classroom_bookings")
     if booking_data.start_time >= booking_data.end_time:
         raise HTTPException(status_code=400, detail="End time must be after start time")
 
     payload = booking_data.model_dump()
+    translations = payload.pop("translations", None)
     captcha_token = payload.pop("captcha_token", None)
     captcha_answer = payload.pop("captcha_answer", None)
     for field in ("title", "teacher_name", "applicant_name", "applicant_contact", "notes"):
@@ -205,6 +231,7 @@ def create_classroom_booking(
         _enforce_contact_request_limit(db, payload.get("applicant_contact"))
 
     booking = ClassroomBooking(**payload)
+    set_translation_bundle(booking, translations)
     if booking.booking_type == "external" and booking.status == "confirmed":
         booking.status = "pending"
 
@@ -226,7 +253,7 @@ def create_classroom_booking(
         else:
             receipt_status = "failed"
     return ClassroomBookingCreateResponse(
-        booking=booking,
+        booking=_booking_response(booking, include_translations=True),
         receipt_email=receipt_email,
         receipt_status=receipt_status,
     )
@@ -238,15 +265,19 @@ def update_classroom_booking(
     booking_data: ClassroomBookingUpdate,
     db: Session = Depends(get_db),
 ):
+    ensure_text_column(db, "classroom_bookings")
     booking = db.query(ClassroomBooking).filter(ClassroomBooking.id == booking_id).first()
     if not booking:
         raise HTTPException(status_code=404, detail="Classroom booking not found")
 
     updates = booking_data.model_dump(exclude_unset=True)
+    translations = updates.pop("translations", None)
     for field, value in updates.items():
         if field in ("title", "teacher_name", "applicant_name", "applicant_contact", "notes"):
             value = _clean_text(value)
         setattr(booking, field, value)
+    if translations is not None:
+        set_translation_bundle(booking, translations)
 
     if booking.start_time >= booking.end_time:
         raise HTTPException(status_code=400, detail="End time must be after start time")
@@ -266,7 +297,7 @@ def update_classroom_booking(
 
     db.commit()
     db.refresh(booking)
-    return booking
+    return _booking_response(booking, include_translations=True)
 
 
 @router.delete("/bookings/{booking_id}")

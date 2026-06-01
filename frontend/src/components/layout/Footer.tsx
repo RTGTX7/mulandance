@@ -41,8 +41,8 @@ export function Footer() {
   const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
 
   useEffect(() => {
-    settingsApi.site().then((data) => setSettings({ ...defaultSettings, ...data })).catch(() => {});
-  }, []);
+    settingsApi.site(locale).then((data) => setSettings({ ...defaultSettings, ...data })).catch(() => {});
+  }, [locale]);
 
   const href = (path: string) => {
     if (!path) return `/${locale}`;
@@ -60,7 +60,7 @@ export function Footer() {
   ].filter((item) => item.href);
 
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="border-t border-white/60 bg-white/55 shadow-inner shadow-white/40 backdrop-blur-2xl">
       <div className="section-padding container">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           <div>
@@ -78,7 +78,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="text-muted-foreground transition-colors hover:text-secondary"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/55 text-muted-foreground shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-white/80 hover:text-secondary"
                 >
                   <Icon className="h-5 w-5" />
                 </a>
@@ -89,7 +89,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="RedNote"
-                  className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/70 transition-colors hover:bg-secondary"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/55 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-secondary"
                 >
                   <Image src="/xiaohongshu-icon.svg" alt="" width={16} height={16} />
                 </a>
@@ -151,7 +151,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/60 pt-8 sm:flex-row">
           <p className="text-xs text-muted-foreground">
             {new Date().getFullYear()} {settings.site_name || t('common.appName')}. {settings.copyright_text || t('common.footer.copyright')}
           </p>

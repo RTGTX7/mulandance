@@ -56,7 +56,7 @@ export default async function LocaleLayout({
     <div className="flex min-h-screen flex-col">
       <LocaleProvider key={normalizedLocale} locale={normalizedLocale} messages={messages}>
         <Header />
-        <main id="main-content" className="flex-1">
+        <main id="main-content" className="page-enter flex-1">
           {children}
         </main>
         <Footer />

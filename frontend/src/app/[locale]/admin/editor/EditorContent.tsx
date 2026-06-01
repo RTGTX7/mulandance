@@ -2,7 +2,17 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslations } from "@/components/ui/i18n-client";
-import { isAuthenticated, newsApi, uploadApi, NewsArticleGroup } from "@/lib/api";
+import {
+  aiApi,
+  isAuthenticated,
+  newsApi,
+  performanceApi,
+  uploadApi,
+  type AiArticleImportItem,
+  type AiDraft,
+  type NewsArticleGroup,
+  type PerformanceBody,
+} from "@/lib/api";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +26,7 @@ import {
   Heading2,
   Heading3,
   Link as LinkIcon,
-  Image,
+  Image as ImageIcon,
   Code,
   Quote,
   Save,
@@ -28,10 +38,36 @@ import {
   CheckCircle2,
   AlertCircle,
   Paperclip,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 
 // Simple vertical divider component (replaces Separator)
 const VDivider = () => <div className="w-px h-6 bg-border mx-1" />;
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const renderCarouselMarkdown = (content: string) => {
+  const slides: string[] = [];
+  const imagePattern = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+  let match = imagePattern.exec(content);
+
+  while (match) {
+    const alt = escapeHtml(match[1] || `Image ${slides.length + 1}`);
+    const url = escapeHtml(match[2]);
+    const caption = match[1] ? `<figcaption>${escapeHtml(match[1])}</figcaption>` : "";
+    slides.push(`<figure class="article-carousel-slide"><img src="${url}" alt="${alt}" loading="lazy" />${caption}</figure>`);
+    match = imagePattern.exec(content);
+  }
+
+  if (slides.length === 0) return "";
+  return `<div class="article-carousel" role="region" aria-label="Image carousel"><div class="article-carousel-track">${slides.join("")}</div></div>`;
+};
 
 function PublishSwitch({
   checked,
@@ -94,7 +130,7 @@ export interface ArticleData {
 
 const SUPPORTED_LOCALES = [
   { code: "en", label: "EN", name: "English" },
-  { code: "zh", label: "简体", name: "简体中文" },
+  { code: "zh", label: "中文", name: "简体中文" },
   { code: "fr", label: "FR", name: "French" },
 ];
 
@@ -176,6 +212,15 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [articleGroup, setArticleGroup] = useState<NewsArticleGroup | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiBatchSaving, setAiBatchSaving] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
+  const [aiDrafts, setAiDrafts] = useState<AiDraft[]>([]);
+  const [aiImportItems, setAiImportItems] = useState<AiArticleImportItem[]>([]);
+  const [pendingAiDrafts, setPendingAiDrafts] = useState<Record<string, AiDraft>>({});
+  const [aiUrls, setAiUrls] = useState("");
+  const [aiManualText, setAiManualText] = useState("");
+  const [aiInstruction, setAiInstruction] = useState("");
 
   const [form, setForm] = useState<ArticleData>({
     id: "",
@@ -223,6 +268,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     if (showPreview && form.body) {
       // Simple markdown to HTML conversion
       let html = form.body
+        // Image carousel
+        .replace(/:::\s*carousel\s*\n([\s\S]*?)\n:::/g, (_match, content: string) => renderCarouselMarkdown(content))
         // Headers
         .replace(/^### (.+)$/gm, '<h3>$1</h3>')
         .replace(/^## (.+)$/gm, '<h2>$1</h2>')
@@ -232,7 +279,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         // Links and Images
-        .replace(/!\[(.+?)\]\((.+?)\)/g, '<img alt="$1" src="$2" class="rounded-lg max-w-full">')
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" class="rounded-lg max-w-full">')
         .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="text-primary underline">$1</a>')
         // Code
         .replace(/`(.+?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm font-mono">$1</code>')
@@ -480,6 +527,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         tag_slugs: form.tag_slugs,
         locale: form.locale || "en",
         is_published: published || form.is_published,
+        published_at: form.published_at || undefined,
       };
 
       console.log("[Save] URL endpoint:", editSlug ? `/v1/news/${editSlug}` : `/v1/news`);
@@ -493,9 +541,23 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         result = await newsApi.createArticle(data);
       }
 
+      const siblingDrafts = Object.values(pendingAiDrafts).filter((draft) => draft.locale !== data.locale);
+      for (const draft of siblingDrafts) {
+        const draftTitle = draft.fields.title || titleText;
+        await newsApi.createArticle({
+          ...data,
+          title: draftTitle,
+          summary: draft.fields.summary || summaryText || undefined,
+          body: draft.fields.body || bodyText,
+          slug: slugValue,
+          locale: draft.locale,
+        });
+      }
+
       console.log("[Save] Success:", result);
 
       setSaveStatus("saved");
+      setPendingAiDrafts({});
       setLastSaved(new Date().toLocaleTimeString());
       
       // If new article created, navigate to it
@@ -612,6 +674,284 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       alert(err instanceof Error ? err.message : "File upload failed");
     } finally {
       setUploadingFile(false);
+    }
+  };
+
+  const slugifyTitle = (title: string) => {
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return /[a-z0-9]/.test(slug) ? slug : `article-${Date.now().toString(36)}`;
+  };
+
+  const importedMediaUrls = (item?: AiArticleImportItem) =>
+    (item?.source.media || [])
+      .map((media) => media.url)
+      .filter((url): url is string => Boolean(url));
+
+  const formatSourceDate = (value?: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(locale === "zh" ? "zh-CN" : locale, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const bodyWithImportedImages = (body: string, item: AiArticleImportItem | undefined, title: string) => {
+    const urls = importedMediaUrls(item);
+    if (urls.length === 0) return body;
+
+    const missingUrls = urls.filter((url) => !body.includes(url));
+    if (missingUrls.length === 0) return body;
+
+    const altText = title || item?.source.title || "Imported image";
+    const imageMarkdown =
+      missingUrls.length > 1
+        ? [":::carousel", ...missingUrls.map((url, index) => `![${altText} ${index + 1}](${url})`), ":::"].join("\n")
+        : `![${altText}](${missingUrls[0]})`;
+
+    return body.trim() ? `${body.trim()}\n\n${imageMarkdown}` : imageMarkdown;
+  };
+
+  const itemTitleFallback = (item?: AiArticleImportItem) => item?.source.title || "Imported image";
+
+  const draftForLocale = (drafts: AiDraft[], localeCode: string) =>
+    drafts.find((draft) => draft.locale === localeCode);
+
+  const applyAiDrafts = (drafts: AiDraft[], importItem?: AiArticleImportItem) => {
+    const usableDrafts = drafts.filter((draft) =>
+      SUPPORTED_LOCALES.some((item) => item.code === draft.locale)
+    );
+    if (usableDrafts.length === 0) {
+      setAiMessage("AI did not return usable language drafts.");
+      return;
+    }
+
+    const activeDraft =
+      draftForLocale(usableDrafts, form.locale || "zh") ||
+      draftForLocale(usableDrafts, "zh") ||
+      usableDrafts[0];
+    const title = activeDraft.fields.title ?? form.title;
+    const importedCover = importedMediaUrls(importItem)[0];
+    const sourcePublishedAt = importItem?.source.source_published_at;
+    const nextPending = usableDrafts.reduce<Record<string, AiDraft>>((acc, draft) => {
+      const draftTitle = draft.fields.title || title || itemTitleFallback(importItem);
+      acc[draft.locale] = {
+        ...draft,
+        fields: {
+          ...draft.fields,
+          body: bodyWithImportedImages(draft.fields.body ?? "", importItem, draftTitle),
+        },
+      };
+      return acc;
+    }, {});
+
+    setPendingAiDrafts(nextPending);
+    setForm((prev) => ({
+      ...prev,
+      locale: activeDraft.locale,
+      title,
+      summary: activeDraft.fields.summary ?? prev.summary,
+      body: nextPending[activeDraft.locale]?.fields.body || activeDraft.fields.body || prev.body,
+      cover_image: importedCover || prev.cover_image,
+      published_at: sourcePublishedAt || prev.published_at,
+      slug: prev.slug || slugifyTitle(title),
+    }));
+    setAiMessage(`已应用 ${usableDrafts.map((draft) => draft.locale.toUpperCase()).join(", ")} 草稿，点击保存会一起保存对应语言版本。`);
+  };
+
+  const applyAiDraft = (draft: AiDraft, importItem?: AiArticleImportItem) => {
+    const title = draft.fields.title ?? form.title;
+    const importedCover = importedMediaUrls(importItem)[0];
+    const sourcePublishedAt = importItem?.source.source_published_at;
+    setForm((prev) => ({
+      ...prev,
+      locale: draft.locale,
+      title,
+      summary: draft.fields.summary ?? prev.summary,
+      body: bodyWithImportedImages(draft.fields.body ?? prev.body, importItem, title),
+      cover_image: importedCover || prev.cover_image,
+      published_at: sourcePublishedAt || prev.published_at,
+      slug: prev.slug || slugifyTitle(title),
+    }));
+    setAiMessage(`已应用 ${draft.locale.toUpperCase()} 草稿，检查后点击保存。`);
+  };
+
+  const firstDraftTitle = (item: AiArticleImportItem, index: number) =>
+    draftForLocale(item.drafts, "zh")?.fields.title ||
+    item.drafts[0]?.fields.title ||
+    item.source.title ||
+    `imported-${index + 1}`;
+
+  const uniqueBatchSlug = (item: AiArticleImportItem, index: number) => {
+    const title = firstDraftTitle(item, index);
+    const base = slugifyTitle(title);
+    const sourceDate = item.source.source_published_at ? new Date(item.source.source_published_at) : null;
+    const suffix = sourceDate && !Number.isNaN(sourceDate.getTime())
+      ? sourceDate.toISOString().slice(0, 10)
+      : Date.now().toString(36);
+    return `${base}-${suffix}-${index + 1}`.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+  };
+
+  const saveImportedNewsItem = async (item: AiArticleImportItem, index: number) => {
+    const slug = uniqueBatchSlug(item, index);
+    const cover = importedMediaUrls(item)[0] || form.cover_image || undefined;
+    const categorySlugs = item.suggested_category_slugs?.length ? item.suggested_category_slugs : form.category_slugs;
+    const tagSlugs = item.suggested_tag_slugs?.length ? item.suggested_tag_slugs : form.tag_slugs;
+    const publishedAt = item.source.source_published_at || form.published_at || undefined;
+
+    for (const draft of item.drafts) {
+      const title = draft.fields.title || firstDraftTitle(item, index);
+      await newsApi.createArticle({
+        title,
+        slug,
+        summary: draft.fields.summary || undefined,
+        body: bodyWithImportedImages(draft.fields.body || "", item, title),
+        cover_image: cover,
+        category_slugs: categorySlugs,
+        tag_slugs: tagSlugs,
+        locale: draft.locale,
+        is_published: false,
+        published_at: publishedAt,
+      });
+    }
+  };
+
+  const saveImportedPerformanceItem = async (item: AiArticleImportItem, index: number) => {
+    const zhDraft = draftForLocale(item.drafts, "zh") || item.drafts[0];
+    const startDate = zhDraft?.fields.start_date || item.drafts.find((draft) => draft.fields.start_date)?.fields.start_date;
+    if (!zhDraft || !startDate) {
+      throw new Error(`${firstDraftTitle(item, index)}: AI classified as performance but did not provide a start date.`);
+    }
+
+    const endDate = zhDraft.fields.end_date || item.drafts.find((draft) => draft.fields.end_date)?.fields.end_date || startDate;
+    const translations: PerformanceBody["translations"] = {};
+    for (const draft of item.drafts) {
+      if (draft.locale === "zh") continue;
+      translations[draft.locale as "en" | "fr"] = {
+        ...(draft.fields.title ? { title: draft.fields.title } : {}),
+        ...(draft.fields.description ? { description: draft.fields.description } : {}),
+        ...(draft.fields.venue ? { venue: draft.fields.venue } : {}),
+      };
+    }
+
+    await performanceApi.create({
+      slug: uniqueBatchSlug(item, index),
+      title: zhDraft.fields.title || firstDraftTitle(item, index),
+      description: zhDraft.fields.description || zhDraft.fields.summary || "",
+      start_date: new Date(startDate).toISOString(),
+      end_date: new Date(endDate).toISOString(),
+      venue: zhDraft.fields.venue || "",
+      cover_image: importedMediaUrls(item)[0] || form.cover_image || undefined,
+      is_current: true,
+      translations,
+    });
+  };
+
+  const handleBatchSaveAiImports = async () => {
+    if (aiImportItems.length === 0) return;
+    setAiBatchSaving(true);
+    setAiMessage("");
+    let newsCount = 0;
+    let performanceCount = 0;
+    const failures: string[] = [];
+
+    for (let index = 0; index < aiImportItems.length; index += 1) {
+      const item = aiImportItems[index];
+      try {
+        if ((item.content_type || "news") === "performance") {
+          await saveImportedPerformanceItem(item, index);
+          performanceCount += 1;
+        } else {
+          await saveImportedNewsItem(item, index);
+          newsCount += 1;
+        }
+      } catch (err) {
+        failures.push(err instanceof Error ? err.message : `${firstDraftTitle(item, index)}: save failed`);
+      }
+    }
+
+    setAiMessage(
+      `批量保存完成：新闻 ${newsCount} 条，演出 ${performanceCount} 条。${failures.length ? `失败 ${failures.length} 条：${failures.join("；")}` : ""}`
+    );
+    setAiBatchSaving(false);
+  };
+
+  const handleAiTranslate = async () => {
+    const fields = {
+      title: form.title,
+      summary: form.summary,
+      body: bodyText,
+    };
+    if (!fields.title.trim() && !fields.body.trim()) {
+      alert("请先填写标题或正文，再生成翻译。");
+      return;
+    }
+    const targets = SUPPORTED_LOCALES
+      .map((item) => item.code)
+      .filter((code) => code !== form.locale);
+    setAiLoading(true);
+    setAiMessage("");
+    setAiImportItems([]);
+    try {
+      const result = await aiApi.translate({
+        module: "news",
+        source_locale: form.locale || "zh",
+        target_locales: targets,
+        fields,
+      });
+      const sourceDraft: AiDraft = {
+        locale: form.locale || "zh",
+        fields,
+        warnings: [],
+      };
+      setAiDrafts([sourceDraft, ...(result.drafts || [])]);
+      setAiMessage(result.warnings?.length ? result.warnings.join("；") : "翻译草稿已生成。");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "AI translation failed";
+      setAiMessage(message);
+      alert(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAiImportUrls = async () => {
+    const urls = aiUrls
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (urls.length === 0 && !aiManualText.trim()) {
+      alert("请至少输入一个链接，或粘贴原始文字。");
+      return;
+    }
+    setAiLoading(true);
+    setAiMessage("");
+    try {
+      const result = await aiApi.importArticleUrls({
+        urls,
+        source_locale: "zh",
+        target_locales: ["zh", "en", "fr"],
+        manual_text: aiManualText || undefined,
+        extra_instruction: aiInstruction || undefined,
+        category_slugs: form.category_slugs,
+        tag_slugs: form.tag_slugs,
+        available_category_slugs: categories.map((category) => category.slug),
+        available_tag_slugs: tags.map((tag) => tag.slug),
+      });
+      setAiImportItems(result.items || []);
+      setAiDrafts(result.items?.[0]?.drafts || []);
+      setAiMessage(result.warnings?.length ? result.warnings.join("；") : "链接草稿已生成。");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "AI import failed";
+      setAiMessage(message);
+      alert(message);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -828,6 +1168,168 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           </div>
         )}
 
+        <Card className="border-purple-100 bg-white/80 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="h-4 w-4 text-purple-700" />
+                  AI 草稿助手
+                </CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  生成翻译或从链接提取内容，只会填入草稿，不会自动发布。
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {aiDrafts.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="default"
+                    onClick={() => applyAiDrafts(aiDrafts, aiImportItems[0])}
+                    className="shrink-0"
+                  >
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    语言同步
+                  </Button>
+                )}
+                {aiImportItems.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBatchSaveAiImports}
+                    disabled={aiBatchSaving}
+                    className="shrink-0"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {aiBatchSaving ? "保存中..." : "批量保存全部"}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAiTranslate}
+                  disabled={aiLoading}
+                  className="shrink-0"
+                >
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  {aiLoading ? "生成中..." : "翻译当前文章"}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <Textarea
+                value={aiUrls}
+                onChange={(event) => setAiUrls(event.target.value)}
+                placeholder="粘贴链接，一行一个。例：小红书帖子链接"
+                className="min-h-[96px]"
+              />
+              <Textarea
+                value={aiManualText}
+                onChange={(event) => setAiManualText(event.target.value)}
+                placeholder="如果链接无法读取，可把帖子文字粘贴到这里"
+                className="min-h-[96px]"
+              />
+              <div className="flex flex-col gap-2">
+                <input
+                  value={aiInstruction}
+                  onChange={(event) => setAiInstruction(event.target.value)}
+                  placeholder="额外要求"
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <Button type="button" onClick={handleAiImportUrls} disabled={aiLoading}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  生成并分类
+                </Button>
+              </div>
+            </div>
+
+            {aiMessage && (
+              <div className="rounded-md border border-purple-100 bg-purple-50 px-3 py-2 text-sm text-purple-900">
+                {aiMessage}
+              </div>
+            )}
+
+            {aiDrafts.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex flex-col gap-1">
+                  <div>
+                    <div className="text-sm font-medium text-slate-800">AI 生成草稿预览</div>
+                    <p className="text-xs text-slate-500">确认三种语言内容后，点击右上角“语言同步”。</p>
+                  </div>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  {aiDrafts.map((draft) => {
+                    return (
+                      <div key={`${draft.locale}-${draft.fields.title || "draft"}`} className="rounded-lg border border-slate-200 bg-white p-3">
+                        <span className="text-sm font-semibold">{draft.locale.toUpperCase()}</span>
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-700">{draft.fields.title || "未生成标题"}</p>
+                        {draft.fields.summary && (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{draft.fields.summary}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {aiImportItems.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-slate-800">导入来源</div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {aiImportItems.slice(0, 4).map((item) => (
+                    <div key={item.source.url} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          (item.content_type || "news") === "performance"
+                            ? "bg-pink-100 text-pink-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}>
+                          {(item.content_type || "news") === "performance" ? "演出" : "新闻"}
+                        </span>
+                        <div className="truncate font-medium">{item.source.title || item.source.url}</div>
+                      </div>
+                      <div className="mt-1 truncate text-xs text-slate-500">{item.source.url}</div>
+                      {((item.suggested_category_slugs?.length || 0) > 0 || (item.suggested_tag_slugs?.length || 0) > 0) && (
+                        <div className="mt-2 flex flex-wrap gap-1 text-[11px] text-slate-600">
+                          {(item.suggested_category_slugs || []).map((slug) => (
+                            <span key={`cat-${slug}`} className="rounded-full bg-white px-2 py-0.5">分类: {slug}</span>
+                          ))}
+                          {(item.suggested_tag_slugs || []).map((slug) => (
+                            <span key={`tag-${slug}`} className="rounded-full bg-white px-2 py-0.5">标签: {slug}</span>
+                          ))}
+                        </div>
+                      )}
+                      {item.source.source_published_at && (
+                        <div className="mt-1 text-xs font-medium text-slate-600">
+                          Source date: {formatSourceDate(item.source.source_published_at)}
+                        </div>
+                      )}
+                      {(item.source.media?.length || 0) > 0 && (
+                        <div className="mt-3 grid grid-cols-4 gap-2">
+                          {(item.source.media || []).slice(0, 4).map((media) => (
+                            <img
+                              key={media.url}
+                              src={media.url}
+                              alt={item.source.title || "Imported image"}
+                              className="aspect-square w-full rounded-md border border-white object-cover shadow-sm"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-2 text-xs text-slate-600">
+                        已下载图片：{item.source.media?.length || 0}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Summary & Cover Image */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <input
@@ -919,7 +1421,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               {uploadingImage ? (
                 <div className="h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               ) : (
-                <Image className="h-3.5 w-3.5" />
+                <ImageIcon className="h-3.5 w-3.5" />
               )}
             </Button>
             {/* Hidden file input for image upload */}

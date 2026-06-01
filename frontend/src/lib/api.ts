@@ -1,7 +1,20 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-console.log('[API Config] NEXT_PUBLIC_API_URL =', process.env.NEXT_PUBLIC_API_URL, '=> API_URL =', API_URL);
+export function getApiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (configured) return configured.replace(/\/$/, '');
+
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol || 'http:';
+    const hostname = window.location.hostname || 'localhost';
+    return `${protocol}//${hostname}:8000`;
+  }
+
+  return 'http://localhost:8000';
+}
 
 const TOKEN_KEY = 'dance_org_token';
+
+export type LocaleCode = 'zh' | 'en' | 'fr';
+export type LocalizedFieldMap = Partial<Record<LocaleCode, Record<string, string>>>;
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -101,7 +114,8 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const fullUrl = `${API_URL}/api${endpoint}`;
+  const apiUrl = getApiBaseUrl();
+  const fullUrl = `${apiUrl}/api${endpoint}`;
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -131,7 +145,7 @@ async function request<T>(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch';
     console.error('[API Network Error]', fullUrl, message);
-    throw new Error(`Network error: ${message}. Is the backend running at ${API_URL}?`);
+    throw new Error(`Network error: ${message}. Is the backend running at ${apiUrl}?`);
   }
 
   console.log('[API Response]', response.status, response.statusText, fullUrl);
@@ -249,6 +263,7 @@ export interface ArticleCreateBody {
   tag_slugs: string[];
   locale: string;
   is_published: boolean;
+  published_at?: string;
 }
 
 export interface ArticleUpdateBody {
@@ -260,6 +275,53 @@ export interface ArticleUpdateBody {
   tag_slugs?: string[];
   locale?: string;
   is_published?: boolean;
+  published_at?: string;
+}
+
+export interface AiDraft {
+  locale: string;
+  fields: Record<string, string>;
+  warnings?: string[];
+}
+
+export interface AiTranslateResponse {
+  module: string;
+  source_locale: string;
+  drafts: AiDraft[];
+  warnings?: string[];
+}
+
+export interface ImportedMedia {
+  url: string;
+  path: string;
+  source_url: string;
+  content_type: string;
+  size: number;
+}
+
+export interface ImportedSource {
+  url: string;
+  title?: string;
+  description?: string;
+  text?: string;
+  source_published_at?: string;
+  images?: string[];
+  media?: ImportedMedia[];
+  warnings?: string[];
+}
+
+export interface AiArticleImportItem {
+  source: ImportedSource;
+  content_type?: 'news' | 'performance';
+  suggested_category_slugs?: string[];
+  suggested_tag_slugs?: string[];
+  drafts: AiDraft[];
+  warnings?: string[];
+}
+
+export interface AiArticleImportResponse {
+  items: AiArticleImportItem[];
+  warnings?: string[];
 }
 
 export interface PerformanceItem {
@@ -273,6 +335,7 @@ export interface PerformanceItem {
   cover_image?: string;
   is_current: boolean;
   created_at?: string;
+  translations?: LocalizedFieldMap;
 }
 
 export interface PerformanceBody {
@@ -284,6 +347,7 @@ export interface PerformanceBody {
   venue?: string;
   cover_image?: string;
   is_current: boolean;
+  translations?: LocalizedFieldMap;
 }
 
 // ====================================================================
@@ -385,19 +449,42 @@ export const newsApi = {
     api.put<NewsArticle>(`/v1/news/${slug}/status`, { is_published: published }),
 };
 
+export const aiApi = {
+  translate: (body: {
+    module: string;
+    source_locale: string;
+    target_locales: string[];
+    fields: Record<string, string>;
+    tone?: string;
+  }) => api.post<AiTranslateResponse>('/v1/ai/translate', body),
+
+  importArticleUrls: (body: {
+    urls: string[];
+    source_locale: string;
+    target_locales: string[];
+    manual_text?: string;
+    extra_instruction?: string;
+    category_slugs?: string[];
+    tag_slugs?: string[];
+    available_category_slugs?: string[];
+    available_tag_slugs?: string[];
+  }) => api.post<AiArticleImportResponse>('/v1/ai/import-article-urls', body),
+};
+
 export const performanceApi = {
-  list: (params?: { current?: boolean }) => {
+  list: (params?: { current?: boolean; locale?: string }) => {
     const query = new URLSearchParams();
     if (params?.current) query.set('current', 'true');
+    if (params?.locale) query.set('locale', params.locale);
     const qs = query.toString();
     return api.get<PerformanceItem[]>(`/v1/events/performances${qs ? '?' + qs : ''}`);
   },
 
-  getBySlug: (slug: string) =>
-    api.get<PerformanceItem>(`/v1/events/performances/slug/${slug}`),
+  getBySlug: (slug: string, locale?: string) =>
+    api.get<PerformanceItem>(`/v1/events/performances/slug/${slug}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
 
-  get: (id: string) =>
-    api.get<PerformanceItem>(`/v1/events/performances/${id}`),
+  get: (id: string, locale?: string) =>
+    api.get<PerformanceItem>(`/v1/events/performances/${id}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
 
   create: (body: PerformanceBody) =>
     api.post<PerformanceItem>('/v1/events/performances', body),
@@ -415,7 +502,7 @@ export const performanceApi = {
 
 export const uploadApi = {
   image: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const API_URL = getApiBaseUrl();
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
@@ -436,7 +523,7 @@ export const uploadApi = {
     return response.json();
   },
   video: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const API_URL = getApiBaseUrl();
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
@@ -457,7 +544,7 @@ export const uploadApi = {
     return response.json();
   },
   file: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const API_URL = getApiBaseUrl();
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
@@ -480,6 +567,98 @@ export const uploadApi = {
 };
 
 // ====================================================================
+// Content backup API helpers
+// ====================================================================
+
+export interface BackupInfo {
+  filename: string;
+  size: number;
+  created_at: string;
+}
+
+export interface BackupListResponse {
+  items: BackupInfo[];
+}
+
+export interface BackupRestoreResponse {
+  message: string;
+  pre_restore_backup: string;
+  restored_database: boolean;
+  restored_files: number;
+}
+
+function backupAuthHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function readBackupFetchError(response: Response, fallback: string): Promise<string> {
+  const payload = await response.json().catch(() => null);
+  if (payload) return getErrorMessage(payload);
+  const text = await response.text().catch(() => '');
+  return text || fallback;
+}
+
+function filenameFromDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1].replace(/"/g, ''));
+  const plainMatch = header.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || null;
+}
+
+export const backupApi = {
+  list: () => api.get<BackupListResponse>('/v1/backups/list'),
+
+  exportSnapshot: async (): Promise<string> => {
+    const API_URL = getApiBaseUrl();
+    const response = await fetch(`${API_URL}/api/v1/backups/export`, {
+      method: 'GET',
+      headers: backupAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const message = await readBackupFetchError(response, 'Backup export failed');
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const filename =
+      filenameFromDisposition(response.headers.get('content-disposition')) ||
+      `mulandance-content-manual-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    return filename;
+  },
+
+  restore: async (file: File): Promise<BackupRestoreResponse> => {
+    const API_URL = getApiBaseUrl();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/api/v1/backups/restore`, {
+      method: 'POST',
+      headers: backupAuthHeaders(),
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const message = await readBackupFetchError(response, 'Backup restore failed');
+      throw new Error(message);
+    }
+
+    return response.json();
+  },
+};
+
+// ====================================================================
 // Site settings API helpers
 // ====================================================================
 
@@ -493,8 +672,71 @@ export const settingsApi = {
   registrationLinks: () => api.get<RegistrationLinks>('/v1/settings/registration-links'),
   updateRegistrationLinks: (body: RegistrationLinks) =>
     api.put<RegistrationLinks>('/v1/settings/registration-links', body),
-  site: () => api.get<SystemSettings>('/v1/settings/site'),
+  site: (locale?: string) => api.get<SystemSettings>(`/v1/settings/site${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+  siteAll: () => api.get<SystemSettings>('/v1/settings/site/all'),
   updateSite: (body: SystemSettings) => api.put<SystemSettings>('/v1/settings/site', body),
+  schoolPolicy: (locale = 'zh') =>
+    api.get<SchoolPolicy>(`/v1/settings/school-policy?locale=${encodeURIComponent(locale)}`),
+  schoolPolicies: () => api.get<SchoolPolicyBundle>('/v1/settings/school-policy/all'),
+  updateSchoolPolicies: (body: SchoolPolicyBundle) =>
+    api.put<SchoolPolicyBundle>('/v1/settings/school-policy', body),
+  ai: () => api.get<AiProviderSettings>('/v1/settings/ai'),
+  updateAi: (body: AiProviderSettingsUpdate) =>
+    api.put<AiProviderSettings>('/v1/settings/ai', body),
+};
+
+// ====================================================================
+// Admin accounts API helpers
+// ====================================================================
+
+export type AdminRole = 'super_admin' | 'admin';
+
+export interface AdminAccount {
+  id: string;
+  email: string;
+  role: AdminRole;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  created_at: string;
+  translations?: LocalizedFieldMap;
+}
+
+export interface AdminAccountBody {
+  email?: string;
+  password?: string;
+  first_name?: string;
+  last_name?: string;
+  is_active?: boolean;
+}
+
+export interface AdminAccountListResponse {
+  items: AdminAccount[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export const usersApi = {
+  me: () => api.get<AdminAccount>('/v1/users/me'),
+  adminAccounts: (params?: {
+    search?: string;
+    status?: 'all' | 'active' | 'disabled';
+    limit?: number;
+    offset?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.status) query.set('status', params.status);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return api.get<AdminAccountListResponse>(`/v1/users/admin/accounts${qs ? '?' + qs : ''}`);
+  },
+  createAdminAccount: (body: Required<Pick<AdminAccountBody, 'email' | 'password' | 'first_name' | 'last_name'>>) =>
+    api.post<AdminAccount>('/v1/users/admin/accounts', body),
+  updateAdminAccount: (id: string, body: AdminAccountBody) =>
+    api.put<AdminAccount>(`/v1/users/admin/accounts/${id}`, body),
 };
 
 export interface SystemSettings {
@@ -523,6 +765,27 @@ export interface SystemSettings {
   instagram_url: string;
   facebook_url: string;
   tiktok_url: string;
+  translations?: LocalizedFieldMap;
+}
+
+export interface AiProviderSettings {
+  enabled: boolean;
+  provider: string;
+  api_base_url: string;
+  model: string;
+  timeout_seconds: number;
+  api_key_set: boolean;
+  api_key_masked: string;
+}
+
+export interface AiProviderSettingsUpdate {
+  enabled: boolean;
+  provider: string;
+  api_base_url: string;
+  model: string;
+  timeout_seconds: number;
+  api_key?: string;
+  clear_api_key?: boolean;
 }
 
 export interface HomepageButton {
@@ -560,9 +823,13 @@ export interface HomepageSettings {
   cta: HomepageCta;
 }
 
+export type HomepageSettingsBundle = Record<LocaleCode, HomepageSettings>;
+
 export const homepageApi = {
-  get: () => api.get<HomepageSettings>('/v1/settings/homepage'),
+  get: (locale?: string) => api.get<HomepageSettings>(`/v1/settings/homepage${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+  getAll: () => api.get<HomepageSettingsBundle>('/v1/settings/homepage/all'),
   update: (body: HomepageSettings) => api.put<HomepageSettings>('/v1/settings/homepage', body),
+  updateAll: (body: HomepageSettingsBundle) => api.put<HomepageSettingsBundle>('/v1/settings/homepage/all', body),
 };
 
 // ====================================================================
@@ -581,6 +848,7 @@ export interface FacultyMember {
   order_index: number;
   created_at: string;
   updated_at?: string;
+  translations?: LocalizedFieldMap;
 }
 
 export interface FacultyMemberBody {
@@ -592,10 +860,11 @@ export interface FacultyMemberBody {
   achievements?: string;
   is_active: boolean;
   order_index: number;
+  translations?: LocalizedFieldMap;
 }
 
 export const facultyApi = {
-  list: () => api.get<FacultyMember[]>('/v1/faculty'),
+  list: (locale?: string) => api.get<FacultyMember[]>(`/v1/faculty${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
   adminList: () => api.get<FacultyMember[]>('/v1/faculty/admin/list'),
   create: (body: FacultyMemberBody) => api.post<FacultyMember>('/v1/faculty', body),
   update: (id: string, body: Partial<FacultyMemberBody>) =>
@@ -619,6 +888,7 @@ export interface ProgramItem {
   order_index: number;
   is_active: boolean;
   created_at: string;
+  translations?: LocalizedFieldMap;
 }
 
 export interface ProgramBody {
@@ -630,10 +900,11 @@ export interface ProgramBody {
   syllabus_ref?: string;
   cover_image?: string;
   order_index: number;
+  translations?: LocalizedFieldMap;
 }
 
 export const programApi = {
-  list: () => api.get<ProgramItem[]>('/v1/programs/'),
+  list: (locale?: string) => api.get<ProgramItem[]>(`/v1/programs/${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
   adminList: () => api.get<ProgramItem[]>('/v1/programs/admin/list'),
   create: (body: ProgramBody) => api.post<ProgramItem>('/v1/programs/', body),
   update: (id: string, body: Partial<ProgramBody> & { is_active?: boolean }) =>
@@ -664,6 +935,7 @@ export interface ClassroomBooking {
   notes?: string;
   created_at: string;
   updated_at?: string;
+  translations?: LocalizedFieldMap;
 }
 
 export interface ClassroomBookingBody {
@@ -680,6 +952,7 @@ export interface ClassroomBookingBody {
   notes?: string;
   captcha_token?: string;
   captcha_answer?: string;
+  translations?: LocalizedFieldMap;
 }
 
 export type ClassroomReceiptStatus = 'sent' | 'not_requested' | 'not_configured' | 'failed';
@@ -696,10 +969,11 @@ export interface ClassroomCaptcha {
 }
 
 export const classroomApi = {
-  list: (params?: { room?: ClassroomRoom; status?: ClassroomBookingStatus }) => {
+  list: (params?: { room?: ClassroomRoom; status?: ClassroomBookingStatus; locale?: string }) => {
     const query = new URLSearchParams();
     if (params?.room) query.set('room', params.room);
     if (params?.status) query.set('status', params.status);
+    if (params?.locale) query.set('locale', params.locale);
     const qs = query.toString();
     return api.get<ClassroomBooking[]>(`/v1/classrooms/bookings${qs ? '?' + qs : ''}`);
   },
@@ -730,6 +1004,7 @@ export interface CourseScheduleItem {
   order_index: number;
   created_at?: string;
   updated_at?: string;
+  translations?: LocalizedFieldMap;
 }
 
 export interface CourseScheduleItemBody {
@@ -741,6 +1016,7 @@ export interface CourseScheduleItemBody {
   location: string;
   is_active: boolean;
   order_index: number;
+  translations?: LocalizedFieldMap;
 }
 
 export interface SchoolPolicy {
@@ -749,10 +1025,17 @@ export interface SchoolPolicy {
   updated_at?: string;
 }
 
+export interface SchoolPolicyBundle {
+  zh: SchoolPolicy;
+  en: SchoolPolicy;
+  fr: SchoolPolicy;
+}
+
 export const scheduleApi = {
-  list: (params?: { includeInactive?: boolean }) => {
+  list: (params?: { includeInactive?: boolean; locale?: string }) => {
     const query = new URLSearchParams();
     if (params?.includeInactive) query.set('include_inactive', 'true');
+    if (params?.locale) query.set('locale', params.locale);
     const qs = query.toString();
     return api.get<CourseScheduleItem[]>(`/v1/schedules/classes${qs ? '?' + qs : ''}`);
   },

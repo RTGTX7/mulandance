@@ -22,10 +22,10 @@ export function CTABanner() {
 
   useEffect(() => {
     homepageApi
-      .get()
+      .get(locale)
       .then((settings) => setCustomCta(settings.cta))
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const localHref = (path: string) => {
     if (!path) return `/${locale}`;

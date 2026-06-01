@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { isAuthenticated, performanceApi, type PerformanceBody, type PerformanceItem } from '@/lib/api';
+import { aiApi, isAuthenticated, performanceApi, type AiDraft, type PerformanceBody, type PerformanceItem } from '@/lib/api';
+import { adminContentLanguageOptions, contentLocaleFromPath } from '@/lib/admin-i18n';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
-import { CheckCircle2, Save, Trash2 } from 'lucide-react';
+import { CheckCircle2, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
+
+type ContentLocale = 'zh' | 'en' | 'fr';
 
 interface FormState {
   title: string;
@@ -21,6 +24,7 @@ interface FormState {
   venue: string;
   cover_image: string;
   is_current: boolean;
+  translations?: PerformanceBody['translations'];
 }
 
 const emptyForm: FormState = {
@@ -64,6 +68,7 @@ function formFromPerformance(item: PerformanceItem): FormState {
     venue: item.venue || '',
     cover_image: item.cover_image || '',
     is_current: item.is_current,
+    translations: item.translations || {},
   };
 }
 
@@ -77,6 +82,7 @@ function bodyFromForm(form: FormState): PerformanceBody {
     venue: form.venue,
     cover_image: form.cover_image,
     is_current: form.is_current,
+    translations: form.translations,
   };
 }
 
@@ -85,14 +91,23 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const languageOptions = adminContentLanguageOptions(locale);
   const [form, setForm] = useState<FormState>(() => ({
     ...emptyForm,
     start: toDateTimeInput(new Date()),
     end: toDateTimeInput(new Date(), '21:00'),
   }));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [loading, setLoading] = useState(Boolean(editId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMessage, setAiMessage] = useState('');
+  const [aiDrafts, setAiDrafts] = useState<AiDraft[]>([]);
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -109,12 +124,109 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
   }, [editId, locale, router, t]);
 
   const handleTitleChange = (title: string) => {
+    setLocalizedField('title', title);
+  };
+
+  function localizedField(key: 'title' | 'description' | 'venue') {
+    if (contentLocale === 'zh') return form[key] || '';
+    return form.translations?.[contentLocale]?.[key] || '';
+  }
+
+  function setLocalizedField(key: 'title' | 'description' | 'venue', value: string) {
+    if (contentLocale === 'zh') {
+      setForm((prev) => ({
+        ...prev,
+        [key]: value,
+        slug: key === 'title' && !editId ? slugify(value) : prev.slug,
+      }));
+      return;
+    }
     setForm((prev) => ({
       ...prev,
-      title,
-      slug: editId ? prev.slug : slugify(title),
+      title: key === 'title' && !prev.title ? value : prev.title,
+      slug: key === 'title' && !prev.slug ? slugify(value) : prev.slug,
+      translations: {
+        ...(prev.translations || {}),
+        [contentLocale]: {
+          ...(prev.translations?.[contentLocale] || {}),
+          [key]: value,
+        },
+      },
     }));
-  };
+  }
+
+  function applyAiDrafts(drafts: AiDraft[]) {
+    if (drafts.length === 0) return;
+    setForm((prev) => {
+      const next: FormState = {
+        ...prev,
+        translations: { ...(prev.translations || {}) },
+      };
+
+      drafts.forEach((draft) => {
+        const fields = draft.fields || {};
+        if (draft.locale === 'zh') {
+          next.title = fields.title ?? next.title;
+          next.description = fields.description ?? next.description;
+          next.venue = fields.venue ?? next.venue;
+          if (!editId && !next.slug && next.title) {
+            next.slug = slugify(next.title);
+          }
+          return;
+        }
+
+        const localeKey = draft.locale as ContentLocale;
+        next.translations = {
+          ...(next.translations || {}),
+          [localeKey]: {
+            ...(next.translations?.[localeKey] || {}),
+            ...(fields.title ? { title: fields.title } : {}),
+            ...(fields.description ? { description: fields.description } : {}),
+            ...(fields.venue ? { venue: fields.venue } : {}),
+          },
+        };
+        if (!next.title && fields.title) next.title = fields.title;
+        if (!editId && !next.slug && fields.title) next.slug = slugify(fields.title);
+      });
+
+      return next;
+    });
+    setAiMessage(`已应用 ${drafts.map((draft) => draft.locale.toUpperCase()).join(', ')} 内容。`);
+  }
+
+  async function handleAiFillAllLanguages() {
+    const fields = {
+      title: localizedField('title'),
+      description: localizedField('description'),
+      venue: localizedField('venue'),
+    };
+    if (!fields.title.trim() && !fields.description.trim()) {
+      setAiMessage('请先填写一个语言的标题或描述。');
+      return;
+    }
+
+    const targets = (['zh', 'en', 'fr'] as ContentLocale[]).filter((item) => item !== contentLocale);
+    setAiLoading(true);
+    setAiMessage('');
+    try {
+      const result = await aiApi.translate({
+        module: 'performances',
+        source_locale: contentLocale,
+        target_locales: targets,
+        fields,
+      });
+      const sourceDraft: AiDraft = { locale: contentLocale, fields, warnings: [] };
+      const allDrafts = [sourceDraft, ...(result.drafts || [])];
+      setAiDrafts(allDrafts);
+      applyAiDrafts(allDrafts);
+      setAiMessage(result.warnings?.length ? result.warnings.join('；') : 'AI 已生成并应用中英法内容，检查后保存。');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'AI generation failed';
+      setAiMessage(message);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -194,9 +306,53 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
         <Card>
           <CardContent className="p-5">
             <form className="space-y-4" onSubmit={handleSave}>
+              <div className="flex flex-wrap gap-2">
+                {languageOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={contentLocale === option.value ? 'default' : 'outline'}
+                    onClick={() => setContentLocale(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-purple-950">
+                      <Sparkles className="h-4 w-4 text-purple-700" />
+                      AI 中英法填充
+                    </div>
+                    <p className="mt-1 text-xs text-purple-900/70">
+                      先填写任意一个语言，AI 会生成并应用中文、英文、法语字段，检查后再保存。
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" onClick={handleAiFillAllLanguages} disabled={aiLoading}>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    {aiLoading ? '生成中...' : '生成中英法'}
+                  </Button>
+                </div>
+                {aiMessage && (
+                  <div className="mt-3 rounded-md border border-purple-100 bg-white/70 px-3 py-2 text-sm text-purple-950">
+                    {aiMessage}
+                  </div>
+                )}
+                {aiDrafts.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-purple-900">
+                    {aiDrafts.map((draft) => (
+                      <span key={draft.locale} className="rounded-full border border-purple-200 bg-white px-2 py-1">
+                        {draft.locale.toUpperCase()} ready
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.title')}</label>
-                <Input value={form.title} onChange={(e) => handleTitleChange(e.target.value)} required />
+                <Input value={localizedField('title')} onChange={(e) => handleTitleChange(e.target.value)} required />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.slug')}</label>
@@ -204,7 +360,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.description')}</label>
-                <Textarea value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} rows={8} />
+                <Textarea value={localizedField('description')} onChange={(e) => setLocalizedField('description', e.target.value)} rows={8} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -218,7 +374,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.venue')}</label>
-                <Input value={form.venue} onChange={(e) => setForm((prev) => ({ ...prev, venue: e.target.value }))} />
+                <Input value={localizedField('venue')} onChange={(e) => setLocalizedField('venue', e.target.value)} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.coverImage')}</label>

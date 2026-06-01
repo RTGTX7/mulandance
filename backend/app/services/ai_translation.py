@@ -1,0 +1,216 @@
+import json
+import re
+import urllib.error
+import urllib.request
+from dataclasses import dataclass
+from typing import Any
+
+from fastapi import HTTPException, status
+
+from app.core.ai_translation_rules import (
+    LOCALE_NAMES,
+    filter_translatable_fields,
+    normalize_locale,
+    validate_locales,
+)
+from app.core.config import settings
+from app.schemas.ai import AiDraft, AiTranslateResponse
+
+
+class AiConfigurationError(RuntimeError):
+    pass
+
+
+@dataclass
+class AiRuntimeConfig:
+    enabled: bool
+    api_base_url: str
+    api_key: str
+    model: str
+    timeout_seconds: int
+
+
+def default_ai_config() -> AiRuntimeConfig:
+    return AiRuntimeConfig(
+        enabled=settings.AI_ENABLED,
+        api_base_url=settings.AI_API_BASE_URL,
+        api_key=settings.AI_API_KEY,
+        model=settings.AI_MODEL,
+        timeout_seconds=settings.AI_TIMEOUT_SECONDS,
+    )
+
+
+def ensure_ai_configured(config: AiRuntimeConfig | None = None) -> AiRuntimeConfig:
+    resolved = config or default_ai_config()
+    if not resolved.enabled:
+        raise AiConfigurationError("AI is disabled. Enable it in System Settings > AI API.")
+    if not resolved.api_key:
+        raise AiConfigurationError("AI API key is missing in System Settings > AI API.")
+    if not resolved.model:
+        raise AiConfigurationError("AI model is missing in System Settings > AI API.")
+    return resolved
+
+
+def ai_unavailable_exception(error: Exception) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=str(error),
+    )
+
+
+def _strip_json_fence(content: str) -> str:
+    text = content.strip()
+    match = re.match(r"^```(?:json)?\s*(.*?)\s*```$", text, flags=re.DOTALL)
+    return match.group(1).strip() if match else text
+
+
+def _call_chat_completion(
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.2,
+    config: AiRuntimeConfig | None = None,
+) -> dict[str, Any]:
+    resolved = ensure_ai_configured(config)
+    base_url = resolved.api_base_url.rstrip("/")
+    url = f"{base_url}/chat/completions"
+    payload: dict[str, Any] = {
+        "model": resolved.model,
+        "messages": messages,
+        "temperature": temperature,
+        "response_format": {"type": "json_object"},
+    }
+
+    def send(body: dict[str, Any]) -> dict[str, Any]:
+        data = json.dumps(body).encode("utf-8")
+        request = urllib.request.Request(
+            url,
+            data=data,
+            headers={
+                "Authorization": f"Bearer {resolved.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=resolved.timeout_seconds) as response:
+            raw = response.read().decode("utf-8")
+        return json.loads(raw)
+
+    try:
+        return send(payload)
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        if exc.code == 400 and "response_format" in body:
+            payload.pop("response_format", None)
+            return send(payload)
+        raise RuntimeError(f"AI provider error {exc.code}: {body[:500]}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"AI provider network error: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise RuntimeError("AI provider request timed out") from exc
+
+
+def chat_json(
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.2,
+    config: AiRuntimeConfig | None = None,
+) -> dict[str, Any]:
+    response = _call_chat_completion(messages, temperature=temperature, config=config)
+    try:
+        content = response["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError("AI provider returned an invalid response shape") from exc
+
+    try:
+        parsed = json.loads(_strip_json_fence(content))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("AI provider did not return valid JSON") from exc
+    if not isinstance(parsed, dict):
+        raise RuntimeError("AI provider JSON root must be an object")
+    return parsed
+
+
+def translate_fields(
+    *,
+    module: str,
+    source_locale: str,
+    target_locales: list[str],
+    fields: dict[str, str],
+    tone: str | None = None,
+    config: AiRuntimeConfig | None = None,
+) -> AiTranslateResponse:
+    source = normalize_locale(source_locale)
+    targets = validate_locales(target_locales)
+    clean_fields = filter_translatable_fields(module, fields)
+    if not clean_fields:
+        raise ValueError("No translatable fields were provided for this module.")
+
+    system = (
+        "You translate and localize dance school website CMS content. "
+        "Return strict JSON only. Preserve markdown structure, links, dates, names, prices, "
+        "phone numbers, URLs, and image markdown. Do not invent facts. "
+        "Only return fields that were provided by the user. If a target locale is the same "
+        "as the source locale, rewrite and organize the original text in that same language "
+        "so it is clear, polished, and ready for publication."
+    )
+    user = {
+        "module": module,
+        "source_locale": source,
+        "target_locales": targets,
+        "target_locale_names": {locale: LOCALE_NAMES[locale] for locale in targets},
+        "tone": tone or "clear, professional, parent-friendly dance school copy",
+        "fields": clean_fields,
+        "required_json_shape": {
+            "drafts": [
+                {
+                    "locale": "en",
+                    "fields": {"title": "translated title"},
+                    "warnings": ["optional warning"],
+                }
+            ],
+            "warnings": ["optional global warning"],
+        },
+    }
+
+    parsed = chat_json(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
+        ],
+        config=config,
+    )
+
+    drafts: list[AiDraft] = []
+    global_warnings = parsed.get("warnings") if isinstance(parsed.get("warnings"), list) else []
+    raw_drafts = parsed.get("drafts")
+    if not isinstance(raw_drafts, list):
+        raise RuntimeError("AI translation JSON is missing drafts[]")
+
+    allowed_keys = set(clean_fields.keys())
+    for item in raw_drafts:
+        if not isinstance(item, dict):
+            continue
+        locale = normalize_locale(str(item.get("locale", "")))
+        if locale not in targets:
+            continue
+        raw_fields = item.get("fields")
+        if not isinstance(raw_fields, dict):
+            continue
+        translated = {
+            key: str(value)
+            for key, value in raw_fields.items()
+            if key in allowed_keys and isinstance(value, (str, int, float))
+        }
+        warnings = item.get("warnings") if isinstance(item.get("warnings"), list) else []
+        drafts.append(AiDraft(locale=locale, fields=translated, warnings=[str(w) for w in warnings]))
+
+    missing = [locale for locale in targets if locale not in {draft.locale for draft in drafts}]
+    if missing:
+        global_warnings.append(f"AI did not return drafts for: {', '.join(missing)}")
+
+    return AiTranslateResponse(
+        module=module,
+        source_locale=source,
+        drafts=drafts,
+        warnings=[str(w) for w in global_warnings],
+    )

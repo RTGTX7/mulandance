@@ -96,6 +96,7 @@ class ArticleTranslationCreate(BaseModel):
     tag_slugs: List[str] = []
     locale: str = "en"
     is_published: bool = False
+    published_at: Optional[datetime] = None
 
 
 class ArticleTranslationUpdate(BaseModel):
@@ -165,6 +166,7 @@ class NewsArticleCreate(BaseModel):
     tag_slugs: List[str] = []
     locale: str = "en"
     is_published: bool = False
+    published_at: Optional[datetime] = None
 
 
 class NewsArticleUpdate(BaseModel):

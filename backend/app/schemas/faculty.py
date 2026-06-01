@@ -13,6 +13,7 @@ class FacultyMemberBase(BaseModel):
     achievements: Optional[str] = None
     is_active: bool = True
     order_index: int = 0
+    translations: dict = {}
 
 
 class FacultyMemberCreate(FacultyMemberBase):
@@ -28,6 +29,7 @@ class FacultyMemberUpdate(BaseModel):
     achievements: Optional[str] = None
     is_active: Optional[bool] = None
     order_index: Optional[int] = None
+    translations: Optional[dict] = None
 
 
 class FacultyMemberResponse(FacultyMemberBase):

@@ -7,7 +7,9 @@ from functools import lru_cache
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _PROJECT_DIR = os.path.dirname(_BACKEND_DIR)
 _DB_PATH = os.path.join(_BACKEND_DIR, "dance_org.db")
-_NEWS_FILES_DIR = os.path.join(_PROJECT_DIR, "data", "news")
+_DATA_DIR = os.path.join(_PROJECT_DIR, "data")
+_NEWS_FILES_DIR = os.path.join(_DATA_DIR, "news")
+_UPLOADS_DIR = os.path.join(_DATA_DIR, "uploads")
 # Convert to forward slashes for SQLAlchemy SQLite URL
 _DB_PATH_FWSLASH = _DB_PATH.replace("\\", "/")
 _DATABASE_URL = f"sqlite:///{_DB_PATH_FWSLASH}"
@@ -22,7 +24,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ALLOWED_HOSTS: str = "http://localhost:3000"
     DEBUG: bool = True
+    DATA_DIR: str = _DATA_DIR
     NEWS_FILES_DIR: str = _NEWS_FILES_DIR
+    UPLOADS_DIR: str = _UPLOADS_DIR
+    PUBLIC_BASE_URL: str = "http://localhost:8000"
     USE_FILE_STORAGE: bool = True
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
@@ -30,8 +35,16 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
     SMTP_USE_TLS: bool = True
+    AI_ENABLED: bool = False
+    AI_PROVIDER: str = "openai_compatible"
+    AI_API_BASE_URL: str = "https://api.openai.com/v1"
+    AI_API_KEY: str = ""
+    AI_MODEL: str = ""
+    AI_TIMEOUT_SECONDS: int = 60
+    AI_MAX_URLS: int = 10
+    AI_MAX_IMAGES_PER_URL: int = 5
 
-    @field_validator("DEBUG", "USE_FILE_STORAGE", "SMTP_USE_TLS", mode="before")
+    @field_validator("DEBUG", "USE_FILE_STORAGE", "SMTP_USE_TLS", "AI_ENABLED", mode="before")
     @classmethod
     def parse_bool_like_env(cls, value):
         if isinstance(value, bool):

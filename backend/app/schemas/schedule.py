@@ -13,6 +13,7 @@ class CourseScheduleItemBase(BaseModel):
     location: str = Field(min_length=1, max_length=300)
     is_active: bool = True
     order_index: int = 0
+    translations: dict = {}
 
 
 class CourseScheduleItemCreate(CourseScheduleItemBase):
@@ -28,6 +29,7 @@ class CourseScheduleItemUpdate(BaseModel):
     location: Optional[str] = Field(default=None, min_length=1, max_length=300)
     is_active: Optional[bool] = None
     order_index: Optional[int] = None
+    translations: Optional[dict] = None
 
 
 class CourseScheduleItemResponse(CourseScheduleItemBase):

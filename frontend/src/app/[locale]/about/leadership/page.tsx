@@ -29,11 +29,11 @@ export default function LeadershipPage() {
 
   useEffect(() => {
     facultyApi
-      .list()
+      .list(locale)
       .then(setFaculty)
       .catch(() => setFaculty([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const sortedFaculty = useMemo(
     () => [...faculty].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),

@@ -4,7 +4,7 @@
     "nav": {
       "home": "首页",
       "about": "关于我们",
-      "programs": "课程",
+      "programs": "开设课程",
       "performances": "演出与活动",
       "news": "新闻",
       "schedule": "排课表",
@@ -25,7 +25,7 @@
     },
     "footer": {
       "quickLinks": "快速链接",
-      "programs": "课程",
+      "programs": "开设课程",
       "performances": "演出",
       "events": "活动",
       "contact": "联系我们",
@@ -47,7 +47,7 @@
       "subtitle": "学中乐、学中思、学中悟 — 渥太华语舞蹈学校"
     },
     "sections": {
-      "ourPrograms": "我们的课程",
+      "ourPrograms": "开设课程",
       "upcomingEvents": "演出活动",
       "testimonials": "学员评价",
       "latestNews": "最新资讯",
@@ -126,7 +126,7 @@
         {
           "title": "让舞动成为艺术",
           "subtitle": "学中乐、学中思、学中悟 — 木兰舞蹈工作室",
-          "cta1": "探索课程",
+          "cta1": "查看开设课程",
           "cta2": "观看宣传片"
         },
         {
@@ -144,7 +144,7 @@
       ]
     },
     "programs": {
-      "title": "我们的课程",
+      "title": "开设课程",
       "subtitle": "为每个年龄和级别提供全面的舞蹈培训",
       "chinese": "中国古典舞",
       "chineseDesc": "富含华夏文化遗产的经典舞蹈，传承中华传统文化",
@@ -314,7 +314,7 @@
     }
   },
   "programs": {
-    "title": "课程",
+    "title": "开设课程",
     "subtitle": "为每个年龄和级别提供全面的舞蹈培训",
     "levels": {
       "children": "儿童（3-12岁）",
@@ -504,7 +504,7 @@
     "title": "页面未找到",
     "description": "抱歉！您查找的页面不存在或已迁移。",
     "returnHome": "返回首页",
-    "explorePrograms": "探索课程",
+    "explorePrograms": "查看开设课程",
     "helpTitle": "如何找到您想要的内容",
     "checkUrl": {
       "label": "检查网址",
@@ -681,14 +681,16 @@
       "newsArticles": "新闻文章",
       "categories": "分类",
       "tags": "标签",
-      "programs": "课程",
+      "programs": "开设课程",
       "schedules": "排课表",
       "performance": "活动与演出",
       "registration": "报名",
       "faculty": "教师",
       "classrooms": "教室使用",
       "pricing": "价格设置",
-      "settings": "系统设置"
+      "schoolPolicy": "学校规章与退费",
+      "settings": "系统设置",
+      "accounts": "账号管理"
     },
     "performances": {
       "calendarTitle": "演出日历",

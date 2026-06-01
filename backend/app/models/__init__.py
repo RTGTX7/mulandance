@@ -7,9 +7,8 @@ from app.core.database import Base
 
 
 class UserRole(str, enum.Enum):
+    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
-    FACULTY = "faculty"
-    EDITOR = "editor"
     STUDENT = "student"
     PARENT = "parent"
     ALUMNI = "alumni"
@@ -56,6 +55,7 @@ class Program(Base):
     cover_image = Column(String(1000))
     order_index = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    translations_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -109,6 +109,7 @@ class Performance(Base):
     venue = Column(String(200))
     cover_image = Column(String(500))
     is_current = Column(Boolean, default=False)
+    translations_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -295,6 +296,13 @@ class SystemSettings(Base):
     facebook_url = Column(String(1000), default="")
     tiktok_url = Column(String(1000), default="")
     homepage_json = Column(Text)
+    translations_json = Column(Text)
+    ai_enabled = Column(Boolean, default=False)
+    ai_provider = Column(String(100), default="openai_compatible")
+    ai_api_base_url = Column(String(1000), default="https://api.openai.com/v1")
+    ai_api_key = Column(Text, default="")
+    ai_model = Column(String(200), default="")
+    ai_timeout_seconds = Column(Integer, default=60)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -311,6 +319,7 @@ class FacultyMember(Base):
     achievements = Column(Text)
     is_active = Column(Boolean, default=True)
     order_index = Column(Integer, default=0)
+    translations_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -330,6 +339,7 @@ class ClassroomBooking(Base):
     start_time = Column(String(5), nullable=False)
     end_time = Column(String(5), nullable=False)
     notes = Column(Text)
+    translations_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -346,6 +356,7 @@ class CourseScheduleItem(Base):
     location = Column(String(300), nullable=False)
     is_active = Column(Boolean, default=True)
     order_index = Column(Integer, default=0)
+    translations_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

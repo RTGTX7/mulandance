@@ -29,11 +29,11 @@ export default function ProgramsPage() {
 
   useEffect(() => {
     programApi
-      .list()
+      .list(locale)
       .then(setPrograms)
       .catch(() => setPrograms([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const sortedPrograms = useMemo(
     () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),

@@ -13,6 +13,7 @@ class ProgramBase(BaseModel):
     syllabus_ref: Optional[str] = None
     cover_image: Optional[str] = None
     order_index: int = 0
+    translations: dict = {}
 
 
 class ProgramCreate(ProgramBase):
@@ -29,6 +30,7 @@ class ProgramUpdate(BaseModel):
     cover_image: Optional[str] = None
     order_index: Optional[int] = None
     is_active: Optional[bool] = None
+    translations: Optional[dict] = None
 
 
 class ProgramResponse(ProgramBase):

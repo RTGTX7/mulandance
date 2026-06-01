@@ -57,7 +57,7 @@ def get_current_user(
 
 
 def _require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role not in ("admin", "editor", "faculty"):
+    if user.role not in ("super_admin", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions",
@@ -66,7 +66,7 @@ def _require_admin(user: User = Depends(get_current_user)) -> User:
 
 
 def _require_admin_or_write(user: User = Depends(get_current_user)) -> User:
-    if user.role not in ("admin", "editor", "faculty"):
+    if user.role not in ("super_admin", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions",

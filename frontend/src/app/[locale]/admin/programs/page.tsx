@@ -7,9 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ProgramBody, ProgramItem, isAuthenticated, programApi, uploadApi } from '@/lib/api';
+import { type AiDraft, ProgramBody, ProgramItem, isAuthenticated, programApi, uploadApi } from '@/lib/api';
+import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
 import { cn, generateSlug } from '@/lib/utils';
 import { BookOpen, Edit2, ImagePlus, Loader2, Save, Trash2, X } from 'lucide-react';
+import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
+
+type ContentLocale = 'zh' | 'en' | 'fr';
 
 const emptyForm: ProgramBody & { is_active: boolean } = {
   slug: '',
@@ -23,7 +27,17 @@ const emptyForm: ProgramBody & { is_active: boolean } = {
   is_active: true,
 };
 
-function VisibilitySwitch({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (checked: boolean) => void }) {
+function VisibilitySwitch({
+  checked,
+  onCheckedChange,
+  visibleLabel,
+  hiddenLabel,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  visibleLabel: string;
+  hiddenLabel: string;
+}) {
   return (
     <button
       type="button"
@@ -37,7 +51,7 @@ function VisibilitySwitch({ checked, onCheckedChange }: { checked: boolean; onCh
       <span className={cn('relative inline-flex h-4 w-7 rounded-full', checked ? 'bg-emerald-500' : 'bg-slate-300')}>
         <span className={cn('absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform', checked ? 'translate-x-[14px]' : 'translate-x-0.5')} />
       </span>
-      {checked ? '前台显示' : '隐藏'}
+      {checked ? visibleLabel : hiddenLabel}
     </button>
   );
 }
@@ -46,8 +60,12 @@ export default function AdminProgramsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const labels = adminUiText(locale);
+  const text = labels.resources.programs;
+  const languageOptions = adminContentLanguageOptions(locale);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,6 +76,10 @@ export default function AdminProgramsPage() {
     () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
     [programs]
   );
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -72,7 +94,7 @@ export default function AdminProgramsPage() {
     programApi
       .adminList()
       .then(setPrograms)
-      .catch((err) => setError(err instanceof Error ? err.message : '加载课程失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : text.loadFailed))
       .finally(() => setLoading(false));
   }
 
@@ -94,6 +116,62 @@ export default function AdminProgramsPage() {
       cover_image: program.cover_image || '',
       order_index: program.order_index || 0,
       is_active: program.is_active,
+      translations: program.translations || {},
+    });
+  }
+
+  function localizedField(key: keyof ProgramBody) {
+    if (contentLocale === 'zh') return String(form[key] ?? '');
+    return form.translations?.[contentLocale]?.[String(key)] ?? '';
+  }
+
+  function setLocalizedField(key: keyof ProgramBody, value: string) {
+    if (contentLocale === 'zh') {
+      setForm((current) => ({ ...current, [key]: value, slug: key === 'name' && !editingId ? generateSlug(value) : current.slug }));
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      name: key === 'name' && !current.name ? value : current.name,
+      slug: key === 'name' && !current.slug ? generateSlug(value) : current.slug,
+      translations: {
+        ...(current.translations || {}),
+        [contentLocale]: {
+          ...(current.translations?.[contentLocale] || {}),
+          [String(key)]: value,
+        },
+      },
+    }));
+  }
+
+  function applyAiDrafts(drafts: AiDraft[]) {
+    setForm((current) => {
+      const next = { ...current, translations: { ...(current.translations || {}) } };
+      drafts.forEach((draft) => {
+        const fields = draft.fields || {};
+        if (draft.locale === 'zh') {
+          next.name = fields.name ?? next.name;
+          next.description = fields.description ?? next.description;
+          next.level = fields.level ?? next.level;
+          next.syllabus_ref = fields.syllabus_ref ?? next.syllabus_ref;
+          if (!editingId && !next.slug && next.name) next.slug = generateSlug(next.name);
+          return;
+        }
+        const localeKey = draft.locale as ContentLocale;
+        next.translations = {
+          ...(next.translations || {}),
+          [localeKey]: {
+            ...(next.translations?.[localeKey] || {}),
+            ...(fields.name ? { name: fields.name } : {}),
+            ...(fields.description ? { description: fields.description } : {}),
+            ...(fields.level ? { level: fields.level } : {}),
+            ...(fields.syllabus_ref ? { syllabus_ref: fields.syllabus_ref } : {}),
+          },
+        };
+        if (!next.name && fields.name) next.name = fields.name;
+        if (!editingId && !next.slug && fields.name) next.slug = generateSlug(fields.name);
+      });
+      return next;
     });
   }
 
@@ -106,7 +184,7 @@ export default function AdminProgramsPage() {
       const uploaded = await uploadApi.image(file);
       setForm((current) => ({ ...current, cover_image: uploaded.url }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : '上传封面失败');
+      setError(err instanceof Error ? err.message : text.uploadFailed);
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -116,11 +194,11 @@ export default function AdminProgramsPage() {
   async function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form.name.trim()) {
-      setError('课程名称必填');
+      setError(text.nameRequired);
       return;
     }
     if (!form.slug.trim()) {
-      setError('Slug 必填');
+      setError(text.slugRequired);
       return;
     }
 
@@ -149,21 +227,21 @@ export default function AdminProgramsPage() {
       resetForm();
       loadPrograms();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : labels.common.saveFailed);
     } finally {
       setSaving(false);
     }
   }
 
   async function removeProgram(program: ProgramItem) {
-    if (!window.confirm(`删除课程“${program.name}”吗？`)) return;
+    if (!window.confirm(text.deleteConfirm.replace('{name}', program.name))) return;
     setError('');
     try {
       await programApi.remove(program.id);
       if (editingId === program.id) resetForm();
       loadPrograms();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : text.deleteFailed);
     }
   }
 
@@ -180,18 +258,43 @@ export default function AdminProgramsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-              {editingId ? '编辑课程' : '新增课程'}
+              {editingId ? text.editTitle : text.newTitle}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={submitForm} className="space-y-4">
               {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
+              <div className="flex flex-wrap gap-2">
+                {languageOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={contentLocale === option.value ? 'default' : 'outline'}
+                    onClick={() => setContentLocale(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+
+              <AiLocaleSyncPanel
+                module="programs"
+                sourceLocale={contentLocale}
+                fields={{
+                  name: localizedField('name'),
+                  description: localizedField('description'),
+                  level: localizedField('level'),
+                  syllabus_ref: localizedField('syllabus_ref'),
+                }}
+                onApply={applyAiDrafts}
+              />
+
               <label className="block space-y-1">
-                <span className="text-sm font-medium">课程名称</span>
+                <span className="text-sm font-medium">{text.name}</span>
                 <Input
-                  value={form.name}
-                  onChange={(e) => setForm((current) => ({ ...current, name: e.target.value, slug: current.slug || generateSlug(e.target.value) }))}
+                  value={localizedField('name')}
+                  onChange={(e) => setLocalizedField('name', e.target.value)}
                 />
               </label>
 
@@ -202,74 +305,79 @@ export default function AdminProgramsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium">分类</span>
-                  <Input value={form.category} onChange={(e) => setForm((current) => ({ ...current, category: e.target.value }))} />
+                  <span className="text-sm font-medium">{text.category}</span>
+                  <Input value={localizedField('category')} onChange={(e) => setLocalizedField('category', e.target.value)} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium">级别</span>
-                  <Input value={form.level || ''} onChange={(e) => setForm((current) => ({ ...current, level: e.target.value }))} />
+                  <span className="text-sm font-medium">{text.level}</span>
+                  <Input value={localizedField('level')} onChange={(e) => setLocalizedField('level', e.target.value)} />
                 </label>
               </div>
 
               <div className="space-y-2">
-                <span className="text-sm font-medium">封面图</span>
+                <span className="text-sm font-medium">{text.coverImage}</span>
                 <div className="space-y-2">
                   <div className="h-32 overflow-hidden rounded-md border bg-slate-100">
                     {form.cover_image ? (
-                      <img src={form.cover_image} alt={form.name || '课程封面'} className="h-full w-full object-cover" />
+                      <img src={form.cover_image} alt={form.name || text.coverImage} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">无封面</div>
+                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{text.noCover}</div>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <Button asChild type="button" variant="outline" disabled={uploading}>
                       <label className="cursor-pointer">
                         {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
-                        上传封面
+                        {text.uploadCover}
                         <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
                       </label>
                     </Button>
                     <Input
                       value={form.cover_image || ''}
                       onChange={(e) => setForm((current) => ({ ...current, cover_image: e.target.value }))}
-                      placeholder="或粘贴图片 URL"
+                      placeholder={text.pasteImageUrl}
                     />
                   </div>
                 </div>
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium">简介</span>
-                <Textarea rows={5} value={form.description || ''} onChange={(e) => setForm((current) => ({ ...current, description: e.target.value }))} />
+                <span className="text-sm font-medium">{text.description}</span>
+                <Textarea rows={5} value={localizedField('description')} onChange={(e) => setLocalizedField('description', e.target.value)} />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium">补充说明</span>
+                <span className="text-sm font-medium">{text.notes}</span>
                 <Textarea
                   rows={3}
-                  value={form.syllabus_ref || ''}
-                  onChange={(e) => setForm((current) => ({ ...current, syllabus_ref: e.target.value }))}
-                  placeholder="可写课程体系、考试、适合年龄等"
+                  value={localizedField('syllabus_ref')}
+                  onChange={(e) => setLocalizedField('syllabus_ref', e.target.value)}
+                  placeholder={text.notesPlaceholder}
                 />
               </label>
 
               <div className="flex items-center justify-between gap-3">
                 <label className="space-y-1">
-                  <span className="text-sm font-medium">排序</span>
+                  <span className="text-sm font-medium">{labels.common.sort}</span>
                   <Input type="number" className="w-24" value={form.order_index} onChange={(e) => setForm((current) => ({ ...current, order_index: Number(e.target.value) }))} />
                 </label>
-                <VisibilitySwitch checked={form.is_active} onCheckedChange={(checked) => setForm((current) => ({ ...current, is_active: checked }))} />
+                <VisibilitySwitch
+                  checked={form.is_active}
+                  onCheckedChange={(checked) => setForm((current) => ({ ...current, is_active: checked }))}
+                  visibleLabel={labels.resources.visibleOnSite}
+                  hiddenLabel={labels.resources.hidden}
+                />
               </div>
 
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving || uploading}>
                   {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  保存
+                  {labels.common.save}
                 </Button>
                 {editingId && (
                   <Button type="button" variant="outline" onClick={resetForm}>
                     <X className="mr-2 h-4 w-4" />
-                    取消
+                    {labels.resources.cancel}
                   </Button>
                 )}
               </div>
@@ -279,12 +387,12 @@ export default function AdminProgramsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>课程列表</CardTitle>
+            <CardTitle>{text.list}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> 加载中...
+                <Loader2 className="h-4 w-4 animate-spin" /> {labels.resources.listLoading}
               </div>
             ) : (
               <div className="space-y-3">
@@ -294,18 +402,18 @@ export default function AdminProgramsPage() {
                       {program.cover_image ? (
                         <img src={program.cover_image} alt={program.name} className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">无图</div>
+                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{labels.resources.noImage}</div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="truncate font-semibold">{program.name}</h3>
                         <span className={cn('rounded-full px-2 py-0.5 text-xs', program.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500')}>
-                          {program.is_active ? '显示' : '隐藏'}
+                          {program.is_active ? labels.resources.show : labels.resources.hidden}
                         </span>
                       </div>
                       <p className="truncate text-sm text-muted-foreground">/{program.slug} · {program.level || program.category}</p>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">{program.description || '未填写简介'}</p>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{program.description || text.emptyDescription}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button type="button" variant="ghost" size="icon" onClick={() => editProgram(program)}>

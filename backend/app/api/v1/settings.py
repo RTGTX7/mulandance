@@ -1,18 +1,37 @@
 import json
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings as app_settings
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.translations import (
+    LOCALES,
+    dump_translations,
+    ensure_text_column,
+    localized_payload,
+    normalize_locale,
+    parse_translations,
+    set_translation_bundle,
+    translation_bundle,
+)
 from app.models import RegistrationSettings, SystemSettings, User
 from app.schemas.settings import (
     RegistrationLinks,
     RegistrationLinksUpdate,
     HomepageSettings,
+    HomepageSettingsBundle,
+    HomepageSettingsBundleUpdate,
     HomepageSettingsUpdate,
+    AiProviderSettings,
+    AiProviderSettingsUpdate,
+    SchoolPolicyBundle,
+    SchoolPolicyBundleUpdate,
+    SchoolPolicyContent,
     SystemSettingsResponse,
     SystemSettingsUpdate,
 )
@@ -20,6 +39,41 @@ from app.schemas.settings import (
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
+PAGES_DIR = Path(app_settings.NEWS_FILES_DIR).parent / "pages"
+POLICY_LOCALES = ("zh", "en", "fr")
+SYSTEM_TRANSLATABLE_FIELDS = (
+    "site_name",
+    "header_cta_label",
+    "announcement_text",
+    "footer_description",
+    "footer_newsletter_title",
+    "footer_newsletter_text",
+    "copyright_text",
+    "contact_address",
+    "program_pricing_json",
+    "classroom_pricing_json",
+)
+
+DEFAULT_POLICY_CONTENT = {
+    "zh": SchoolPolicyContent(
+        title="学校规章制度及退费规则",
+        body_markdown="# 学校规章制度及退费规则\n\n请在报名及缴费前仔细阅读学校规章制度及退费规则。\n",
+    ),
+    "en": SchoolPolicyContent(
+        title="School Policies and Refund Rules",
+        body_markdown=(
+            "# School Policies and Refund Rules\n\n"
+            "Please read the school policies and refund rules carefully before registration and payment.\n"
+        ),
+    ),
+    "fr": SchoolPolicyContent(
+        title="Règlement de l'école et règles de remboursement",
+        body_markdown=(
+            "# Règlement de l'école et règles de remboursement\n\n"
+            "Veuillez lire attentivement le règlement de l'école et les règles de remboursement avant l'inscription et le paiement.\n"
+        ),
+    ),
+}
 
 
 def get_current_user(
@@ -51,12 +105,80 @@ def get_current_user(
 
 
 def require_admin_or_editor(user: User = Depends(get_current_user)) -> User:
-    if user.role not in ("admin", "editor", "faculty"):
+    if user.role not in ("super_admin", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions",
         )
     return user
+
+
+def require_super_admin(user: User = Depends(get_current_user)) -> User:
+    if user.role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin access required",
+        )
+    return user
+
+
+def _normalize_policy_locale(locale: str) -> str:
+    value = (locale or "zh").lower()
+    if value.startswith("fr"):
+        return "fr"
+    if value.startswith("en"):
+        return "en"
+    return "zh"
+
+
+def _policy_path(locale: str) -> Path:
+    return PAGES_DIR / f"school-policy.{locale}.md"
+
+
+def _legacy_policy_path() -> Path:
+    return PAGES_DIR / "school-policy.md"
+
+
+def _read_policy(locale: str) -> SchoolPolicyContent:
+    normalized = _normalize_policy_locale(locale)
+    path = _policy_path(normalized)
+    if path.exists():
+        body = path.read_text(encoding="utf-8")
+    elif normalized == "zh" and _legacy_policy_path().exists():
+        body = _legacy_policy_path().read_text(encoding="utf-8")
+    else:
+        body = DEFAULT_POLICY_CONTENT[normalized].body_markdown
+
+    title = DEFAULT_POLICY_CONTENT[normalized].title
+    for line in body.splitlines():
+        if line.startswith("# "):
+            title = line[2:].strip() or title
+            break
+    return SchoolPolicyContent(title=title, body_markdown=body)
+
+
+def _write_policy(locale: str, policy: SchoolPolicyContent) -> SchoolPolicyContent:
+    normalized = _normalize_policy_locale(locale)
+    title = (policy.title or DEFAULT_POLICY_CONTENT[normalized].title).strip()
+    body = policy.body_markdown or ""
+    if not body.strip():
+        body = f"# {title}\n"
+    elif not body.lstrip().startswith("#"):
+        body = f"# {title}\n\n{body.lstrip()}"
+
+    PAGES_DIR.mkdir(parents=True, exist_ok=True)
+    _policy_path(normalized).write_text(body, encoding="utf-8", newline="")
+    if normalized == "zh":
+        _legacy_policy_path().write_text(body, encoding="utf-8", newline="")
+    return SchoolPolicyContent(title=title, body_markdown=body)
+
+
+def _policy_bundle() -> SchoolPolicyBundle:
+    return SchoolPolicyBundle(
+        zh=_read_policy("zh"),
+        en=_read_policy("en"),
+        fr=_read_policy("fr"),
+    )
 
 
 def _get_or_create_settings(db: Session) -> RegistrationSettings:
@@ -98,10 +220,47 @@ def _ensure_system_settings_columns(db: Session) -> None:
     if "homepage_json" not in columns:
         db.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
         db.commit()
+    ai_columns = {
+        "ai_enabled": "ALTER TABLE system_settings ADD COLUMN ai_enabled INTEGER DEFAULT 0",
+        "ai_provider": "ALTER TABLE system_settings ADD COLUMN ai_provider VARCHAR(100) DEFAULT 'openai_compatible'",
+        "ai_api_base_url": "ALTER TABLE system_settings ADD COLUMN ai_api_base_url VARCHAR(1000) DEFAULT 'https://api.openai.com/v1'",
+        "ai_api_key": "ALTER TABLE system_settings ADD COLUMN ai_api_key TEXT DEFAULT ''",
+        "ai_model": "ALTER TABLE system_settings ADD COLUMN ai_model VARCHAR(200) DEFAULT ''",
+        "ai_timeout_seconds": "ALTER TABLE system_settings ADD COLUMN ai_timeout_seconds INTEGER DEFAULT 60",
+    }
+    added_ai_column = False
+    for column, statement in ai_columns.items():
+        if column not in columns:
+            db.execute(text(statement))
+            added_ai_column = True
+    if added_ai_column:
+        db.commit()
+    ensure_text_column(db, "system_settings")
 
 
-def _system_to_response(settings: SystemSettings) -> SystemSettingsResponse:
-    return SystemSettingsResponse(
+def _mask_secret(value: str | None) -> str:
+    if not value:
+        return ""
+    if len(value) <= 8:
+        return "********"
+    return f"{value[:4]}...{value[-4:]}"
+
+
+def _ai_settings_to_response(settings: SystemSettings) -> AiProviderSettings:
+    api_key = settings.ai_api_key or app_settings.AI_API_KEY or ""
+    return AiProviderSettings(
+        enabled=bool(settings.ai_enabled),
+        provider=settings.ai_provider or app_settings.AI_PROVIDER or "openai_compatible",
+        api_base_url=settings.ai_api_base_url or app_settings.AI_API_BASE_URL or "https://api.openai.com/v1",
+        model=settings.ai_model or app_settings.AI_MODEL or "",
+        timeout_seconds=settings.ai_timeout_seconds or app_settings.AI_TIMEOUT_SECONDS or 60,
+        api_key_set=bool(api_key),
+        api_key_masked=_mask_secret(api_key),
+    )
+
+
+def _system_to_response(settings: SystemSettings, locale: str | None = None, include_translations: bool = False) -> SystemSettingsResponse:
+    data = dict(
         site_name=settings.site_name or "Mulan Dance Studio",
         logo_url=settings.logo_url or "/logo.png",
         header_cta_label=settings.header_cta_label or "",
@@ -127,10 +286,68 @@ def _system_to_response(settings: SystemSettings) -> SystemSettingsResponse:
         instagram_url=settings.instagram_url or "",
         facebook_url=settings.facebook_url or "",
         tiktok_url=settings.tiktok_url or "",
+        translations=translation_bundle(settings) if include_translations else {},
     )
+    data.update(localized_payload(settings, SYSTEM_TRANSLATABLE_FIELDS, locale))
+    return SystemSettingsResponse(**data)
 
 
-def _homepage_defaults() -> HomepageSettings:
+def _homepage_defaults(locale: str = "zh") -> HomepageSettings:
+    normalized = normalize_locale(locale)
+    if normalized == "en":
+        return HomepageSettings(
+            hero_slides=[
+                {
+                    "badge": "Mulan Dance Studio",
+                    "title": "Where Movement Becomes Art",
+                    "subtitle": "Learn with joy, reflection, and growth at Mulan Dance Studio.",
+                    "primary": {"label": "Explore Programs", "href": "/programs"},
+                    "secondary": {"label": "Watch Video", "href": "https://www.youtube.com/@mulandancestudio21"},
+                    "overlay": "from-primary/90 via-primary/70 to-primary/40",
+                    "is_active": True,
+                },
+            ],
+            stats=[
+                {"value": "200+", "label": "Students"},
+                {"value": "5+", "label": "Years Teaching"},
+                {"value": "100+", "label": "Performances"},
+                {"value": "5+", "label": "Faculty"},
+            ],
+            cta={
+                "title": "Join the Mulan Dance Family",
+                "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
+                "note": "Our studio welcomes dancers into a warm, focused community.",
+                "primary": {"label": "Register Now", "href": "/classes/register"},
+                "secondary": {"label": "Contact Us", "href": "/about/contact"},
+            },
+        )
+    if normalized == "fr":
+        return HomepageSettings(
+            hero_slides=[
+                {
+                    "badge": "Mulan Dance Studio",
+                    "title": "Quand le mouvement devient art",
+                    "subtitle": "Apprendre avec plaisir, réflexion et progression chez Mulan Dance Studio.",
+                    "primary": {"label": "Voir les cours", "href": "/programs"},
+                    "secondary": {"label": "Voir la vidéo", "href": "https://www.youtube.com/@mulandancestudio21"},
+                    "overlay": "from-primary/90 via-primary/70 to-primary/40",
+                    "is_active": True,
+                },
+            ],
+            stats=[
+                {"value": "200+", "label": "Élèves"},
+                {"value": "5+", "label": "Années d'enseignement"},
+                {"value": "100+", "label": "Spectacles"},
+                {"value": "5+", "label": "Professeurs"},
+            ],
+            cta={
+                "title": "Rejoignez la famille Mulan Dance",
+                "subtitle": "2527 Baseline Rd, Ottawa, ON K2C 0E3 | 343-777-1766",
+                "note": "Notre studio accueille les danseurs dans une communauté chaleureuse et sérieuse.",
+                "primary": {"label": "S'inscrire", "href": "/classes/register"},
+                "secondary": {"label": "Nous contacter", "href": "/about/contact"},
+            },
+        )
     return HomepageSettings(
         hero_slides=[
             {
@@ -177,14 +394,44 @@ def _homepage_defaults() -> HomepageSettings:
     )
 
 
-def _homepage_to_response(settings: SystemSettings) -> HomepageSettings:
+def _homepage_single_from_raw(raw) -> HomepageSettings | None:
+    try:
+        return HomepageSettings.model_validate(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _homepage_bundle(settings: SystemSettings) -> HomepageSettingsBundle:
     if not settings.homepage_json:
-        return _homepage_defaults()
+        return HomepageSettingsBundle(
+            zh=_homepage_defaults("zh"),
+            en=_homepage_defaults("en"),
+            fr=_homepage_defaults("fr"),
+        )
 
     try:
-        return HomepageSettings.model_validate(json.loads(settings.homepage_json))
+        raw = json.loads(settings.homepage_json)
     except (TypeError, json.JSONDecodeError, ValueError):
-        return _homepage_defaults()
+        raw = None
+
+    if isinstance(raw, dict) and any(locale in raw for locale in LOCALES):
+        return HomepageSettingsBundle(
+            zh=_homepage_single_from_raw(raw.get("zh")) or _homepage_defaults("zh"),
+            en=_homepage_single_from_raw(raw.get("en")) or _homepage_defaults("en"),
+            fr=_homepage_single_from_raw(raw.get("fr")) or _homepage_defaults("fr"),
+        )
+
+    legacy = _homepage_single_from_raw(raw)
+    return HomepageSettingsBundle(
+        zh=legacy or _homepage_defaults("zh"),
+        en=_homepage_defaults("en"),
+        fr=_homepage_defaults("fr"),
+    )
+
+
+def _homepage_to_response(settings: SystemSettings, locale: str | None = None) -> HomepageSettings:
+    bundle = _homepage_bundle(settings)
+    return getattr(bundle, normalize_locale(locale), bundle.zh)
 
 
 @router.get("/registration-links", response_model=RegistrationLinks)
@@ -196,7 +443,7 @@ def get_registration_links(db: Session = Depends(get_db)):
 @router.put("/registration-links", response_model=RegistrationLinks)
 def update_registration_links(
     payload: RegistrationLinksUpdate,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ):
     settings = _get_or_create_settings(db)
@@ -210,32 +457,68 @@ def update_registration_links(
 
 
 @router.get("/site", response_model=SystemSettingsResponse)
-def get_site_settings(db: Session = Depends(get_db)):
+def get_site_settings(locale: str | None = None, db: Session = Depends(get_db)):
     settings = _get_or_create_system_settings(db)
-    return _system_to_response(settings)
+    return _system_to_response(settings, locale)
+
+
+@router.get("/site/all", response_model=SystemSettingsResponse)
+def get_site_settings_all(
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    return _system_to_response(settings, include_translations=True)
 
 
 @router.put("/site", response_model=SystemSettingsResponse)
 def update_site_settings(
     payload: SystemSettingsUpdate,
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    data = payload.model_dump()
+    translations = data.pop("translations", None)
+    for field, value in data.items():
+        if isinstance(value, str):
+            value = value.strip()
+        setattr(settings, field, value)
+    if translations is not None:
+        set_translation_bundle(settings, translations)
+
+    db.commit()
+    db.refresh(settings)
+    return _system_to_response(settings, include_translations=True)
+
+
+@router.get("/homepage", response_model=HomepageSettings)
+def get_homepage_settings(locale: str | None = None, db: Session = Depends(get_db)):
+    settings = _get_or_create_system_settings(db)
+    return _homepage_to_response(settings, locale)
+
+
+@router.get("/homepage/all", response_model=HomepageSettingsBundle)
+def get_homepage_settings_bundle(
     user: User = Depends(require_admin_or_editor),
     db: Session = Depends(get_db),
 ):
     settings = _get_or_create_system_settings(db)
-    for field, value in payload.model_dump().items():
-        if isinstance(value, str):
-            value = value.strip()
-        setattr(settings, field, value)
+    return _homepage_bundle(settings)
+
+
+@router.put("/homepage/all", response_model=HomepageSettingsBundle)
+def update_homepage_settings_bundle(
+    payload: HomepageSettingsBundleUpdate,
+    user: User = Depends(require_admin_or_editor),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    settings.homepage_json = payload.model_dump_json()
 
     db.commit()
     db.refresh(settings)
-    return _system_to_response(settings)
-
-
-@router.get("/homepage", response_model=HomepageSettings)
-def get_homepage_settings(db: Session = Depends(get_db)):
-    settings = _get_or_create_system_settings(db)
-    return _homepage_to_response(settings)
+    return _homepage_bundle(settings)
 
 
 @router.put("/homepage", response_model=HomepageSettings)
@@ -245,8 +528,63 @@ def update_homepage_settings(
     db: Session = Depends(get_db),
 ):
     settings = _get_or_create_system_settings(db)
-    settings.homepage_json = payload.model_dump_json()
+    bundle = _homepage_bundle(settings)
+    bundle.zh = payload
+    settings.homepage_json = bundle.model_dump_json()
 
     db.commit()
     db.refresh(settings)
-    return _homepage_to_response(settings)
+    return _homepage_to_response(settings, "zh")
+
+
+@router.get("/ai", response_model=AiProviderSettings)
+def get_ai_provider_settings(
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    return _ai_settings_to_response(settings)
+
+
+@router.put("/ai", response_model=AiProviderSettings)
+def update_ai_provider_settings(
+    payload: AiProviderSettingsUpdate,
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    settings.ai_enabled = payload.enabled
+    settings.ai_provider = payload.provider.strip() or "openai_compatible"
+    settings.ai_api_base_url = payload.api_base_url.strip().rstrip("/") or "https://api.openai.com/v1"
+    settings.ai_model = payload.model.strip()
+    settings.ai_timeout_seconds = payload.timeout_seconds
+    if payload.clear_api_key:
+        settings.ai_api_key = ""
+    elif payload.api_key is not None and payload.api_key.strip():
+        settings.ai_api_key = payload.api_key.strip()
+
+    db.commit()
+    db.refresh(settings)
+    return _ai_settings_to_response(settings)
+
+
+@router.get("/school-policy", response_model=SchoolPolicyContent)
+def get_school_policy(locale: str = "zh"):
+    return _read_policy(locale)
+
+
+@router.get("/school-policy/all", response_model=SchoolPolicyBundle)
+def get_school_policy_bundle(user: User = Depends(require_super_admin)):
+    return _policy_bundle()
+
+
+@router.put("/school-policy", response_model=SchoolPolicyBundle)
+def update_school_policy_bundle(
+    payload: SchoolPolicyBundleUpdate,
+    user: User = Depends(require_super_admin),
+):
+    return SchoolPolicyBundle(
+        zh=_write_policy("zh", payload.zh),
+        en=_write_policy("en", payload.en),
+        fr=_write_policy("fr", payload.fr),
+    )

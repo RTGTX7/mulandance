@@ -103,11 +103,11 @@ export default function ClassroomsPage() {
 
   useEffect(() => {
     classroomApi
-      .list({ status: 'confirmed' })
+      .list({ status: 'confirmed', locale })
       .then(setBookings)
       .catch((err) => setError(err instanceof Error ? err.message : loadFailedMessage))
       .finally(() => setLoading(false));
-  }, [loadFailedMessage]);
+  }, [loadFailedMessage, locale]);
 
   function refreshCaptcha() {
     classroomApi

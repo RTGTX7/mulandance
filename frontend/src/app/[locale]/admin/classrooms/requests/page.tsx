@@ -98,8 +98,8 @@ export default function ClassroomRequestsPage() {
   function loadBookings() {
     setLoading(true);
     Promise.all([
-      classroomApi.list({ status: 'pending' }),
-      classroomApi.list({ status: 'confirmed' }),
+      classroomApi.list({ status: 'pending', locale }),
+      classroomApi.list({ status: 'confirmed', locale }),
     ])
       .then(([pending, confirmed]) => {
         setBookings(pending);

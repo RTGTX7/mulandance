@@ -1,24 +1,24 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { marked } from 'marked';
 import { usePathname, useRouter } from 'next/navigation';
 import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
+  type AiDraft,
   CourseScheduleItem,
   CourseScheduleItemBody,
-  SchoolPolicy,
   isAuthenticated,
   scheduleApi,
 } from '@/lib/api';
-import { CalendarDays, Eye, Plus, Save, Trash2 } from 'lucide-react';
+import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { CalendarDays, Plus, Trash2 } from 'lucide-react';
+import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
 
-const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
+type ContentLocale = 'zh' | 'en' | 'fr';
 
 const initialForm: CourseScheduleItemBody = {
   day_of_week: 1,
@@ -30,6 +30,12 @@ const initialForm: CourseScheduleItemBody = {
   is_active: true,
   order_index: 10,
 };
+
+function weekdayLabelsForLocale(locale: string) {
+  if (locale === 'fr') return ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  if (locale === 'en') return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+}
 
 function scheduleStatusLabels(locale: string, active: boolean) {
   if (locale === 'fr') {
@@ -92,19 +98,23 @@ export default function AdminSchedulesPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'zh';
+  const labels = adminUiText(locale);
+  const text = labels.resources.schedules;
+  const weekdays = useMemo(() => weekdayLabelsForLocale(locale), [locale]);
+  const languageOptions = adminContentLanguageOptions(locale);
   const [items, setItems] = useState<CourseScheduleItem[]>([]);
   const [form, setForm] = useState<CourseScheduleItemBody>(initialForm);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [policy, setPolicy] = useState<SchoolPolicy>({
-    title: '学校规章制度及退费规则',
-    body_markdown: '',
-  });
-  const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [switchLoading, setSwitchLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -126,22 +136,17 @@ export default function AdminSchedulesPage() {
           a.end_time.localeCompare(b.end_time)
         ),
     }));
-  }, [items]);
-
-  const policyHtml = useMemo(
-    () => String(marked.parse(policy.body_markdown || '')),
-    [policy.body_markdown]
-  );
+  }, [items, weekdays]);
 
   function loadData() {
     setLoading(true);
     setError('');
-    Promise.all([scheduleApi.list({ includeInactive: true }), scheduleApi.policy()])
-      .then(([scheduleItems, policyData]) => {
+    scheduleApi
+      .list({ includeInactive: true })
+      .then((scheduleItems) => {
         setItems(scheduleItems);
-        setPolicy(policyData);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : '加载失败'))
+      .catch((err) => setError(err instanceof Error ? err.message : text.loadFailed))
       .finally(() => setLoading(false));
   }
 
@@ -156,12 +161,65 @@ export default function AdminSchedulesPage() {
       location: item.location,
       is_active: item.is_active,
       order_index: item.order_index,
+      translations: item.translations || {},
     });
+  }
+
+  function localizedField(key: keyof CourseScheduleItemBody) {
+    if (contentLocale === 'zh') return String(form[key] ?? '');
+    return form.translations?.[contentLocale]?.[String(key)] ?? '';
+  }
+
+  function setLocalizedField(key: keyof CourseScheduleItemBody, value: string) {
+    if (contentLocale === 'zh') {
+      setForm((current) => ({ ...current, [key]: value }));
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      title: key === 'title' && !current.title ? value : current.title,
+      location: key === 'location' && !current.location ? value : current.location,
+      translations: {
+        ...(current.translations || {}),
+        [contentLocale]: {
+          ...(current.translations?.[contentLocale] || {}),
+          [String(key)]: value,
+        },
+      },
+    }));
   }
 
   function resetForm() {
     setEditingId(null);
     setForm(initialForm);
+  }
+
+  function applyAiDrafts(drafts: AiDraft[]) {
+    setForm((current) => {
+      const next = { ...current, translations: { ...(current.translations || {}) } };
+      drafts.forEach((draft) => {
+        const fields = draft.fields || {};
+        if (draft.locale === 'zh') {
+          next.title = fields.title ?? next.title;
+          next.description = fields.description ?? next.description;
+          next.location = fields.location ?? next.location;
+          return;
+        }
+        const localeKey = draft.locale as ContentLocale;
+        next.translations = {
+          ...(next.translations || {}),
+          [localeKey]: {
+            ...(next.translations?.[localeKey] || {}),
+            ...(fields.title ? { title: fields.title } : {}),
+            ...(fields.description ? { description: fields.description } : {}),
+            ...(fields.location ? { location: fields.location } : {}),
+          },
+        };
+        if (!next.title && fields.title) next.title = fields.title;
+        if (!next.location && fields.location) next.location = fields.location;
+      });
+      return next;
+    });
   }
 
   async function saveScheduleItem(event: FormEvent<HTMLFormElement>) {
@@ -176,23 +234,23 @@ export default function AdminSchedulesPage() {
         await scheduleApi.create(form);
       }
       resetForm();
-      setMessage('排课已保存');
+      setMessage(text.saved);
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : labels.common.saveFailed);
     } finally {
       setSaving(false);
     }
   }
 
   async function removeItem(item: CourseScheduleItem) {
-    if (!window.confirm(`删除「${item.title}」吗？`)) return;
+    if (!window.confirm(text.deleteConfirm.replace('{title}', item.title))) return;
     setError('');
     try {
       await scheduleApi.remove(item.id);
       loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : text.deleteFailed);
     }
   }
 
@@ -212,21 +270,6 @@ export default function AdminSchedulesPage() {
     }
   }
 
-  async function savePolicy() {
-    setSaving(true);
-    setMessage('');
-    setError('');
-    try {
-      const next = await scheduleApi.updatePolicy(policy);
-      setPolicy(next);
-      setMessage('规章制度已保存');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-10 border-b bg-card">
@@ -239,10 +282,10 @@ export default function AdminSchedulesPage() {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
             <CalendarDays className="h-6 w-6 text-primary" />
-            排课表
+            {text.title}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            管理前台课程排课表，以及学校规章制度和退费规则 Markdown。
+            {text.subtitle}
           </p>
         </div>
 
@@ -259,12 +302,36 @@ export default function AdminSchedulesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{editingId ? '编辑排课' : '新增排课'}</CardTitle>
+            <CardTitle className="text-base">{editingId ? text.editTitle : text.newTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={saveScheduleItem} className="grid grid-cols-1 gap-4 md:grid-cols-6">
+              <div className="flex flex-wrap gap-2 md:col-span-6">
+                {languageOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={contentLocale === option.value ? 'default' : 'outline'}
+                    onClick={() => setContentLocale(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="md:col-span-6">
+                <AiLocaleSyncPanel
+                  module="schedules"
+                  sourceLocale={contentLocale}
+                  fields={{
+                    title: localizedField('title'),
+                    description: localizedField('description'),
+                    location: localizedField('location'),
+                  }}
+                  onApply={applyAiDrafts}
+                />
+              </div>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">星期</span>
+                <span className="text-xs font-medium text-muted-foreground">{text.weekday}</span>
                 <select
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                   value={form.day_of_week}
@@ -276,28 +343,28 @@ export default function AdminSchedulesPage() {
                 </select>
               </label>
               <label className="space-y-1 md:col-span-2">
-                <span className="text-xs font-medium text-muted-foreground">课程名</span>
-                <Input required value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} />
+                <span className="text-xs font-medium text-muted-foreground">{text.courseName}</span>
+                <Input required value={localizedField('title')} onChange={(event) => setLocalizedField('title', event.target.value)} />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">开始</span>
+                <span className="text-xs font-medium text-muted-foreground">{text.start}</span>
                 <Input type="time" required value={form.start_time} onChange={(event) => setForm((prev) => ({ ...prev, start_time: event.target.value }))} />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">结束</span>
+                <span className="text-xs font-medium text-muted-foreground">{text.end}</span>
                 <Input type="time" required value={form.end_time} onChange={(event) => setForm((prev) => ({ ...prev, end_time: event.target.value }))} />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">排序</span>
+                <span className="text-xs font-medium text-muted-foreground">{labels.common.sort}</span>
                 <Input type="number" value={form.order_index} onChange={(event) => setForm((prev) => ({ ...prev, order_index: Number(event.target.value) }))} />
               </label>
               <label className="space-y-1 md:col-span-3">
-                <span className="text-xs font-medium text-muted-foreground">说明</span>
-                <Input value={form.description || ''} onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))} />
+                <span className="text-xs font-medium text-muted-foreground">{text.description}</span>
+                <Input value={localizedField('description')} onChange={(event) => setLocalizedField('description', event.target.value)} />
               </label>
               <label className="space-y-1 md:col-span-2">
-                <span className="text-xs font-medium text-muted-foreground">上课地址</span>
-                <Input required value={form.location} onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))} />
+                <span className="text-xs font-medium text-muted-foreground">{text.location}</span>
+                <Input required value={localizedField('location')} onChange={(event) => setLocalizedField('location', event.target.value)} />
               </label>
               <label className="flex items-center gap-2 pt-6 text-sm">
                 <input
@@ -305,15 +372,15 @@ export default function AdminSchedulesPage() {
                   checked={form.is_active}
                   onChange={(event) => setForm((prev) => ({ ...prev, is_active: event.target.checked }))}
                 />
-                前台显示
+                {labels.resources.visibleOnSite}
               </label>
               <div className="md:col-span-6 flex justify-end gap-2">
                 {editingId && (
-                  <Button type="button" variant="outline" onClick={resetForm}>取消编辑</Button>
+                  <Button type="button" variant="outline" onClick={resetForm}>{text.cancelEdit}</Button>
                 )}
                 <Button type="submit" disabled={saving}>
                   <Plus className="mr-2 h-4 w-4" />
-                  {saving ? '保存中...' : '保存排课'}
+                  {saving ? labels.common.saving : text.save}
                 </Button>
               </div>
             </form>
@@ -322,7 +389,7 @@ export default function AdminSchedulesPage() {
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {loading ? (
-            <Card className="lg:col-span-2 p-8 text-sm text-muted-foreground">加载中...</Card>
+            <Card className="lg:col-span-2 p-8 text-sm text-muted-foreground">{labels.resources.listLoading}</Card>
           ) : grouped.map((day) => (
             <Card key={day.day}>
               <CardHeader>
@@ -330,7 +397,7 @@ export default function AdminSchedulesPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {day.items.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">暂无课程</p>
+                  <p className="text-sm text-muted-foreground">{text.noClasses}</p>
                 ) : day.items.map((item) => (
                   <div key={item.id} className={`rounded-md border p-3 ${item.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}`}>
                     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -348,7 +415,7 @@ export default function AdminSchedulesPage() {
                           loading={switchLoading === item.id}
                           onChange={toggleScheduleStatus}
                         />
-                        <Button size="sm" variant="outline" onClick={() => editItem(item)}>编辑</Button>
+                        <Button size="sm" variant="outline" onClick={() => editItem(item)}>{labels.resources.edit}</Button>
                         <Button size="sm" variant="outline" className="text-red-600" onClick={() => removeItem(item)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -361,39 +428,6 @@ export default function AdminSchedulesPage() {
           ))}
         </section>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">学校规章制度及退费规则</CardTitle>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowPreview((prev) => !prev)}>
-                <Eye className="mr-2 h-4 w-4" />
-                {showPreview ? '编辑' : '预览'}
-              </Button>
-              <Button size="sm" onClick={savePolicy} disabled={saving}>
-                <Save className="mr-2 h-4 w-4" />
-                保存规则
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input
-              value={policy.title}
-              onChange={(event) => setPolicy((prev) => ({ ...prev, title: event.target.value }))}
-            />
-            {showPreview ? (
-              <div
-                className="prose prose-slate max-w-none rounded-md border bg-white p-4"
-                dangerouslySetInnerHTML={{ __html: policyHtml }}
-              />
-            ) : (
-              <Textarea
-                value={policy.body_markdown}
-                onChange={(event) => setPolicy((prev) => ({ ...prev, body_markdown: event.target.value }))}
-                className="min-h-[420px] font-mono text-sm"
-              />
-            )}
-          </CardContent>
-        </Card>
       </main>
     </div>
   );

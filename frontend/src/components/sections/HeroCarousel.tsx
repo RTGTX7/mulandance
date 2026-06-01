@@ -84,13 +84,13 @@ export function HeroCarousel() {
 
   useEffect(() => {
     homepageApi
-      .get()
+      .get(locale)
       .then((settings) => {
         const activeSlides = settings.hero_slides.filter((item) => item.is_active);
         if (activeSlides.length > 0) setCustomSlides(activeSlides);
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (current >= slides.length) setCurrent(0);

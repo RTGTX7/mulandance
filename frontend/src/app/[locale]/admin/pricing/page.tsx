@@ -1,14 +1,19 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { SystemSettings, isAuthenticated, settingsApi } from '@/lib/api';
+import { Textarea } from '@/components/ui/textarea';
+import { type AiDraft, SystemSettings, isAuthenticated, settingsApi, uploadApi } from '@/lib/api';
+import { adminContentLanguageOptions, contentLocaleFromPath } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
-import { DollarSign, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { DollarSign, ImagePlus, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
+
+type ContentLocale = 'zh' | 'en' | 'fr';
 
 type ProgramPricingItem = {
   program: string;
@@ -21,6 +26,7 @@ type ProgramPricingItem = {
 
 type ClassroomPricingItem = {
   key: 'large' | 'small';
+  image_url: string;
   hourlyCurrency: string;
   hourlyPrice: string;
   hourlyTime: string;
@@ -32,9 +38,21 @@ type ClassroomPricingItem = {
   fullDayTime: string;
 };
 
-const currencyOptions = ['', '$', 'C$', 'CAD', 'USD', '￥', '¥'];
+type InfoCard = { title: string; body: string };
+type PaymentColumn = { title: string; items: string[] };
+type ProgramPricingContent = {
+  items: ProgramPricingItem[];
+  infoCards: InfoCard[];
+  payment: { title: string; columns: PaymentColumn[] };
+};
+type ClassroomPricingContent = {
+  items: ClassroomPricingItem[];
+  notes: { title: string; items: string[] };
+};
 
-const defaultProgramPricing: ProgramPricingItem[] = [
+const currencyOptions = ['', '$', 'C$', 'CAD', 'USD', '¥', '€'];
+
+const defaultProgramItems: ProgramPricingItem[] = [
   { program: 'Young Dancers (Ages 3-5)', monthlyCurrency: '$', monthlyPrice: '120', termCurrency: '$', termPrice: '340', hours: '45 min, 1x/week' },
   { program: 'Ballet (All Levels)', monthlyCurrency: '$', monthlyPrice: '150', termCurrency: '$', termPrice: '420', hours: '60 min, 1x/week' },
   { program: 'Contemporary', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
@@ -44,75 +62,164 @@ const defaultProgramPricing: ProgramPricingItem[] = [
   { program: 'Multi-Program Discount', monthlyCurrency: '', monthlyPrice: '10% off 2nd program', termCurrency: '', termPrice: '10% off 2nd program', hours: '' },
 ];
 
-const defaultClassroomPricing: ClassroomPricingItem[] = [
-  { key: 'large', hourlyCurrency: '$', hourlyPrice: '80', hourlyTime: 'hour', halfDayCurrency: '$', halfDayPrice: '280', halfDayTime: '4 hours', fullDayCurrency: '$', fullDayPrice: '520', fullDayTime: 'day' },
-  { key: 'small', hourlyCurrency: '$', hourlyPrice: '45', hourlyTime: 'hour', halfDayCurrency: '$', halfDayPrice: '160', halfDayTime: '4 hours', fullDayCurrency: '$', fullDayPrice: '300', fullDayTime: 'day' },
+const defaultClassroomItems: ClassroomPricingItem[] = [
+  { key: 'large', image_url: '', hourlyCurrency: '$', hourlyPrice: '80', hourlyTime: 'hour', halfDayCurrency: '$', halfDayPrice: '280', halfDayTime: '4 hours', fullDayCurrency: '$', fullDayPrice: '520', fullDayTime: 'day' },
+  { key: 'small', image_url: '', hourlyCurrency: '$', hourlyPrice: '45', hourlyTime: 'hour', halfDayCurrency: '$', halfDayPrice: '160', halfDayTime: '4 hours', fullDayCurrency: '$', fullDayPrice: '300', fullDayTime: 'day' },
 ];
+
+const defaultProgramContent: Record<ContentLocale, ProgramPricingContent> = {
+  zh: {
+    items: defaultProgramItems,
+    infoCards: [
+      { title: '可申请助学金', body: '我们希望舞蹈学习更容易负担。可通过学生入口申请奖学金项目。' },
+      { title: '兄弟姐妹优惠', body: '第二个孩子可享 10% 优惠，第三个及之后孩子可享 15% 优惠。' },
+      { title: '免费体验课', body: '新学生可免费参加一次课程。请联系我们预约体验。' },
+    ],
+    payment: {
+      title: '付款方式',
+      columns: [
+        { title: '接受的付款方式', items: ['信用卡 / 借记卡', '银行转账（EFT）', '在线付款入口', '现金或支票（到校）'] },
+        { title: '付款时间', items: ['按月：每月 1 日前支付', '按学期：开课前 2 周支付', '按年：全年预付可享 10% 优惠'] },
+      ],
+    },
+  },
+  en: {
+    items: defaultProgramItems,
+    infoCards: [
+      { title: 'Financial Aid Available', body: 'We believe dance should be accessible. Apply for our scholarship program through the student portal.' },
+      { title: 'Sibling Discount Available', body: '10% off for the second child, 15% off for the third and subsequent children enrolled.' },
+      { title: 'Free Introductory Class', body: 'New students can attend one class free of charge. Contact us to schedule your trial.' },
+    ],
+    payment: {
+      title: 'Payment Options',
+      columns: [
+        { title: 'Accepted Methods', items: ['Credit/Debit Card', 'Bank Transfer (EFT)', 'Online Payment Portal', 'Cash or Cheque (at studio)'] },
+        { title: 'Payment Schedule', items: ['Monthly: Due on the 1st of each month', 'Per Term: Due 2 weeks before term starts', 'Annual: 10% discount for annual prepayment'] },
+      ],
+    },
+  },
+  fr: {
+    items: defaultProgramItems,
+    infoCards: [
+      { title: 'Aide financiere disponible', body: 'Nous voulons rendre la danse accessible. Les familles peuvent demander une aide via le portail etudiant.' },
+      { title: 'Rabais pour fratrie', body: '10 % de rabais pour le deuxieme enfant, 15 % pour le troisieme enfant et les suivants.' },
+      { title: 'Cours d essai gratuit', body: 'Les nouveaux eleves peuvent essayer un cours gratuitement. Contactez-nous pour reserver.' },
+    ],
+    payment: {
+      title: 'Options de paiement',
+      columns: [
+        { title: 'Modes acceptes', items: ['Carte de credit/debit', 'Virement bancaire (EFT)', 'Portail de paiement en ligne', 'Comptant ou cheque au studio'] },
+        { title: 'Calendrier de paiement', items: ['Mensuel : payable le 1er de chaque mois', 'Par session : payable 2 semaines avant le debut', 'Annuel : 10 % de rabais pour paiement annuel'] },
+      ],
+    },
+  },
+};
+
+const defaultClassroomContent: Record<ContentLocale, ClassroomPricingContent> = {
+  zh: { items: defaultClassroomItems, notes: { title: '申请前说明', items: ['提交租借申请表不代表已经保证有教室。', '只有完成付款后，教室才会被正式预留。', '额外清洁、设备或工作人员需求可能影响最终价格。'] } },
+  en: { items: defaultClassroomItems, notes: { title: 'Before You Book', items: ['Submitting a rental request form does not guarantee a room.', 'Only completing the payment reserves a room.', 'Additional cleaning, equipment, or staffing needs may affect the final price.'] } },
+  fr: { items: defaultClassroomItems, notes: { title: 'Avant de reserver', items: ["L'envoi d'une demande ne garantit pas une salle.", 'La salle est reservee seulement apres paiement.', 'Le nettoyage, le materiel ou le personnel supplementaire peuvent modifier le prix final.'] } },
+};
 
 function splitLegacyPrice(value: unknown) {
   const raw = String(value || '').trim();
-  const currencyMatch = raw.match(/^(C\$|CA\$|CAD|USD|[$￥¥])\s*/i);
+  const currencyMatch = raw.match(/^(C\$|CA\$|CAD|USD|[$¥€])\s*/i);
   const currency = currencyMatch?.[1] || '';
-  const price = raw.replace(/^(C\$|CA\$|CAD|USD|[$￥¥])\s*/i, '');
+  const price = raw.replace(/^(C\$|CA\$|CAD|USD|[$¥€])\s*/i, '');
   return { currency, price };
 }
 
 function splitLegacyPriceTime(value: unknown) {
   const raw = String(value || '').trim();
-  const currencyMatch = raw.match(/^(C\$|CA\$|CAD|USD|[$￥¥])\s*/i);
+  const currencyMatch = raw.match(/^(C\$|CA\$|CAD|USD|[$¥€])\s*/i);
   const currency = currencyMatch?.[1] || '$';
-  const text = raw.replace(/^(C\$|CA\$|CAD|USD|[$￥¥])\s*/i, '');
+  const text = raw.replace(/^(C\$|CA\$|CAD|USD|[$¥€])\s*/i, '');
   const [price = '', time = ''] = text.split('/').map((part) => part.trim());
   return { currency, price, time };
 }
 
-function parseProgramPricing(value: string): ProgramPricingItem[] {
-  if (!value) return defaultProgramPricing;
+function parseProgramItems(items: unknown): ProgramPricingItem[] {
+  if (!Array.isArray(items)) return defaultProgramItems;
+  return items.map((raw) => {
+    const item = raw as Partial<ProgramPricingItem> & { monthly?: string; term?: string };
+    const monthly = splitLegacyPrice(item.monthly);
+    const term = splitLegacyPrice(item.term);
+    return {
+      program: String(item.program || ''),
+      monthlyCurrency: String(item.monthlyCurrency ?? monthly.currency),
+      monthlyPrice: String(item.monthlyPrice ?? monthly.price),
+      termCurrency: String(item.termCurrency ?? term.currency),
+      termPrice: String(item.termPrice ?? term.price),
+      hours: String(item.hours || ''),
+    };
+  });
+}
+
+function parseClassroomItems(items: unknown): ClassroomPricingItem[] {
+  if (!Array.isArray(items)) return defaultClassroomItems;
+  return items.map((raw) => {
+    const item = raw as Partial<ClassroomPricingItem> & { hourly?: string; halfDay?: string; fullDay?: string; imageUrl?: string };
+    const hourly = splitLegacyPriceTime(item.hourly);
+    const halfDay = splitLegacyPriceTime(item.halfDay);
+    const fullDay = splitLegacyPriceTime(item.fullDay);
+    return {
+      key: item.key === 'small' ? 'small' : 'large',
+      image_url: String(item.image_url ?? item.imageUrl ?? ''),
+      hourlyCurrency: String(item.hourlyCurrency ?? hourly.currency),
+      hourlyPrice: String(item.hourlyPrice ?? hourly.price),
+      hourlyTime: String(item.hourlyTime ?? hourly.time),
+      halfDayCurrency: String(item.halfDayCurrency ?? halfDay.currency),
+      halfDayPrice: String(item.halfDayPrice ?? halfDay.price),
+      halfDayTime: String(item.halfDayTime ?? halfDay.time),
+      fullDayCurrency: String(item.fullDayCurrency ?? fullDay.currency),
+      fullDayPrice: String(item.fullDayPrice ?? fullDay.price),
+      fullDayTime: String(item.fullDayTime ?? fullDay.time),
+    };
+  });
+}
+
+function parseProgramContent(value: string | undefined, locale: ContentLocale): ProgramPricingContent {
+  if (!value) return defaultProgramContent[locale];
   try {
     const parsed = JSON.parse(value);
-    if (!Array.isArray(parsed)) return defaultProgramPricing;
-    return parsed.map((item) => {
-      const monthly = splitLegacyPrice(item.monthly);
-      const term = splitLegacyPrice(item.term);
-      return {
-        program: String(item.program || ''),
-        monthlyCurrency: String(item.monthlyCurrency ?? monthly.currency),
-        monthlyPrice: String(item.monthlyPrice ?? monthly.price),
-        termCurrency: String(item.termCurrency ?? term.currency),
-        termPrice: String(item.termPrice ?? term.price),
-        hours: String(item.hours || ''),
-      };
-    });
+    if (Array.isArray(parsed)) return { ...defaultProgramContent[locale], items: parseProgramItems(parsed) };
+    return {
+      items: parseProgramItems(parsed.items),
+      infoCards: Array.isArray(parsed.infoCards) ? parsed.infoCards.map((item: InfoCard) => ({ title: String(item.title || ''), body: String(item.body || '') })) : defaultProgramContent[locale].infoCards,
+      payment: {
+        title: String(parsed.payment?.title || defaultProgramContent[locale].payment.title),
+        columns: Array.isArray(parsed.payment?.columns)
+          ? parsed.payment.columns.map((column: PaymentColumn) => ({
+              title: String(column.title || ''),
+              items: Array.isArray(column.items) ? column.items.map((item) => String(item)) : [],
+            }))
+          : defaultProgramContent[locale].payment.columns,
+      },
+    };
   } catch {
-    return defaultProgramPricing;
+    return defaultProgramContent[locale];
   }
 }
 
-function parseClassroomPricing(value: string): ClassroomPricingItem[] {
-  if (!value) return defaultClassroomPricing;
+function parseClassroomContent(value: string | undefined, locale: ContentLocale): ClassroomPricingContent {
+  if (!value) return defaultClassroomContent[locale];
   try {
     const parsed = JSON.parse(value);
-    if (!Array.isArray(parsed)) return defaultClassroomPricing;
-    return parsed.map((item) => {
-      const hourly = splitLegacyPriceTime(item.hourly);
-      const halfDay = splitLegacyPriceTime(item.halfDay);
-      const fullDay = splitLegacyPriceTime(item.fullDay);
-      return {
-        key: item.key === 'small' ? 'small' : 'large',
-        hourlyCurrency: String(item.hourlyCurrency ?? hourly.currency),
-        hourlyPrice: String(item.hourlyPrice ?? hourly.price),
-        hourlyTime: String(item.hourlyTime ?? hourly.time),
-        halfDayCurrency: String(item.halfDayCurrency ?? halfDay.currency),
-        halfDayPrice: String(item.halfDayPrice ?? halfDay.price),
-        halfDayTime: String(item.halfDayTime ?? halfDay.time),
-        fullDayCurrency: String(item.fullDayCurrency ?? fullDay.currency),
-        fullDayPrice: String(item.fullDayPrice ?? fullDay.price),
-        fullDayTime: String(item.fullDayTime ?? fullDay.time),
-      };
-    });
+    if (Array.isArray(parsed)) return { ...defaultClassroomContent[locale], items: parseClassroomItems(parsed) };
+    return {
+      items: parseClassroomItems(parsed.items),
+      notes: {
+        title: String(parsed.notes?.title || defaultClassroomContent[locale].notes.title),
+        items: Array.isArray(parsed.notes?.items) ? parsed.notes.items.map((item: string) => String(item)) : defaultClassroomContent[locale].notes.items,
+      },
+    };
   } catch {
-    return defaultClassroomPricing;
+    return defaultClassroomContent[locale];
   }
+}
+
+function stringify(value: unknown) {
+  return JSON.stringify(value, null, 2);
 }
 
 function CurrencyPriceInput({
@@ -126,29 +233,16 @@ function CurrencyPriceInput({
   onCurrencyChange: (value: string) => void;
   onPriceChange: (value: string) => void;
 }) {
-  const isTextMode = currency === '';
-
   return (
     <div className="flex h-10 overflow-hidden rounded-md border border-input bg-background">
-      <select
-        className={cn(
-          'border-r bg-muted px-2 text-sm text-muted-foreground outline-none',
-          isTextMode ? 'w-16' : 'w-12'
-        )}
-        value={currency}
-        onChange={(event) => onCurrencyChange(event.target.value)}
-      >
+      <select className="w-16 border-r bg-muted px-2 text-sm text-muted-foreground outline-none" value={currency} onChange={(event) => onCurrencyChange(event.target.value)}>
         {currencyOptions.map((option) => (
           <option key={option || 'text'} value={option}>
             {option || 'Text'}
           </option>
         ))}
       </select>
-      <input
-        className="min-w-0 flex-1 bg-transparent px-2 text-sm outline-none"
-        value={price}
-        onChange={(event) => onPriceChange(event.target.value)}
-      />
+      <input className="min-w-0 flex-1 bg-transparent px-2 text-sm outline-none" value={price} onChange={(event) => onPriceChange(event.target.value)} />
     </div>
   );
 }
@@ -157,84 +251,138 @@ export default function AdminPricingPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const languageOptions = adminContentLanguageOptions(locale);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [programPricing, setProgramPricing] = useState<ProgramPricingItem[]>(defaultProgramPricing);
-  const [classroomPricing, setClassroomPricing] = useState<ClassroomPricingItem[]>(defaultClassroomPricing);
+  const [programContent, setProgramContent] = useState<Record<ContentLocale, ProgramPricingContent>>(defaultProgramContent);
+  const [classroomContent, setClassroomContent] = useState<Record<ContentLocale, ClassroomPricingContent>>(defaultClassroomContent);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingClassroomImage, setUploadingClassroomImage] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push(`/${locale}/admin/login`);
       return;
     }
-
     settingsApi
-      .site()
+      .siteAll()
       .then((data) => {
         setSettings(data);
-        setProgramPricing(parseProgramPricing(data.program_pricing_json));
-        setClassroomPricing(parseClassroomPricing(data.classroom_pricing_json));
+        setProgramContent({
+          zh: parseProgramContent(data.program_pricing_json, 'zh'),
+          en: parseProgramContent(data.translations?.en?.program_pricing_json, 'en'),
+          fr: parseProgramContent(data.translations?.fr?.program_pricing_json, 'fr'),
+        });
+        setClassroomContent({
+          zh: parseClassroomContent(data.classroom_pricing_json, 'zh'),
+          en: parseClassroomContent(data.translations?.en?.classroom_pricing_json, 'en'),
+          fr: parseClassroomContent(data.translations?.fr?.classroom_pricing_json, 'fr'),
+        });
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load pricing settings'))
       .finally(() => setLoading(false));
   }, [locale, router]);
 
+  const currentProgram = programContent[contentLocale];
+  const currentClassroom = classroomContent[contentLocale];
+
+  function updateProgramContent(updater: (content: ProgramPricingContent) => ProgramPricingContent) {
+    setProgramContent((current) => ({ ...current, [contentLocale]: updater(current[contentLocale]) }));
+  }
+
+  function updateClassroomContent(updater: (content: ClassroomPricingContent) => ClassroomPricingContent) {
+    setClassroomContent((current) => ({ ...current, [contentLocale]: updater(current[contentLocale]) }));
+  }
+
+  function applyClassroomAiDrafts(drafts: AiDraft[]) {
+    setClassroomContent((current) => {
+      const next = { ...current };
+      drafts.forEach((draft) => {
+        if (!['zh', 'en', 'fr'].includes(draft.locale)) return;
+        const localeKey = draft.locale as ContentLocale;
+        const body = draft.fields.notes_body || draft.fields.body || '';
+        next[localeKey] = {
+          ...next[localeKey],
+          notes: {
+            ...next[localeKey].notes,
+            ...(draft.fields.notes_title ? { title: draft.fields.notes_title } : {}),
+            ...(body ? { items: body.split(/\r?\n/).map((line) => line.replace(/^[-*]\s*/, '').trim()).filter(Boolean) } : {}),
+          },
+        };
+      });
+      return next;
+    });
+  }
+
   function updateProgramRow(index: number, field: keyof ProgramPricingItem, value: string) {
-    setProgramPricing((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)));
+    updateProgramContent((content) => ({
+      ...content,
+      items: content.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    }));
   }
 
   function updateClassroomRow(index: number, field: keyof ClassroomPricingItem, value: string) {
-    setClassroomPricing((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item))
-    );
+    updateClassroomContent((content) => ({
+      ...content,
+      items: content.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    }));
+  }
+
+  async function uploadClassroomImage(index: number, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const uploadKey = `${contentLocale}-${index}`;
+    setUploadingClassroomImage(uploadKey);
+    setError('');
+    try {
+      const uploaded = await uploadApi.image(file);
+      updateClassroomRow(index, 'image_url', uploaded.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload classroom image');
+    } finally {
+      setUploadingClassroomImage(null);
+      event.target.value = '';
+    }
   }
 
   async function savePricing(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!settings) return;
-
-    if (programPricing.some((item) => !item.program.trim())) {
+    if (Object.values(programContent).some((content) => content.items.some((item) => !item.program.trim()))) {
       setError('Every program pricing row needs a program name.');
       setMessage('');
       return;
     }
-
     setSaving(true);
     setError('');
     setMessage('');
     try {
-      const cleanedProgramPricing = programPricing.map((item) => ({
-        program: item.program.trim(),
-        monthlyCurrency: item.monthlyCurrency.trim(),
-        monthlyPrice: item.monthlyPrice.trim(),
-        termCurrency: item.termCurrency.trim(),
-        termPrice: item.termPrice.trim(),
-        hours: item.hours.trim(),
-      }));
-      const cleanedClassroomPricing = classroomPricing.map((item) => ({
-        key: item.key,
-        hourlyCurrency: item.hourlyCurrency.trim(),
-        hourlyPrice: item.hourlyPrice.trim(),
-        hourlyTime: item.hourlyTime.trim(),
-        halfDayCurrency: item.halfDayCurrency.trim(),
-        halfDayPrice: item.halfDayPrice.trim(),
-        halfDayTime: item.halfDayTime.trim(),
-        fullDayCurrency: item.fullDayCurrency.trim(),
-        fullDayPrice: item.fullDayPrice.trim(),
-        fullDayTime: item.fullDayTime.trim(),
-      }));
-
       const saved = await settingsApi.updateSite({
         ...settings,
-        program_pricing_json: JSON.stringify(cleanedProgramPricing, null, 2),
-        classroom_pricing_json: JSON.stringify(cleanedClassroomPricing, null, 2),
+        program_pricing_json: stringify(programContent.zh),
+        classroom_pricing_json: stringify(classroomContent.zh),
+        translations: {
+          ...(settings.translations || {}),
+          en: {
+            ...(settings.translations?.en || {}),
+            program_pricing_json: stringify(programContent.en),
+            classroom_pricing_json: stringify(classroomContent.en),
+          },
+          fr: {
+            ...(settings.translations?.fr || {}),
+            program_pricing_json: stringify(programContent.fr),
+            classroom_pricing_json: stringify(classroomContent.fr),
+          },
+        },
       });
       setSettings(saved);
-      setProgramPricing(parseProgramPricing(saved.program_pricing_json));
-      setClassroomPricing(parseClassroomPricing(saved.classroom_pricing_json));
       setMessage('Pricing settings saved.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save pricing settings');
@@ -260,7 +408,7 @@ export default function AdminPricingPage() {
                 Pricing
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Control the content shown on the public program pricing and rental pricing pages.
+                Edit program pricing, rental pricing, and public pricing page content in Chinese, English, and French.
               </p>
             </div>
             <Button type="submit" disabled={loading || saving}>
@@ -268,6 +416,17 @@ export default function AdminPricingPage() {
               Save Pricing
             </Button>
           </div>
+
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-2 py-4">
+              <span className="mr-1 text-sm font-medium text-muted-foreground">Editing Language</span>
+              {languageOptions.map((option) => (
+                <Button key={option.value} type="button" variant={contentLocale === option.value ? 'default' : 'outline'} onClick={() => setContentLocale(option.value)}>
+                  {option.label}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
 
           {(error || message) && (
             <div className={cn('rounded-md border px-3 py-2 text-sm', error ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>
@@ -288,14 +447,9 @@ export default function AdminPricingPage() {
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle>Program Pricing</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">Controls /programs/pricing.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Controls the table on /programs/pricing.</p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setProgramPricing((current) => [...current, { program: '', monthlyCurrency: '$', monthlyPrice: '', termCurrency: '$', termPrice: '', hours: '' }])}
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, items: [...content.items, { program: '', monthlyCurrency: '$', monthlyPrice: '', termCurrency: '$', termPrice: '', hours: '' }] }))}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Program
                   </Button>
@@ -310,30 +464,13 @@ export default function AdminPricingPage() {
                         <div>Duration</div>
                         <div />
                       </div>
-                      {programPricing.map((item, index) => (
-                        <div key={`${item.program}-${index}`} className="grid grid-cols-[2fr_1fr_1fr_1.15fr_44px] gap-2 border-b px-3 py-2 last:border-b-0">
+                      {currentProgram.items.map((item, index) => (
+                        <div key={`${contentLocale}-${index}`} className="grid grid-cols-[2fr_1fr_1fr_1.15fr_44px] gap-2 border-b px-3 py-2 last:border-b-0">
                           <Input value={item.program} onChange={(event) => updateProgramRow(index, 'program', event.target.value)} />
-                          <CurrencyPriceInput
-                            currency={item.monthlyCurrency}
-                            price={item.monthlyPrice}
-                            onCurrencyChange={(value) => updateProgramRow(index, 'monthlyCurrency', value)}
-                            onPriceChange={(value) => updateProgramRow(index, 'monthlyPrice', value)}
-                          />
-                          <CurrencyPriceInput
-                            currency={item.termCurrency}
-                            price={item.termPrice}
-                            onCurrencyChange={(value) => updateProgramRow(index, 'termCurrency', value)}
-                            onPriceChange={(value) => updateProgramRow(index, 'termPrice', value)}
-                          />
+                          <CurrencyPriceInput currency={item.monthlyCurrency} price={item.monthlyPrice} onCurrencyChange={(value) => updateProgramRow(index, 'monthlyCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'monthlyPrice', value)} />
+                          <CurrencyPriceInput currency={item.termCurrency} price={item.termPrice} onCurrencyChange={(value) => updateProgramRow(index, 'termCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'termPrice', value)} />
                           <Input value={item.hours} onChange={(event) => updateProgramRow(index, 'hours', event.target.value)} />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={() => setProgramPricing((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                            aria-label="Remove program pricing row"
-                          >
+                          <Button type="button" variant="ghost" size="icon" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => updateProgramContent((content) => ({ ...content, items: content.items.filter((_, itemIndex) => itemIndex !== index) }))} aria-label="Remove program pricing row">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -346,24 +483,68 @@ export default function AdminPricingPage() {
               <Card>
                 <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
+                    <CardTitle>Program Pricing Page Blocks</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">Controls the three info cards and payment options below the program price table.</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, infoCards: [...content.infoCards, { title: '', body: '' }] }))}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Card
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    {currentProgram.infoCards.map((card, index) => (
+                      <div key={`${contentLocale}-card-${index}`} className="space-y-2 rounded-md border p-3">
+                        <Input value={card.title} onChange={(event) => updateProgramContent((content) => ({ ...content, infoCards: content.infoCards.map((item, itemIndex) => (itemIndex === index ? { ...item, title: event.target.value } : item)) }))} placeholder="Card title" />
+                        <Textarea value={card.body} onChange={(event) => updateProgramContent((content) => ({ ...content, infoCards: content.infoCards.map((item, itemIndex) => (itemIndex === index ? { ...item, body: event.target.value } : item)) }))} placeholder="Card body" />
+                        <Button type="button" variant="ghost" size="sm" className="text-red-600" onClick={() => updateProgramContent((content) => ({ ...content, infoCards: content.infoCards.filter((_, itemIndex) => itemIndex !== index) }))}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">Payment section title</span>
+                    <Input value={currentProgram.payment.title} onChange={(event) => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, title: event.target.value } }))} />
+                  </label>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {currentProgram.payment.columns.map((column, index) => (
+                      <div key={`${contentLocale}-payment-${index}`} className="space-y-2 rounded-md border p-3">
+                        <Input value={column.title} onChange={(event) => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, columns: content.payment.columns.map((item, itemIndex) => (itemIndex === index ? { ...item, title: event.target.value } : item)) } }))} placeholder="Column title" />
+                        <Textarea value={column.items.join('\n')} onChange={(event) => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, columns: content.payment.columns.map((item, itemIndex) => (itemIndex === index ? { ...item, items: event.target.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) } : item)) } }))} placeholder="One item per line" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
                     <CardTitle>Rental Pricing</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">Controls /classrooms/pricing.</p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setClassroomPricing((current) => [...current, { key: 'large', hourlyCurrency: '$', hourlyPrice: '', hourlyTime: '', halfDayCurrency: '$', halfDayPrice: '', halfDayTime: '', fullDayCurrency: '$', fullDayPrice: '', fullDayTime: '' }])}
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={() => updateClassroomContent((content) => ({ ...content, items: [...content.items, { key: 'large', image_url: '', hourlyCurrency: '$', hourlyPrice: '', hourlyTime: '', halfDayCurrency: '$', halfDayPrice: '', halfDayTime: '', fullDayCurrency: '$', fullDayPrice: '', fullDayTime: '' }] }))}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Rental
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-5">
+                  <AiLocaleSyncPanel
+                    module="classrooms"
+                    sourceLocale={contentLocale}
+                    fields={{
+                      notes_title: currentClassroom.notes.title,
+                      notes_body: currentClassroom.notes.items.join('\n'),
+                    }}
+                    onApply={applyClassroomAiDrafts}
+                  />
                   <div className="overflow-x-auto">
-                    <div className="min-w-[1040px] rounded-md border">
-                      <div className="grid grid-cols-[0.95fr_1fr_0.8fr_1fr_0.8fr_1fr_0.8fr_44px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+                    <div className="min-w-[1320px] rounded-md border">
+                      <div className="grid grid-cols-[0.7fr_1.5fr_1fr_0.75fr_1fr_0.75fr_1fr_0.75fr_44px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
                         <div>Room</div>
+                        <div>Image</div>
                         <div>Hourly Price</div>
                         <div>Hourly Time</div>
                         <div>Half Day Price</div>
@@ -372,50 +553,61 @@ export default function AdminPricingPage() {
                         <div>Full Day Time</div>
                         <div />
                       </div>
-                      {classroomPricing.map((item, index) => (
-                        <div key={`${item.key}-${index}`} className="grid grid-cols-[0.95fr_1fr_0.8fr_1fr_0.8fr_1fr_0.8fr_44px] gap-2 border-b px-3 py-2 last:border-b-0">
-                          <select
-                            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                            value={item.key}
-                            onChange={(event) => updateClassroomRow(index, 'key', event.target.value as ClassroomPricingItem['key'])}
-                          >
+                      {currentClassroom.items.map((item, index) => (
+                        <div key={`${contentLocale}-rental-${index}`} className="grid grid-cols-[0.7fr_1.5fr_1fr_0.75fr_1fr_0.75fr_1fr_0.75fr_44px] gap-2 border-b px-3 py-2 last:border-b-0">
+                          <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={item.key} onChange={(event) => updateClassroomRow(index, 'key', event.target.value as ClassroomPricingItem['key'])}>
                             <option value="large">Large Room</option>
                             <option value="small">Small Room</option>
                           </select>
-                          <CurrencyPriceInput
-                            currency={item.hourlyCurrency}
-                            price={item.hourlyPrice}
-                            onCurrencyChange={(value) => updateClassroomRow(index, 'hourlyCurrency', value)}
-                            onPriceChange={(value) => updateClassroomRow(index, 'hourlyPrice', value)}
-                          />
+                          <div className="flex min-w-0 gap-2">
+                            {item.image_url ? (
+                              <img src={item.image_url} alt="" className="h-10 w-14 rounded-md border object-cover" />
+                            ) : null}
+                            <Input value={item.image_url} onChange={(event) => updateClassroomRow(index, 'image_url', event.target.value)} placeholder="Image URL" />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              disabled={uploadingClassroomImage === `${contentLocale}-${index}`}
+                              onClick={() => document.getElementById(`classroom-image-${contentLocale}-${index}`)?.click()}
+                              aria-label="Upload classroom image"
+                            >
+                              {uploadingClassroomImage === `${contentLocale}-${index}` ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ImagePlus className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <input
+                              id={`classroom-image-${contentLocale}-${index}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(event) => uploadClassroomImage(index, event)}
+                            />
+                          </div>
+                          <CurrencyPriceInput currency={item.hourlyCurrency} price={item.hourlyPrice} onCurrencyChange={(value) => updateClassroomRow(index, 'hourlyCurrency', value)} onPriceChange={(value) => updateClassroomRow(index, 'hourlyPrice', value)} />
                           <Input value={item.hourlyTime} onChange={(event) => updateClassroomRow(index, 'hourlyTime', event.target.value)} />
-                          <CurrencyPriceInput
-                            currency={item.halfDayCurrency}
-                            price={item.halfDayPrice}
-                            onCurrencyChange={(value) => updateClassroomRow(index, 'halfDayCurrency', value)}
-                            onPriceChange={(value) => updateClassroomRow(index, 'halfDayPrice', value)}
-                          />
+                          <CurrencyPriceInput currency={item.halfDayCurrency} price={item.halfDayPrice} onCurrencyChange={(value) => updateClassroomRow(index, 'halfDayCurrency', value)} onPriceChange={(value) => updateClassroomRow(index, 'halfDayPrice', value)} />
                           <Input value={item.halfDayTime} onChange={(event) => updateClassroomRow(index, 'halfDayTime', event.target.value)} />
-                          <CurrencyPriceInput
-                            currency={item.fullDayCurrency}
-                            price={item.fullDayPrice}
-                            onCurrencyChange={(value) => updateClassroomRow(index, 'fullDayCurrency', value)}
-                            onPriceChange={(value) => updateClassroomRow(index, 'fullDayPrice', value)}
-                          />
+                          <CurrencyPriceInput currency={item.fullDayCurrency} price={item.fullDayPrice} onCurrencyChange={(value) => updateClassroomRow(index, 'fullDayCurrency', value)} onPriceChange={(value) => updateClassroomRow(index, 'fullDayPrice', value)} />
                           <Input value={item.fullDayTime} onChange={(event) => updateClassroomRow(index, 'fullDayTime', event.target.value)} />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={() => setClassroomPricing((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                            aria-label="Remove rental pricing row"
-                          >
+                          <Button type="button" variant="ghost" size="icon" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => updateClassroomContent((content) => ({ ...content, items: content.items.filter((_, itemIndex) => itemIndex !== index) }))} aria-label="Remove rental pricing row">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
                     </div>
+                  </div>
+                  <div className="grid gap-3 lg:grid-cols-[0.7fr_1.3fr]">
+                    <label className="block space-y-1">
+                      <span className="text-sm font-medium">Rental notes title</span>
+                      <Input value={currentClassroom.notes.title} onChange={(event) => updateClassroomContent((content) => ({ ...content, notes: { ...content.notes, title: event.target.value } }))} />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-sm font-medium">Rental notes, one per line</span>
+                      <Textarea value={currentClassroom.notes.items.join('\n')} onChange={(event) => updateClassroomContent((content) => ({ ...content, notes: { ...content.notes, items: event.target.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) } }))} />
+                    </label>
                   </div>
                 </CardContent>
               </Card>

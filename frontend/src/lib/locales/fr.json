@@ -688,7 +688,9 @@
       "faculty": "Professeurs",
       "classrooms": "Salles",
       "pricing": "Tarifs",
-      "settings": "Paramètres système"
+      "schoolPolicy": "Reglement et remboursements",
+      "settings": "Paramètres système",
+      "accounts": "Comptes"
     },
     "performances": {
       "calendarTitle": "Calendrier des spectacles",

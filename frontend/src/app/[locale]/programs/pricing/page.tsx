@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent } from '@/components/ui/card';
 import { settingsApi } from '@/lib/api';
@@ -15,25 +15,49 @@ type ProgramPricingItem = {
   hours: string;
 };
 
-const defaultPricing: ProgramPricingItem[] = [
+type InfoCard = { title: string; body: string };
+type PaymentColumn = { title: string; items: string[] };
+type ProgramPricingContent = {
+  items: ProgramPricingItem[];
+  infoCards: InfoCard[];
+  payment: { title: string; columns: PaymentColumn[] };
+};
+
+const defaultItems: ProgramPricingItem[] = [
   { program: 'Young Dancers (Ages 3-5)', monthlyCurrency: '$', monthlyPrice: '120', termCurrency: '$', termPrice: '340', hours: '45 min, 1x/week' },
   { program: 'Ballet (All Levels)', monthlyCurrency: '$', monthlyPrice: '150', termCurrency: '$', termPrice: '420', hours: '60 min, 1x/week' },
   { program: 'Contemporary', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
   { program: 'Chinese Dance', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
   { program: 'Jazz', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
   { program: 'Hip-Hop', monthlyCurrency: '$', monthlyPrice: '130', termCurrency: '$', termPrice: '360', hours: '60 min, 1x/week' },
-  { program: 'Multi-Program Discount', monthlyCurrency: '', monthlyPrice: '10% off 2nd program', termCurrency: '', termPrice: '10% off 2nd program', hours: '' },
 ];
+
+const defaultContent: ProgramPricingContent = {
+  items: defaultItems,
+  infoCards: [
+    { title: 'Financial Aid Available', body: 'We believe dance should be accessible. Apply for our scholarship program through the student portal.' },
+    { title: 'Sibling Discount Available', body: '10% off for the second child, 15% off for the third and subsequent children enrolled.' },
+    { title: 'Free Introductory Class', body: 'New students can attend one class free of charge. Contact us to schedule your trial.' },
+  ],
+  payment: {
+    title: 'Payment Options',
+    columns: [
+      { title: 'Accepted Methods', items: ['Credit/Debit Card', 'Bank Transfer (EFT)', 'Online Payment Portal', 'Cash or Cheque (at studio)'] },
+      { title: 'Payment Schedule', items: ['Monthly: Due on the 1st of each month', 'Per Term: Due 2 weeks before term starts', 'Annual: 10% discount for annual prepayment'] },
+    ],
+  },
+};
 
 function splitLegacyPrice(value: unknown) {
   const raw = String(value || '').trim();
-  const currencyMatch = raw.match(/^(C\$|CA\$|CAD|USD|[$￥¥])\s*/i);
+  const currencyMatch = raw.match(/^(C\$|CA\$|CAD|USD|[$¥€])\s*/i);
   const currency = currencyMatch?.[1] || '';
-  const price = raw.replace(/^(C\$|CA\$|CAD|USD|[$￥¥])\s*/i, '');
+  const price = raw.replace(/^(C\$|CA\$|CAD|USD|[$¥€])\s*/i, '');
   return { currency, price };
 }
 
-function normalizePricing(items: unknown[]): ProgramPricingItem[] {
+function normalizeItems(items: unknown): ProgramPricingItem[] {
+  if (!Array.isArray(items)) return defaultItems;
   return items.map((raw) => {
     const item = raw as Partial<ProgramPricingItem> & { monthly?: string; term?: string };
     const monthly = splitLegacyPrice(item.monthly);
@@ -49,6 +73,31 @@ function normalizePricing(items: unknown[]): ProgramPricingItem[] {
   });
 }
 
+function parseContent(value: string): ProgramPricingContent {
+  if (!value) return defaultContent;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return { ...defaultContent, items: normalizeItems(parsed) };
+    return {
+      items: normalizeItems(parsed.items),
+      infoCards: Array.isArray(parsed.infoCards)
+        ? parsed.infoCards.map((item: InfoCard) => ({ title: String(item.title || ''), body: String(item.body || '') }))
+        : defaultContent.infoCards,
+      payment: {
+        title: String(parsed.payment?.title || defaultContent.payment.title),
+        columns: Array.isArray(parsed.payment?.columns)
+          ? parsed.payment.columns.map((column: PaymentColumn) => ({
+              title: String(column.title || ''),
+              items: Array.isArray(column.items) ? column.items.map((item) => String(item)) : [],
+            }))
+          : defaultContent.payment.columns,
+      },
+    };
+  } catch {
+    return defaultContent;
+  }
+}
+
 function formatPrice(currency: string, price: string) {
   const symbol = currency.trim();
   const amount = price.trim();
@@ -58,20 +107,15 @@ function formatPrice(currency: string, price: string) {
 
 export default function PricingPage() {
   const t = useTranslations();
-  const [pricing, setPricing] = useState<ProgramPricingItem[]>(defaultPricing);
+  const locale = useLocale();
+  const [content, setContent] = useState<ProgramPricingContent>(defaultContent);
 
   useEffect(() => {
     settingsApi
-      .site()
-      .then((settings) => {
-        if (!settings.program_pricing_json) return;
-        const parsed = JSON.parse(settings.program_pricing_json);
-        if (Array.isArray(parsed)) {
-          setPricing(normalizePricing(parsed));
-        }
-      })
+      .site(locale)
+      .then((settings) => setContent(parseContent(settings.program_pricing_json)))
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   return (
     <div className="section-padding">
@@ -81,8 +125,8 @@ export default function PricingPage() {
         <p className="text-lead mb-12">{t('programs.pricing.subtitle')}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {pricing.map((item) => (
-            <Card key={item.program}>
+          {content.items.map((item, index) => (
+            <Card key={`${item.program}-${index}`}>
               <CardContent className="pt-6">
                 <h3 className="font-semibold mb-3">{item.program}</h3>
                 <div className="grid grid-cols-3 gap-4 text-center">
@@ -104,54 +148,33 @@ export default function PricingPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <h3 className="heading-sm mb-2">{t('programs.pricing.financialAid')}</h3>
-              <p className="text-sm text-muted-foreground">
-                We believe dance should be accessible. Apply for our scholarship program through the student portal.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <h3 className="heading-sm mb-2">{t('programs.pricing.siblingDiscount')}</h3>
-              <p className="text-sm text-muted-foreground">
-                10% off for the second child, 15% off for the third and subsequent children enrolled.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <h3 className="heading-sm mb-2">{t('programs.pricing.freeIntro')}</h3>
-              <p className="text-sm text-muted-foreground">
-                New students can attend one class free of charge. Contact us to schedule your trial.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {content.infoCards.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+            {content.infoCards.map((card, index) => (
+              <Card key={`${card.title}-${index}`}>
+                <CardContent className="pt-6 text-center">
+                  <h3 className="heading-sm mb-2">{card.title}</h3>
+                  <p className="text-sm text-muted-foreground">{card.body}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <Card>
           <CardContent className="pt-6">
-            <h2 className="heading-lg mb-4">Payment Options</h2>
+            <h2 className="heading-lg mb-4">{content.payment.title}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-muted-foreground">
-              <div>
-                <h4 className="font-semibold mb-2 text-foreground">Accepted Methods</h4>
-                <ul className="space-y-1">
-                  <li>- Credit/Debit Card</li>
-                  <li>- Bank Transfer (EFT)</li>
-                  <li>- Online Payment Portal</li>
-                  <li>- Cash or Cheque (at studio)</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2 text-foreground">Payment Schedule</h4>
-                <ul className="space-y-1">
-                  <li>- Monthly: Due on the 1st of each month</li>
-                  <li>- Per Term: Due 2 weeks before term starts</li>
-                  <li>- Annual: 10% discount for annual prepayment</li>
-                </ul>
-              </div>
+              {content.payment.columns.map((column, index) => (
+                <div key={`${column.title}-${index}`}>
+                  <h4 className="font-semibold mb-2 text-foreground">{column.title}</h4>
+                  <ul className="space-y-1">
+                    {column.items.map((item) => (
+                      <li key={item}>- {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

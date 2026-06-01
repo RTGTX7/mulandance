@@ -59,14 +59,14 @@ export function EventCards() {
   const [events, setEvents] = useState<Event[]>(fallbackEvents);
 
   useEffect(() => {
-    performanceApi.list({ current: true })
+    performanceApi.list({ current: true, locale })
       .then((items) => {
         if (items.length > 0) {
           setEvents(items.slice(0, 3).map(performanceToEvent));
         }
       })
       .catch(() => setEvents(fallbackEvents));
-  }, []);
+  }, [locale]);
 
   return (
     <section className="section-padding">

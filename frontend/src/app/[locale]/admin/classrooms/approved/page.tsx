@@ -104,7 +104,7 @@ export default function ApprovedClassroomsPage() {
   function loadBookings() {
     setLoading(true);
     classroomApi
-      .list({ status: 'confirmed' })
+      .list({ status: 'confirmed', locale })
       .then(setBookings)
       .catch((err) => setError(err instanceof Error ? err.message : '加载已通过申请失败'))
       .finally(() => setLoading(false));

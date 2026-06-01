@@ -22,10 +22,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { adminContentLanguageOptions, contentLocaleFromPath } from '@/lib/admin-i18n';
 import { CalendarClock, Clock3, Eye } from 'lucide-react';
 
 const roomKeys: ClassroomRoom[] = ['large', 'small'];
 const weekdayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+type ContentLocale = 'zh' | 'en' | 'fr';
 
 const initialForm: ClassroomBookingBody = {
   room: 'large',
@@ -84,12 +86,18 @@ export default function InternalClassroomsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const languageOptions = adminContentLanguageOptions(locale);
   const [bookings, setBookings] = useState<ClassroomBooking[]>([]);
   const [form, setForm] = useState<ClassroomBookingBody>(initialForm);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<ClassroomBooking | null>(null);
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -126,7 +134,7 @@ export default function InternalClassroomsPage() {
   function loadBookings() {
     setLoading(true);
     classroomApi
-      .list({ status: 'confirmed' })
+      .list({ status: 'confirmed', locale })
       .then(setBookings)
       .catch((err) => setError(err instanceof Error ? err.message : '加载内部申请失败'))
       .finally(() => setLoading(false));
@@ -159,6 +167,30 @@ export default function InternalClassroomsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function localizedField(key: 'title' | 'teacher_name' | 'notes') {
+    if (contentLocale === 'zh') return form[key] || '';
+    return form.translations?.[contentLocale]?.[key] || '';
+  }
+
+  function setLocalizedField(key: 'title' | 'teacher_name' | 'notes', value: string) {
+    if (contentLocale === 'zh') {
+      setForm((current) => ({ ...current, [key]: value }));
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      title: key === 'title' && !current.title ? value : current.title,
+      teacher_name: key === 'teacher_name' && !current.teacher_name ? value : current.teacher_name,
+      translations: {
+        ...(current.translations || {}),
+        [contentLocale]: {
+          ...(current.translations?.[contentLocale] || {}),
+          [key]: value,
+        },
+      },
+    }));
   }
 
   return (
@@ -197,6 +229,18 @@ export default function InternalClassroomsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {languageOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={contentLocale === option.value ? 'default' : 'outline'}
+                      onClick={() => setContentLocale(option.value)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="space-y-1 text-sm font-medium">
                     教室
@@ -256,16 +300,16 @@ export default function InternalClassroomsPage() {
                 <label className="space-y-1 text-sm font-medium">
                   课程 / 用途
                   <Input
-                    value={form.title}
-                    onChange={(event) => setForm({ ...form, title: event.target.value })}
+                    value={localizedField('title')}
+                    onChange={(event) => setLocalizedField('title', event.target.value)}
                     required
                   />
                 </label>
                 <label className="space-y-1 text-sm font-medium">
                   负责人
                   <Input
-                    value={form.teacher_name || ''}
-                    onChange={(event) => setForm({ ...form, teacher_name: event.target.value })}
+                    value={localizedField('teacher_name')}
+                    onChange={(event) => setLocalizedField('teacher_name', event.target.value)}
                     required
                   />
                 </label>
@@ -280,8 +324,8 @@ export default function InternalClassroomsPage() {
                   备注
                   <Textarea
                     rows={4}
-                    value={form.notes || ''}
-                    onChange={(event) => setForm({ ...form, notes: event.target.value })}
+                    value={localizedField('notes')}
+                    onChange={(event) => setLocalizedField('notes', event.target.value)}
                   />
                 </label>
 

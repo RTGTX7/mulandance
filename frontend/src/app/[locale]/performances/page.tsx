@@ -48,7 +48,7 @@ export default function PerformancesPage() {
 
   useEffect(() => {
     Promise.all([
-      performanceApi.list({ current: true }),
+      performanceApi.list({ current: true, locale }),
       newsApi.list({ category: 'performances', locale, limit: 6 }).catch(() => []),
     ])
       .then(([performanceItems, newsItems]) => {

@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+import html as html_lib
 from pathlib import Path
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -37,6 +38,69 @@ from app.schemas.news import (
 
 
 _mistune_renderer = mistune.create_markdown(renderer=mistune.HTMLRenderer())
+_carousel_block_re = re.compile(r"(?ms)^:::\s*carousel\s*\n(.*?)\n:::\s*$")
+_carousel_image_re = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+
+
+def _safe_carousel_url(url: str) -> Optional[str]:
+    clean_url = (url or "").strip()
+    if clean_url.startswith(("http://", "https://", "/")):
+        return clean_url
+    return None
+
+
+def _extract_carousel_items(markdown: str) -> List[Dict[str, str]]:
+    items: List[Dict[str, str]] = []
+    for alt, url in _carousel_image_re.findall(markdown or ""):
+        safe_url = _safe_carousel_url(url)
+        if safe_url:
+            items.append({"alt": alt.strip(), "url": safe_url})
+
+    if items:
+        return items
+
+    for line in (markdown or "").splitlines():
+        safe_url = _safe_carousel_url(line.strip())
+        if safe_url:
+            items.append({"alt": "", "url": safe_url})
+    return items
+
+
+def _render_carousel_html(items: List[Dict[str, str]]) -> str:
+    if not items:
+        return ""
+
+    slides = []
+    for index, item in enumerate(items, start=1):
+        alt = html_lib.escape(item.get("alt") or f"Image {index}", quote=True)
+        url = html_lib.escape(item["url"], quote=True)
+        caption = html_lib.escape(item.get("alt") or "", quote=False)
+        figcaption = f'<figcaption>{caption}</figcaption>' if caption else ""
+        slides.append(
+            '<figure class="article-carousel-slide">'
+            f'<img src="{url}" alt="{alt}" loading="lazy" />'
+            f"{figcaption}"
+            "</figure>"
+        )
+
+    return (
+        '<div class="article-carousel" role="region" aria-label="Image carousel">'
+        '<div class="article-carousel-track">'
+        + "".join(slides)
+        + "</div>"
+        "</div>"
+    )
+
+
+def _replace_carousel_blocks(body: str) -> tuple[str, Dict[str, str]]:
+    carousels: Dict[str, str] = {}
+
+    def replace(match: re.Match[str]) -> str:
+        token = f"ARTICLE_CAROUSEL_{len(carousels)}"
+        carousels[token] = _render_carousel_html(_extract_carousel_items(match.group(1)))
+        return f"\n\n{token}\n\n"
+
+    return _carousel_block_re.sub(replace, body or ""), carousels
 
 
 def _article_locale(locale: Optional[str]) -> Optional[str]:
@@ -135,9 +199,14 @@ def _write_markdown_file(filepath: Path, content: str, metadata: dict) -> None:
 
 
 def render_markdown(body: str) -> str:
-    html = _mistune_renderer(body)
+    markdown, carousels = _replace_carousel_blocks(body)
+    html = _mistune_renderer(markdown)
     soup = BeautifulSoup(html, "html.parser")
-    return str(soup)
+    rendered = str(soup)
+    for token, carousel_html in carousels.items():
+        rendered = rendered.replace(f"<p>{token}</p>", carousel_html)
+        rendered = rendered.replace(token, carousel_html)
+    return rendered
 
 
 def _safe_dt(dt_val):
@@ -409,6 +478,7 @@ def create_article_translation(
 ) -> Dict[str, Any]:
     """Create a new article group with one translation."""
     now = datetime.utcnow()
+    published_at = data.published_at or (now if data.is_published else None)
     group_slug = data.slug
 
     # Check if group already exists
@@ -464,7 +534,7 @@ def create_article_translation(
         summary=data.summary,
         body=None if settings.USE_FILE_STORAGE else data.body,
         author_id=author_id,
-        published_at=now if data.is_published else None,
+        published_at=published_at,
         cover_image=data.cover_image,
         is_published=data.is_published,
     )
@@ -510,7 +580,7 @@ def create_article_translation(
 
     # Write markdown file
     if settings.USE_FILE_STORAGE:
-        filepath = _markdown_file_path(group_slug, now if data.is_published else None)
+        filepath = _markdown_file_path(group_slug, published_at or now)
         metadata = {
             "title": data.title,
             "slug": group_slug,
@@ -834,13 +904,14 @@ def create_article(
 
     # Legacy path
     now = datetime.utcnow()
+    published_at = article_data.published_at or (now if article_data.is_published else None)
     article = NewsArticle(
         slug=article_data.slug,
         title=article_data.title,
         summary=article_data.summary,
         body=article_data.body,
         author_id=author_id,
-        published_at=now if article_data.is_published else None,
+        published_at=published_at,
         cover_image=article_data.cover_image,
         is_published=article_data.is_published,
         locale=article_data.locale,

@@ -1,15 +1,25 @@
 'use client';
 
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { SystemSettings, isAuthenticated, settingsApi, uploadApi } from '@/lib/api';
+import {
+  type AiProviderSettings,
+  type AiProviderSettingsUpdate,
+  type SystemSettings,
+  type BackupInfo,
+  backupApi,
+  isAuthenticated,
+  settingsApi,
+  uploadApi,
+} from '@/lib/api';
+import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
-import { ImagePlus, Loader2, Mail, Save, Settings } from 'lucide-react';
+import { Download, ImagePlus, KeyRound, Loader2, Mail, Save, Settings, Upload } from 'lucide-react';
 
 const defaultSettings: SystemSettings = {
   site_name: 'Mulan Dance Studio',
@@ -39,6 +49,20 @@ const defaultSettings: SystemSettings = {
   tiktok_url: '',
 };
 
+type ContentLocale = 'zh' | 'en' | 'fr';
+
+const defaultAiSettings: AiProviderSettings = {
+  enabled: false,
+  provider: 'openai_compatible',
+  api_base_url: 'https://api.openai.com/v1',
+  model: '',
+  timeout_seconds: 60,
+  api_key_set: false,
+  api_key_masked: '',
+};
+
+type AiForm = AiProviderSettingsUpdate;
+
 function Toggle({
   checked,
   onCheckedChange,
@@ -66,16 +90,163 @@ function Toggle({
   );
 }
 
+function formatBackupSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+}
+
+function formatBackupTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
 export default function AdminSettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const labels = adminUiText(locale);
+  const aiText = locale.startsWith('zh')
+    ? {
+        title: 'AI API 接入',
+        subtitle: '用于新闻、演出和系统内容的中英法草稿生成。保存后立即生效。',
+        enabled: '启用 AI',
+        disabled: '关闭 AI',
+        provider: '接口类型',
+        baseUrl: 'API Base URL',
+        model: '模型',
+        timeout: '超时秒数',
+        apiKey: 'API Key',
+        apiKeyPlaceholder: '留空则保留当前密钥',
+        keySet: '已设置',
+        keyNotSet: '未设置',
+        clearKey: '清空当前 API Key',
+        help: '兼容 OpenAI /chat/completions 的服务都可以接入，例如 OpenAI 或其它兼容网关。',
+      }
+    : locale.startsWith('fr')
+      ? {
+          title: 'Connexion API IA',
+          subtitle: 'Utilisee pour generer des brouillons chinois, anglais et francais.',
+          enabled: 'IA activee',
+          disabled: 'IA desactivee',
+          provider: "Type d'API",
+          baseUrl: 'API Base URL',
+          model: 'Modele',
+          timeout: 'Delai en secondes',
+          apiKey: 'API Key',
+          apiKeyPlaceholder: 'Laisser vide pour garder la cle actuelle',
+          keySet: 'Configuree',
+          keyNotSet: 'Non configuree',
+          clearKey: 'Effacer la cle API actuelle',
+          help: 'Toute API compatible OpenAI /chat/completions peut etre utilisee.',
+        }
+      : {
+          title: 'AI API Connection',
+          subtitle: 'Used to generate Chinese, English, and French drafts for CMS content.',
+          enabled: 'AI enabled',
+          disabled: 'AI disabled',
+          provider: 'API type',
+          baseUrl: 'API Base URL',
+          model: 'Model',
+          timeout: 'Timeout seconds',
+          apiKey: 'API Key',
+          apiKeyPlaceholder: 'Leave blank to keep current key',
+          keySet: 'Set',
+          keyNotSet: 'Not set',
+          clearKey: 'Clear current API key',
+          help: 'Any OpenAI-compatible /chat/completions API can be used.',
+        };
+  const backupText = locale.startsWith('zh')
+    ? {
+        title: '网站设置与内容备份',
+        subtitle: '导出数据库、新闻/页面内容、上传图片视频和系统配置。代码更新或 Docker 重新部署前先导出一份快照。',
+        export: '导出完整快照',
+        restore: '恢复备份',
+        choose: '选择备份 zip',
+        noFile: '请先选择一个备份 zip 文件。',
+        warning: '恢复会覆盖当前数据库和 data 内容。系统会先自动创建一份恢复前快照。',
+        confirm: '恢复会覆盖当前网站内容。系统会先自动创建恢复前快照，确认继续吗？',
+        exportDone: '已生成并下载备份：',
+        restoreDone: '恢复完成。',
+        preRestore: '恢复前快照',
+        restoredFiles: '恢复文件数',
+        recent: '服务器本地快照',
+        noRecent: '还没有服务器本地快照。',
+        superAdminOnly: '仅超级管理员可以导出或恢复完整内容。',
+      }
+    : locale.startsWith('fr')
+      ? {
+          title: 'Parametres et sauvegarde du site',
+          subtitle: 'Exporte la base de donnees, le contenu, les medias televerses et la configuration.',
+          export: 'Exporter un instantane complet',
+          restore: 'Restaurer la sauvegarde',
+          choose: 'Choisir un zip',
+          noFile: 'Choisissez d’abord un fichier zip de sauvegarde.',
+          warning: 'La restauration remplace la base de donnees et le dossier data actuels. Un instantane avant restauration sera cree.',
+          confirm: 'La restauration remplacera le contenu actuel. Continuer ?',
+          exportDone: 'Sauvegarde telechargee :',
+          restoreDone: 'Restauration terminee.',
+          preRestore: 'Instantane avant restauration',
+          restoredFiles: 'Fichiers restaures',
+          recent: 'Instantanes locaux du serveur',
+          noRecent: 'Aucun instantane local pour le moment.',
+          superAdminOnly: 'Seul le super administrateur peut exporter ou restaurer tout le contenu.',
+        }
+      : {
+          title: 'Website Settings and Content Backup',
+          subtitle: 'Export the database, content files, uploaded media, and system configuration before code or Docker updates.',
+          export: 'Export Full Snapshot',
+          restore: 'Restore Backup',
+          choose: 'Choose backup zip',
+          noFile: 'Choose a backup zip file first.',
+          warning: 'Restore overwrites the current database and data folder. A pre-restore snapshot is created first.',
+          confirm: 'Restore will overwrite the current website content. A pre-restore snapshot will be created first. Continue?',
+          exportDone: 'Backup downloaded:',
+          restoreDone: 'Restore complete.',
+          preRestore: 'Pre-restore snapshot',
+          restoredFiles: 'Restored files',
+          recent: 'Server Local Snapshots',
+          noRecent: 'No server local snapshots yet.',
+          superAdminOnly: 'Only the super administrator can export or restore full content.',
+        };
+  const policyLocaleOptions = adminContentLanguageOptions(locale);
   const [form, setForm] = useState<SystemSettings>(defaultSettings);
+  const [aiSettings, setAiSettings] = useState<AiProviderSettings>(defaultAiSettings);
+  const [aiForm, setAiForm] = useState<AiForm>({
+    enabled: false,
+    provider: 'openai_compatible',
+    api_base_url: 'https://api.openai.com/v1',
+    model: '',
+    timeout_seconds: 60,
+    api_key: '',
+    clear_api_key: false,
+  });
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupFile, setBackupFile] = useState<File | null>(null);
+  const [backupItems, setBackupItems] = useState<BackupInfo[]>([]);
+  const [backupMessage, setBackupMessage] = useState('');
+  const [backupError, setBackupError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setContentLocale(contentLocaleFromPath(locale));
+  }, [locale]);
+
+  const refreshBackupList = useCallback(async () => {
+    try {
+      const data = await backupApi.list();
+      setBackupItems(data.items);
+    } catch {
+      setBackupItems([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -83,15 +254,53 @@ export default function AdminSettingsPage() {
       return;
     }
 
-    settingsApi
-      .site()
-      .then((settings) => setForm({ ...defaultSettings, ...settings }))
-      .catch((err) => setError(err instanceof Error ? err.message : '加载系统设置失败'))
+    Promise.all([settingsApi.siteAll(), settingsApi.ai()])
+      .then(([settings, ai]) => {
+        setForm({ ...defaultSettings, ...settings });
+        setAiSettings({ ...defaultAiSettings, ...ai });
+        setAiForm({
+          enabled: ai.enabled,
+          provider: ai.provider,
+          api_base_url: ai.api_base_url,
+          model: ai.model,
+          timeout_seconds: ai.timeout_seconds,
+          api_key: '',
+          clear_api_key: false,
+        });
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : labels.settings.loadFailed))
       .finally(() => setLoading(false));
-  }, [router, locale]);
+    refreshBackupList();
+  }, [router, locale, labels.settings.loadFailed, refreshBackupList]);
 
   function setField<K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function setAiField<K extends keyof AiForm>(key: K, value: AiForm[K]) {
+    setAiForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function localizedField(key: keyof SystemSettings) {
+    if (contentLocale === 'zh') return String(form[key] ?? '');
+    return form.translations?.[contentLocale]?.[String(key)] ?? '';
+  }
+
+  function setLocalizedField(key: keyof SystemSettings, value: string) {
+    if (contentLocale === 'zh') {
+      setField(key, value as SystemSettings[typeof key]);
+      return;
+    }
+    setForm((current) => ({
+      ...current,
+      translations: {
+        ...(current.translations || {}),
+        [contentLocale]: {
+          ...(current.translations?.[contentLocale] || {}),
+          [String(key)]: value,
+        },
+      },
+    }));
   }
 
   async function uploadLogo(event: ChangeEvent<HTMLInputElement>) {
@@ -103,10 +312,51 @@ export default function AdminSettingsPage() {
       const uploaded = await uploadApi.image(file);
       setField('logo_url', uploaded.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '上传 Logo 失败');
+      setError(err instanceof Error ? err.message : labels.common.uploadFailed);
     } finally {
       setUploading(false);
       event.target.value = '';
+    }
+  }
+
+  async function exportBackup() {
+    setBackupLoading(true);
+    setBackupMessage('');
+    setBackupError('');
+
+    try {
+      const filename = await backupApi.exportSnapshot();
+      setBackupMessage(`${backupText.exportDone} ${filename}`);
+      await refreshBackupList();
+    } catch (err) {
+      setBackupError(err instanceof Error ? err.message : 'Backup export failed');
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
+  async function restoreBackup() {
+    if (!backupFile) {
+      setBackupError(backupText.noFile);
+      return;
+    }
+    if (!window.confirm(backupText.confirm)) return;
+
+    setBackupLoading(true);
+    setBackupMessage('');
+    setBackupError('');
+
+    try {
+      const result = await backupApi.restore(backupFile);
+      setBackupMessage(
+        `${backupText.restoreDone} ${backupText.preRestore}: ${result.pre_restore_backup}; ${backupText.restoredFiles}: ${result.restored_files}.`
+      );
+      setBackupFile(null);
+      await refreshBackupList();
+    } catch (err) {
+      setBackupError(err instanceof Error ? err.message : 'Backup restore failed');
+    } finally {
+      setBackupLoading(false);
     }
   }
 
@@ -117,11 +367,36 @@ export default function AdminSettingsPage() {
     setError('');
 
     try {
-      const saved = await settingsApi.updateSite(form);
+      const aiPayload: AiProviderSettingsUpdate = {
+        enabled: aiForm.enabled,
+        provider: aiForm.provider,
+        api_base_url: aiForm.api_base_url,
+        model: aiForm.model,
+        timeout_seconds: aiForm.timeout_seconds,
+        clear_api_key: aiForm.clear_api_key,
+      };
+      if (aiForm.api_key?.trim()) {
+        aiPayload.api_key = aiForm.api_key.trim();
+      }
+
+      const [saved, savedAi] = await Promise.all([
+        settingsApi.updateSite(form),
+        settingsApi.updateAi(aiPayload),
+      ]);
       setForm({ ...defaultSettings, ...saved });
-      setMessage('系统设置已保存');
+      setAiSettings({ ...defaultAiSettings, ...savedAi });
+      setAiForm({
+        enabled: savedAi.enabled,
+        provider: savedAi.provider,
+        api_base_url: savedAi.api_base_url,
+        model: savedAi.model,
+        timeout_seconds: savedAi.timeout_seconds,
+        api_key: '',
+        clear_api_key: false,
+      });
+      setMessage(labels.settings.saved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      setError(err instanceof Error ? err.message : labels.common.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -141,15 +416,15 @@ export default function AdminSettingsPage() {
             <div>
               <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
                 <Settings className="h-6 w-6 text-primary" />
-                系统设置
+                {labels.settings.title}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                管理全站品牌、页眉、页脚、联系方式、邮件发信人、社媒和版权信息。
+                {labels.settings.subtitle}
               </p>
             </div>
             <Button type="submit" disabled={loading || saving || uploading}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              保存设置
+              {labels.settings.save}
             </Button>
           </div>
 
@@ -159,23 +434,39 @@ export default function AdminSettingsPage() {
             </div>
           )}
 
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-2 py-4">
+              <span className="mr-1 text-sm font-medium text-muted-foreground">{labels.common.editingLanguage}</span>
+              {policyLocaleOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={contentLocale === option.value ? 'default' : 'outline'}
+                  onClick={() => setContentLocale(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+
           {loading ? (
             <Card>
               <CardContent className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                正在加载系统设置...
+                {labels.settings.loading}
               </CardContent>
             </Card>
           ) : (
             <>
               <Card>
                 <CardHeader>
-                  <CardTitle>品牌与页眉</CardTitle>
+                  <CardTitle>{labels.settings.brandHeader}</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-5 lg:grid-cols-2">
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">网站名称</span>
-                    <Input value={form.site_name} onChange={(e) => setField('site_name', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.siteName}</span>
+                    <Input value={localizedField('site_name')} onChange={(e) => setLocalizedField('site_name', e.target.value)} />
                   </label>
 
                   <div className="space-y-2">
@@ -192,26 +483,26 @@ export default function AdminSettingsPage() {
                         <Button asChild type="button" variant="outline" disabled={uploading}>
                           <label className="cursor-pointer">
                             {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
-                            上传 Logo
+                            {labels.common.uploadLogo}
                             <input type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
                           </label>
                         </Button>
-                        <Input value={form.logo_url} onChange={(e) => setField('logo_url', e.target.value)} placeholder="/logo.png 或 https://..." />
+                        <Input value={form.logo_url} onChange={(e) => setField('logo_url', e.target.value)} placeholder="/logo.png or https://..." />
                       </div>
                     </div>
                   </div>
 
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">页眉按钮文字</span>
-                    <Input value={form.header_cta_label} onChange={(e) => setField('header_cta_label', e.target.value)} placeholder="Register" />
+                    <span className="text-sm font-medium">{labels.settings.headerCtaLabel}</span>
+                    <Input value={localizedField('header_cta_label')} onChange={(e) => setLocalizedField('header_cta_label', e.target.value)} placeholder="Register" />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">页眉按钮链接</span>
-                    <Input value={form.header_cta_href} onChange={(e) => setField('header_cta_href', e.target.value)} placeholder="/classes/register 或 https://..." />
+                    <span className="text-sm font-medium">{labels.settings.headerCtaHref}</span>
+                    <Input value={form.header_cta_href} onChange={(e) => setField('header_cta_href', e.target.value)} placeholder="/classes/register or https://..." />
                   </label>
 
                   <div className="lg:col-span-2">
-                    <Toggle checked={form.show_admin_login} onCheckedChange={(checked) => setField('show_admin_login', checked)} label={form.show_admin_login ? '显示后台登录入口' : '隐藏后台登录入口'} />
+                    <Toggle checked={form.show_admin_login} onCheckedChange={(checked) => setField('show_admin_login', checked)} label={form.show_admin_login ? labels.settings.showAdminLogin : labels.settings.hideAdminLogin} />
                   </div>
                 </CardContent>
               </Card>
@@ -220,12 +511,12 @@ export default function AdminSettingsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-primary" />
-                    邮件发送设置
+                    {labels.settings.emailSettings}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-3 lg:grid-cols-2">
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">对外发信人邮箱</span>
+                    <span className="text-sm font-medium">{labels.settings.outboundEmail}</span>
                     <Input
                       type="email"
                       value={form.outbound_email}
@@ -234,7 +525,7 @@ export default function AdminSettingsPage() {
                     />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">同一联系方式最多申请次数</span>
+                    <span className="text-sm font-medium">{labels.settings.requestLimit}</span>
                     <Input
                       type="number"
                       min={0}
@@ -245,78 +536,236 @@ export default function AdminSettingsPage() {
                       }
                     />
                     <span className="text-xs text-muted-foreground">
-                      0 表示不限制。这里限制前台租借申请表里的联系方式。
+                      {labels.settings.requestLimitHelp}
                     </span>
                   </label>
                   <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
-                    这里控制网站邮件显示的 From 发信人。真正发送还需要后端配置 SMTP_HOST、SMTP_USERNAME、SMTP_PASSWORD。
+                    {labels.settings.smtpHelp}
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>顶部公告栏</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-primary" />
+                    {aiText.title}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">{aiText.subtitle}</p>
                 </CardHeader>
                 <CardContent className="grid gap-5 lg:grid-cols-2">
                   <div className="lg:col-span-2">
-                    <Toggle checked={form.announcement_enabled} onCheckedChange={(checked) => setField('announcement_enabled', checked)} label={form.announcement_enabled ? '公告已启用' : '公告关闭'} />
+                    <Toggle
+                      checked={aiForm.enabled}
+                      onCheckedChange={(checked) => setAiField('enabled', checked)}
+                      label={aiForm.enabled ? aiText.enabled : aiText.disabled}
+                    />
+                  </div>
+
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">{aiText.provider}</span>
+                    <Input
+                      value={aiForm.provider}
+                      onChange={(e) => setAiField('provider', e.target.value)}
+                      placeholder="openai_compatible"
+                    />
+                  </label>
+
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">{aiText.model}</span>
+                    <Input
+                      value={aiForm.model}
+                      onChange={(e) => setAiField('model', e.target.value)}
+                      placeholder="gpt-4o-mini"
+                    />
+                  </label>
+
+                  <label className="block space-y-1 lg:col-span-2">
+                    <span className="text-sm font-medium">{aiText.baseUrl}</span>
+                    <Input
+                      value={aiForm.api_base_url}
+                      onChange={(e) => setAiField('api_base_url', e.target.value)}
+                      placeholder="https://api.openai.com/v1"
+                    />
+                  </label>
+
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">{aiText.apiKey}</span>
+                    <Input
+                      type="password"
+                      value={aiForm.api_key || ''}
+                      onChange={(e) => setAiField('api_key', e.target.value)}
+                      placeholder={aiText.apiKeyPlaceholder}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {aiSettings.api_key_set ? `${aiText.keySet}: ${aiSettings.api_key_masked}` : aiText.keyNotSet}
+                    </span>
+                  </label>
+
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">{aiText.timeout}</span>
+                    <Input
+                      type="number"
+                      min={5}
+                      max={300}
+                      value={aiForm.timeout_seconds}
+                      onChange={(e) => setAiField('timeout_seconds', Math.max(5, Math.min(300, Number(e.target.value) || 60)))}
+                    />
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm lg:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(aiForm.clear_api_key)}
+                      onChange={(e) => setAiField('clear_api_key', e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    {aiText.clearKey}
+                  </label>
+
+                  <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm leading-6 text-blue-800 lg:col-span-2">
+                    {aiText.help}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Download className="h-5 w-5 text-primary" />
+                    {backupText.title}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">{backupText.subtitle}</p>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
+                    {backupText.warning} {backupText.superAdminOnly}
+                  </div>
+
+                  {(backupError || backupMessage) && (
+                    <div
+                      className={cn(
+                        'rounded-md border px-3 py-2 text-sm',
+                        backupError ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      )}
+                    >
+                      {backupError || backupMessage}
+                    </div>
+                  )}
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-lg border bg-background/70 p-4">
+                      <h3 className="text-sm font-semibold text-foreground">{backupText.export}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        database.sqlite + data/uploads + data/news + data/pages + settings
+                      </p>
+                      <Button type="button" className="mt-4" onClick={exportBackup} disabled={backupLoading}>
+                        {backupLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {backupText.export}
+                      </Button>
+                    </div>
+
+                    <div className="rounded-lg border bg-background/70 p-4">
+                      <h3 className="text-sm font-semibold text-foreground">{backupText.restore}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{backupText.warning}</p>
+                      <div className="mt-4 space-y-3">
+                        <Input
+                          type="file"
+                          accept=".zip,application/zip"
+                          aria-label={backupText.choose}
+                          onChange={(event) => setBackupFile(event.target.files?.[0] || null)}
+                        />
+                        {backupFile && <p className="text-xs text-muted-foreground">{backupFile.name}</p>}
+                        <Button type="button" variant="outline" onClick={restoreBackup} disabled={backupLoading}>
+                          {backupLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                          {backupText.restore}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">{backupText.recent}</h3>
+                    {backupItems.length > 0 ? (
+                      <div className="mt-2 divide-y rounded-lg border bg-background/70">
+                        {backupItems.slice(0, 5).map((item) => (
+                          <div key={item.filename} className="grid gap-1 px-3 py-2 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                            <span className="truncate font-medium text-foreground">{item.filename}</span>
+                            <span className="text-muted-foreground">{formatBackupSize(item.size)}</span>
+                            <span className="text-muted-foreground">{formatBackupTime(item.created_at)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">{backupText.noRecent}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{labels.settings.announcement}</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-5 lg:grid-cols-2">
+                  <div className="lg:col-span-2">
+                    <Toggle checked={form.announcement_enabled} onCheckedChange={(checked) => setField('announcement_enabled', checked)} label={form.announcement_enabled ? labels.settings.announcementOn : labels.settings.announcementOff} />
                   </div>
                   <label className="block space-y-1 lg:col-span-2">
-                    <span className="text-sm font-medium">公告文字</span>
-                    <Input value={form.announcement_text} onChange={(e) => setField('announcement_text', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.announcementText}</span>
+                    <Input value={localizedField('announcement_text')} onChange={(e) => setLocalizedField('announcement_text', e.target.value)} />
                   </label>
                   <label className="block space-y-1 lg:col-span-2">
-                    <span className="text-sm font-medium">公告链接</span>
-                    <Input value={form.announcement_href} onChange={(e) => setField('announcement_href', e.target.value)} placeholder="可留空" />
+                    <span className="text-sm font-medium">{labels.settings.announcementHref}</span>
+                    <Input value={form.announcement_href} onChange={(e) => setField('announcement_href', e.target.value)} placeholder={labels.common.optional} />
                   </label>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>页脚内容</CardTitle>
+                  <CardTitle>{labels.settings.footer}</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-5 lg:grid-cols-2">
                   <label className="block space-y-1 lg:col-span-2">
-                    <span className="text-sm font-medium">页脚简介</span>
-                    <Textarea rows={4} value={form.footer_description} onChange={(e) => setField('footer_description', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.footerDescription}</span>
+                    <Textarea rows={4} value={localizedField('footer_description')} onChange={(e) => setLocalizedField('footer_description', e.target.value)} />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">页脚右侧标题</span>
-                    <Input value={form.footer_newsletter_title} onChange={(e) => setField('footer_newsletter_title', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.footerTitle}</span>
+                    <Input value={localizedField('footer_newsletter_title')} onChange={(e) => setLocalizedField('footer_newsletter_title', e.target.value)} />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">隐私政策链接</span>
+                    <span className="text-sm font-medium">{labels.settings.privacyHref}</span>
                     <Input value={form.privacy_href} onChange={(e) => setField('privacy_href', e.target.value)} />
                   </label>
                   <label className="block space-y-1 lg:col-span-2">
-                    <span className="text-sm font-medium">页脚右侧文字</span>
-                    <Textarea rows={3} value={form.footer_newsletter_text} onChange={(e) => setField('footer_newsletter_text', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.footerText}</span>
+                    <Textarea rows={3} value={localizedField('footer_newsletter_text')} onChange={(e) => setLocalizedField('footer_newsletter_text', e.target.value)} />
                   </label>
                   <label className="block space-y-1 lg:col-span-2">
-                    <span className="text-sm font-medium">Copyright 文字</span>
-                    <Input value={form.copyright_text} onChange={(e) => setField('copyright_text', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.copyright}</span>
+                    <Input value={localizedField('copyright_text')} onChange={(e) => setLocalizedField('copyright_text', e.target.value)} />
                   </label>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>联系方式与社媒</CardTitle>
+                  <CardTitle>{labels.settings.contactSocial}</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-5 lg:grid-cols-2">
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">联系邮箱</span>
+                    <span className="text-sm font-medium">{labels.settings.contactEmail}</span>
                     <Input value={form.contact_email} onChange={(e) => setField('contact_email', e.target.value)} />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium">电话</span>
+                    <span className="text-sm font-medium">{labels.settings.phone}</span>
                     <Input value={form.contact_phone} onChange={(e) => setField('contact_phone', e.target.value)} />
                   </label>
                   <label className="block space-y-1 lg:col-span-2">
-                    <span className="text-sm font-medium">地址</span>
-                    <Textarea rows={3} value={form.contact_address} onChange={(e) => setField('contact_address', e.target.value)} />
+                    <span className="text-sm font-medium">{labels.settings.address}</span>
+                    <Textarea rows={3} value={localizedField('contact_address')} onChange={(e) => setLocalizedField('contact_address', e.target.value)} />
                   </label>
                   <label className="block space-y-1">
                     <span className="text-sm font-medium">YouTube</span>

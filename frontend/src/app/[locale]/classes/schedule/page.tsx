@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
+import { usePathname } from 'next/navigation';
 import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { CourseScheduleItem, SchoolPolicy, isAuthenticated, scheduleApi } from '@/lib/api';
+import { CourseScheduleItem, SchoolPolicy, isAuthenticated, scheduleApi, settingsApi } from '@/lib/api';
 import { CalendarDays, Clock3, MapPin } from 'lucide-react';
 
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
@@ -29,6 +30,8 @@ function interpolate(template: string, values: Record<string, string | number>) 
 
 export default function SchedulePage() {
   const t = useTranslations();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'zh';
   const rawWeekdays = t.raw('common.weekdays.long') as string[] | undefined;
   const weekdays = useMemo(
     () => rawWeekdays || ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
@@ -46,14 +49,14 @@ export default function SchedulePage() {
   }, []);
 
   useEffect(() => {
-    Promise.all([scheduleApi.list(), scheduleApi.policy()])
+    Promise.all([scheduleApi.list({ locale }), settingsApi.schoolPolicy(locale)])
       .then(([scheduleItems, policyData]) => {
         setItems(scheduleItems);
         setPolicy(policyData);
       })
       .catch((err) => setError(err instanceof Error ? err.message : loadFailedMessage))
       .finally(() => setLoading(false));
-  }, [loadFailedMessage]);
+  }, [loadFailedMessage, locale]);
 
   const grouped = useMemo(() => {
     return displayOrder.map((day) => ({

@@ -4,10 +4,35 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.translations import ensure_text_column, localized_payload, set_translation_bundle, translation_bundle
 from app.schemas.event import EventCreate, EventUpdate, EventResponse, PerformanceCreate, PerformanceUpdate, PerformanceResponse
 from app.models import Event, Performance
 
 router = APIRouter()
+PERFORMANCE_TRANSLATABLE_FIELDS = ("title", "description", "venue")
+
+
+def _ensure_performance_columns(db: Session) -> None:
+    ensure_text_column(db, "performances")
+
+
+def _performance_response(
+    performance: Performance,
+    locale: str | None = None,
+    include_translations: bool = False,
+) -> PerformanceResponse:
+    data = {
+        "id": performance.id,
+        "slug": performance.slug,
+        "start_date": performance.start_date,
+        "end_date": performance.end_date,
+        "cover_image": performance.cover_image,
+        "is_current": bool(performance.is_current),
+        "created_at": performance.created_at,
+        "translations": translation_bundle(performance) if include_translations else {},
+    }
+    data.update(localized_payload(performance, PERFORMANCE_TRANSLATABLE_FIELDS, locale))
+    return PerformanceResponse(**data)
 
 
 @router.get("/events", response_model=List[EventResponse])
@@ -45,12 +70,15 @@ def get_event_by_slug(slug: str, db: Session = Depends(get_db)):
 @router.get("/performances", response_model=List[PerformanceResponse])
 def list_performances(
     current: bool = Query(False),
+    locale: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
+    _ensure_performance_columns(db)
     query = db.query(Performance)
     if current:
         query = query.filter(Performance.is_current == True)
-    return query.order_by(Performance.start_date.asc()).all()
+    performances = query.order_by(Performance.start_date.asc()).all()
+    return [_performance_response(performance, locale) for performance in performances]
 
 
 @router.post("/performances", response_model=PerformanceResponse)
@@ -58,31 +86,37 @@ def create_performance(
     performance_data: PerformanceCreate,
     db: Session = Depends(get_db),
 ):
+    _ensure_performance_columns(db)
     existing = db.query(Performance).filter(Performance.slug == performance_data.slug).first()
     if existing:
         raise HTTPException(status_code=400, detail="Performance slug already exists")
 
-    performance = Performance(**performance_data.model_dump())
+    payload = performance_data.model_dump()
+    translations = payload.pop("translations", None)
+    performance = Performance(**payload)
+    set_translation_bundle(performance, translations)
     db.add(performance)
     db.commit()
     db.refresh(performance)
-    return performance
+    return _performance_response(performance, include_translations=True)
 
 
 @router.get("/performances/slug/{slug}", response_model=PerformanceResponse)
-def get_performance_by_slug(slug: str, db: Session = Depends(get_db)):
+def get_performance_by_slug(slug: str, locale: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    _ensure_performance_columns(db)
     performance = db.query(Performance).filter(Performance.slug == slug).first()
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")
-    return performance
+    return _performance_response(performance, locale)
 
 
 @router.get("/performances/{performance_id}", response_model=PerformanceResponse)
-def get_performance(performance_id: str, db: Session = Depends(get_db)):
+def get_performance(performance_id: str, locale: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    _ensure_performance_columns(db)
     performance = db.query(Performance).filter(Performance.id == performance_id).first()
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")
-    return performance
+    return _performance_response(performance, locale, include_translations=True)
 
 
 @router.put("/performances/{performance_id}", response_model=PerformanceResponse)
@@ -91,11 +125,13 @@ def update_performance(
     performance_data: PerformanceUpdate,
     db: Session = Depends(get_db),
 ):
+    _ensure_performance_columns(db)
     performance = db.query(Performance).filter(Performance.id == performance_id).first()
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")
 
     updates = performance_data.model_dump(exclude_unset=True)
+    translations = updates.pop("translations", None)
     new_slug = updates.get("slug")
     if new_slug and new_slug != performance.slug:
         existing = db.query(Performance).filter(Performance.slug == new_slug).first()
@@ -104,10 +140,12 @@ def update_performance(
 
     for field, value in updates.items():
         setattr(performance, field, value)
+    if translations is not None:
+        set_translation_bundle(performance, translations)
 
     db.commit()
     db.refresh(performance)
-    return performance
+    return _performance_response(performance, include_translations=True)
 
 
 @router.delete("/performances/{performance_id}")

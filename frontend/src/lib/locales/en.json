@@ -688,7 +688,9 @@
       "faculty": "Faculty",
       "classrooms": "Classrooms",
       "pricing": "Pricing",
-      "settings": "System Settings"
+      "schoolPolicy": "Policies & Refunds",
+      "settings": "System Settings",
+      "accounts": "Accounts"
     },
     "performances": {
       "calendarTitle": "Performance Calendar",

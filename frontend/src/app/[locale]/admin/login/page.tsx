@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { setAuthToken } from '@/lib/api';
+import { getApiBaseUrl, setAuthToken } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,7 @@ export default function LoginPage() {
     setSuccess(false);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const API_URL = getApiBaseUrl();
       const res = await fetch(`${API_URL}/api/v1/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
