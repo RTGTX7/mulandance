@@ -1,3 +1,5 @@
+const apiProxyTarget = process.env.API_PROXY_TARGET || 'http://localhost:8000';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -6,7 +8,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://backend:8000/api/:path*',
+        destination: `${apiProxyTarget.replace(/\/$/, '')}/api/:path*`,
       },
     ];
   },
