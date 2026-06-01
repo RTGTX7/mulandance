@@ -1,6 +1,6 @@
 services:
   backend:
-    image: rtgtx7/mulanstudio:backend-latest
+    image: rtgtx7/mulandance:backend-latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: rtgtx7/mulanstudio:frontend-latest
+    image: rtgtx7/mulandance:frontend-latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
