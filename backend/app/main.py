@@ -450,6 +450,58 @@ def _migrate_admin_roles_if_needed():
         conn.close()
 
 
+def _bootstrap_admin_from_env():
+    """Create or update the configured super admin from environment variables."""
+    if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
+        logger.info("ADMIN_EMAIL/ADMIN_PASSWORD not set; skipping admin bootstrap.")
+        return
+
+    from app.core.database import SessionLocal
+    from app.core.security import get_password_hash
+    from app.models import User, UserProfile
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+        if not user:
+            user = User(
+                email=settings.ADMIN_EMAIL,
+                password_hash=get_password_hash(settings.ADMIN_PASSWORD),
+                role="super_admin",
+                is_active=True,
+            )
+            db.add(user)
+            db.flush()
+            logger.info("Created super admin from ADMIN_EMAIL.")
+        else:
+            user.password_hash = get_password_hash(settings.ADMIN_PASSWORD)
+            user.role = "super_admin"
+            user.is_active = True
+            db.flush()
+            logger.info("Updated super admin from ADMIN_EMAIL.")
+
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        if not profile:
+            db.add(
+                UserProfile(
+                    user_id=user.id,
+                    first_name=settings.ADMIN_FIRST_NAME,
+                    last_name=settings.ADMIN_LAST_NAME,
+                )
+            )
+        else:
+            profile.first_name = settings.ADMIN_FIRST_NAME
+            profile.last_name = settings.ADMIN_LAST_NAME
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Admin bootstrap failed.")
+        raise
+    finally:
+        db.close()
+
+
 def _seed_news_taxonomy_if_needed():
     """Ensure the default news categories and tags exist."""
     from sqlalchemy import text
@@ -738,6 +790,7 @@ async def startup_event():
     _ensure_data_directories()
     _ensure_database_tables()
     _migrate_admin_roles_if_needed()
+    _bootstrap_admin_from_env()
     _migrate_system_settings_if_needed()
     _migrate_programs_if_needed()
     _seed_news_taxonomy_if_needed()

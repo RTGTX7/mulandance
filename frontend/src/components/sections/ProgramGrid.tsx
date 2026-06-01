@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { BookOpen, Footprints, Globe, Music, Sparkles, Sun, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ProgramItem, programApi } from '@/lib/api';
+import { AnimatedLineHeading, RevealOnScroll } from '@/components/motion/ScrollEffects';
 
 const iconMap = [
   { test: 'ballet', icon: Footprints, color: 'from-purple-500 to-violet-500' },
@@ -35,45 +36,72 @@ export function ProgramGrid() {
   );
 
   return (
-    <section className="py-20 md:py-24 bg-[#FAFAF9]" aria-label={t('common.sections.ourPrograms')}>
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 tracking-tight">
-            {t('home.programs.title')}
-          </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+    <section className="section-padding bg-white/30" aria-label={t('common.sections.ourPrograms')}>
+      <div className="container mx-auto">
+        <div className="mb-6 text-center md:mb-12">
+          <AnimatedLineHeading text={t('home.programs.title')} className="mx-auto mb-2 md:mb-4" />
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-lg">
             {t('home.programs.subtitle')}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {visiblePrograms.map((program) => {
+        <div className="grid grid-cols-2 gap-2 md:hidden">
+          {visiblePrograms.map((program, index) => {
             const visual = visualFor(program.slug);
             const Icon = visual.icon;
             const href = `/${locale}/programs#${program.slug}`;
 
             return (
-              <Link key={program.id} href={href} className="group">
-                <Card className="h-full bg-white border-0 shadow-sm hover:shadow-md transition-shadow duration-300 rounded-xl">
-                  <CardContent className="p-8 flex flex-col items-start">
-                    <div className={`mb-6 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${visual.color} text-white shadow-lg`}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors">
-                      {program.name}
-                    </h3>
-                    <p className="text-muted-foreground leading-relaxed mb-4 flex-1">
-                      {program.description}
-                    </p>
-                    <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:text-secondary transition-colors">
-                      {t('common.buttons.learnMore')}
-                      <svg className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
-                  </CardContent>
-                </Card>
-              </Link>
+              <RevealOnScroll key={program.id} delay={(index % 2) * 70}>
+                <Link
+                  href={href}
+                  className="group flex min-h-[112px] flex-col rounded-lg border border-white/70 bg-white/75 p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl transition-all hover:bg-white/90"
+                >
+                  <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${visual.color} text-white shadow-sm`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+                    {program.name}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">
+                    {program.description}
+                  </p>
+                </Link>
+              </RevealOnScroll>
+            );
+          })}
+        </div>
+
+        <div className="mx-auto hidden max-w-7xl grid-cols-1 gap-3 md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+          {visiblePrograms.map((program, index) => {
+            const visual = visualFor(program.slug);
+            const Icon = visual.icon;
+            const href = `/${locale}/programs#${program.slug}`;
+
+            return (
+              <RevealOnScroll key={program.id} delay={(index % 3) * 90}>
+                <Link href={href} className="group block h-full">
+                  <Card className="h-full border-white/70 bg-white/75 shadow-sm transition-shadow duration-300 hover:shadow-md">
+                    <CardContent className="flex min-h-[164px] flex-col items-start p-4 md:min-h-[210px] md:p-6">
+                      <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${visual.color} text-white shadow-lg md:mb-5 md:h-12 md:w-12`}>
+                        <Icon className="h-5 w-5 md:h-6 md:w-6" />
+                      </div>
+                      <h3 className="mb-1.5 text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-primary md:text-xl">
+                        {program.name}
+                      </h3>
+                      <p className="mb-3 line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground md:line-clamp-4 md:text-base">
+                        {program.description}
+                      </p>
+                      <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:text-secondary transition-colors">
+                        {t('common.buttons.learnMore')}
+                        <svg className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </RevealOnScroll>
             );
           })}
         </div>

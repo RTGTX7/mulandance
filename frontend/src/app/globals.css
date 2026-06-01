@@ -55,7 +55,7 @@
     --destructive-foreground: 210 40% 98%;
 
     /* 圆角 */
-    --radius: 0.875rem;
+    --radius: 0.5rem;
 
     /* --- 玻璃材质 --- */
     --glass-bg: 0 0% 100% / 0.64;
@@ -101,13 +101,14 @@
     @apply bg-background text-foreground;
     font-family: var(--font-body);
     font-size: 16px;
-    line-height: 1.75;
+    line-height: 1.62;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
     background:
       linear-gradient(145deg, hsl(260 55% 98%) 0%, hsl(210 48% 98%) 36%, hsl(34 70% 97%) 72%, hsl(330 42% 98%) 100%);
     background-attachment: fixed;
+    overflow-x: hidden;
   }
 
   /* --- 标题字体系统 --- */
@@ -116,7 +117,7 @@
     font-family: var(--font-heading);
     font-weight: 700;
     line-height: 1.25;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 
   /* 装饰字体 */
@@ -154,11 +155,11 @@
 @layer components {
   /* --- 页面区块间距 --- */
   .section-padding {
-    @apply py-16 md:py-24 lg:py-32;
+    @apply py-8 md:py-16 lg:py-20;
   }
 
   .section-padding-narrow {
-    @apply py-12 md:py-16;
+    @apply py-6 md:py-12;
   }
 
   /* --- 容器 --- */
@@ -172,13 +173,13 @@
 
   /* --- 标题样式 --- */
   .heading-xl {
-    @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
-    line-height: 1.15;
+    @apply text-3xl md:text-5xl lg:text-6xl font-bold tracking-normal;
+    line-height: 1.08;
   }
 
   .heading-lg {
-    @apply text-3xl md:text-4xl font-bold tracking-tight;
-    line-height: 1.2;
+    @apply text-2xl md:text-4xl font-bold tracking-normal;
+    line-height: 1.12;
   }
 
   .heading-md {
@@ -198,11 +199,11 @@
 
   /* --- 正文字体 --- */
   .text-lead {
-    @apply text-lg md:text-xl text-muted-foreground leading-relaxed;
+    @apply text-sm md:text-lg text-muted-foreground leading-relaxed;
   }
 
   .text-body {
-    @apply text-base leading-relaxed;
+    @apply text-sm md:text-base leading-relaxed;
   }
 
   .text-small {
@@ -235,24 +236,24 @@
 
   /* --- 按钮样式 --- */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:translate-y-0 active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:translate-y-0 active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-2xl bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground shadow-sm transition-all duration-300 hover:bg-secondary/90 hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow-sm transition-all duration-300 hover:bg-secondary/90 hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center rounded-2xl border border-primary/25 bg-white/45 px-6 py-3 text-sm font-semibold text-primary shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-lg border border-primary/25 bg-white/50 px-4 py-2 text-sm font-semibold text-primary shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-foreground transition-all duration-300 hover:bg-white/55 hover:text-foreground hover:shadow-sm disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
   }
 
   /* --- 卡片样式 --- */
   .card {
-    @apply rounded-2xl border border-white/60 bg-white/65 p-6 shadow-sm backdrop-blur-2xl transition-all duration-300;
+    @apply rounded-lg border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur-2xl transition-all duration-300;
   }
 
   .card-hover {
@@ -320,11 +321,11 @@
 
   /* --- 表单样式 --- */
   .input {
-    @apply flex h-12 w-full rounded-2xl border border-white/60 bg-white/60 px-4 py-2 text-sm text-foreground shadow-inner shadow-white/30 backdrop-blur-xl transition-all placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:bg-white/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex h-10 w-full rounded-lg border border-white/60 bg-white/60 px-3 py-2 text-sm text-foreground shadow-inner shadow-white/30 backdrop-blur-xl transition-all placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:bg-white/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .textarea {
-    @apply flex min-h-[120px] w-full rounded-2xl border border-white/60 bg-white/60 px-4 py-3 text-sm text-foreground shadow-inner shadow-white/30 backdrop-blur-xl transition-all placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:bg-white/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply flex min-h-[104px] w-full rounded-lg border border-white/60 bg-white/60 px-3 py-2 text-sm text-foreground shadow-inner shadow-white/30 backdrop-blur-xl transition-all placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:bg-white/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   /* --- 动画 --- */
@@ -341,15 +342,23 @@
   }
 
   .glass-panel {
-    @apply border border-white/60 bg-white/65 shadow-soft backdrop-blur-2xl;
+    @apply rounded-lg border border-white/60 bg-white/70 shadow-soft backdrop-blur-xl;
   }
 
   .glass-panel-strong {
-    @apply border border-white/70 bg-white/80 shadow-medium backdrop-blur-2xl;
+    @apply rounded-lg border border-white/70 bg-white/80 shadow-medium backdrop-blur-xl;
   }
 
   .glass-toolbar {
-    @apply border border-white/60 bg-white/70 shadow-sm backdrop-blur-2xl;
+    @apply rounded-lg border border-white/60 bg-white/75 shadow-sm backdrop-blur-xl;
+  }
+
+  .glass-nav {
+    @apply border-b border-white/60 bg-white/80 shadow-sm shadow-purple-950/5 backdrop-blur-xl;
+  }
+
+  .glass-control {
+    @apply rounded-lg border border-white/60 bg-white/60 shadow-sm backdrop-blur-xl;
   }
 
   .interactive-lift {
@@ -361,11 +370,51 @@
   }
 
   header.sticky {
-    @apply border-white/60 bg-white/70 shadow-sm shadow-purple-950/5 backdrop-blur-2xl;
+    @apply border-white/60 bg-white/80 shadow-sm shadow-purple-950/5 backdrop-blur-xl;
+  }
+}
+
+@media (max-width: 767px) {
+  body {
+    font-size: 15px;
+    line-height: 1.55;
+    background:
+      linear-gradient(150deg, hsl(260 45% 98%) 0%, hsl(214 42% 98%) 48%, hsl(330 30% 98%) 100%);
+    background-attachment: scroll;
+  }
+
+  .container {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .heading-xl {
+    font-size: 2.25rem;
+    line-height: 1.05;
+  }
+
+  .heading-lg {
+    font-size: 1.7rem;
+    line-height: 1.12;
+  }
+
+  .card,
+  .glass-panel,
+  .glass-panel-strong,
+  .glass-toolbar {
+    box-shadow: 0 8px 22px hsl(270 35% 18% / 0.07);
+    backdrop-filter: blur(14px);
   }
 }
 
 @layer utilities {
+  .tracking-tight,
+  .tracking-wide,
+  .tracking-wider,
+  .tracking-widest {
+    letter-spacing: 0 !important;
+  }
+
   /* 文字渐变 */
   .text-balance {
     text-wrap: balance;
@@ -382,6 +431,91 @@
 
   .text-shadow-lg {
     text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(4px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform, filter;
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.dance-line-heading {
+  display: inline-flex;
+  width: min(100%, 760px);
+  min-height: 1.2em;
+  color: hsl(var(--foreground));
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.dance-line-heading-left {
+  width: min(100%, 620px);
+}
+
+@media (min-width: 768px) {
+  .dance-line-heading {
+    font-size: 3.4rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .dance-line-heading {
+    font-size: 2.25rem;
+  }
+
+  .dance-line-heading-left {
+    width: min(100%, 420px);
+  }
+}
+
+.dance-line-heading svg {
+  display: block;
+  width: 100%;
+  height: 1.18em;
+  overflow: visible;
+}
+
+.dance-line-heading text {
+  font-family: var(--font-heading);
+  font-size: 96px;
+  font-weight: 700;
+  fill: hsl(var(--foreground) / 0);
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1800;
+  stroke-dashoffset: 1800;
+}
+
+.dance-line-heading.is-visible text {
+  animation:
+    danceTextDraw 1150ms cubic-bezier(0.37, 0, 0.12, 1) forwards,
+    danceTextFill 420ms ease-out 900ms forwards;
+}
+
+@keyframes danceTextDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes danceTextFill {
+  to {
+    fill: hsl(var(--foreground));
   }
 }
 
@@ -441,7 +575,7 @@
 
 /* --- 加载骨架屏 --- */
 .skeleton {
-  @apply animate-pulse rounded-2xl bg-white/55 backdrop-blur-xl;
+  @apply animate-pulse rounded-lg bg-white/60 backdrop-blur-xl;
 }
 
 .skeleton-text {
@@ -512,6 +646,18 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .dance-line-heading text {
+    fill: hsl(var(--foreground));
+    stroke-dashoffset: 0;
+    animation: none !important;
   }
 }
 

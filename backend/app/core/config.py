@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     AI_TIMEOUT_SECONDS: int = 60
     AI_MAX_URLS: int = 10
     AI_MAX_IMAGES_PER_URL: int = 5
+    ADMIN_EMAIL: str = ""
+    ADMIN_PASSWORD: str = ""
+    ADMIN_FIRST_NAME: str = "Mulan"
+    ADMIN_LAST_NAME: str = "Admin"
 
     @field_validator("DEBUG", "USE_FILE_STORAGE", "SMTP_USE_TLS", "AI_ENABLED", mode="before")
     @classmethod

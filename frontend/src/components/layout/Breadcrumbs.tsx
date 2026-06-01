@@ -27,14 +27,14 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
   };
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-6">
-      <ol className="flex items-center justify-center gap-1.5 text-sm text-white/65">
+    <nav aria-label="Breadcrumb" className="mb-3 md:mb-5">
+      <ol className="flex items-center justify-center gap-1.5 text-xs text-white/70 md:text-sm">
         <li>
           <Link
             href={getHref('/')}
             className="hover:text-white transition-colors"
           >
-            <Home className="h-4 w-4" />
+            <Home className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </Link>
         </li>
         {items.map((item, index) => (

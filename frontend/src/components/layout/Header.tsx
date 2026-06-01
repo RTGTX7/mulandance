@@ -43,13 +43,7 @@ const navSections: NavSection[] = [
     key: 'programs',
     labelKey: 'common.nav.programs',
     links: [
-      { labelKey: 'home.programs.chinese', href: '/programs#chinese' },
-      { labelKey: 'home.programs.folk', href: '/programs#folk' },
-      { labelKey: 'home.programs.ballet', href: '/programs#ballet' },
-      { labelKey: 'home.programs.contemporary', href: '/programs#contemporary' },
-      { labelKey: 'home.programs.jazz', href: '/programs#jazz' },
-      { labelKey: 'home.programs.hiphop', href: '/programs#hiphop' },
-      { labelKey: 'programs.summer.title', href: '/programs/summer-camps' },
+      { labelKey: 'common.nav.programs', href: '/programs' },
       { labelKey: 'programs.pricing.title', href: '/programs/pricing' },
     ],
   },
@@ -134,7 +128,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/55 bg-white/70 shadow-sm shadow-purple-950/5 backdrop-blur-2xl supports-[backdrop-filter]:bg-white/60">
+    <header className="glass-nav sticky top-0 z-40 w-full supports-[backdrop-filter]:bg-white/75">
       {settings.announcement_enabled && settings.announcement_text && (
         <div className="bg-primary/90 px-4 py-2 text-center text-sm font-medium text-primary-foreground shadow-sm backdrop-blur-xl">
           {settings.announcement_href ? (
@@ -146,20 +140,20 @@ export function Header() {
           )}
         </div>
       )}
-      <div className="container flex h-16 items-center justify-between gap-3">
+      <div className="container flex h-12 items-center justify-between gap-2 md:h-14 md:gap-3">
         <Link
           href={href('/')}
-          className="flex items-center gap-2"
+          className="flex min-w-0 items-center gap-2"
         >
-          <img src={settings.logo_url || '/logo.png'} alt={settings.site_name} className="h-10 w-10 rounded-full object-cover" />
-          <span className="hidden text-sm font-semibold text-foreground 2xl:inline">{settings.site_name}</span>
+          <img src={settings.logo_url || '/logo.png'} alt={settings.site_name} className="h-8 w-8 shrink-0 rounded-full object-cover md:h-9 md:w-9" />
+          <span className="truncate text-sm font-semibold text-foreground sm:max-w-[180px] md:max-w-[220px] lg:hidden 2xl:inline">{settings.site_name}</span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-0.5" aria-label={t('common.accessibility.navigation')}>
           <Link
             href={href('/')}
             className={cn(
-              'whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/55 hover:text-foreground hover:shadow-sm',
+                  'whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm',
               activeDropdown === null && 'text-foreground'
             )}
           >
@@ -174,7 +168,7 @@ export function Header() {
                 <Link
                   href={href(section.href)}
                   className={cn(
-                    'flex items-center gap-1 whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/55 hover:text-foreground hover:shadow-sm',
+                    'flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm',
                     activeDropdown === section.key && 'bg-white/60 text-foreground shadow-sm'
                   )}
                 >
@@ -185,7 +179,7 @@ export function Header() {
                 <button
                   type="button"
                   className={cn(
-                    'flex items-center gap-1 whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/55 hover:text-foreground hover:shadow-sm',
+                    'flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm',
                     activeDropdown === section.key && 'bg-white/60 text-foreground shadow-sm'
                   )}
                 >
@@ -193,7 +187,7 @@ export function Header() {
                   <ChevronDown className={cn("h-3 w-3 transition-transform", activeDropdown === section.key && "rotate-180")} />
                 </button>
               )}
-              <div className="invisible absolute left-0 top-full mt-2 w-56 translate-y-1 rounded-2xl border border-white/70 bg-white/80 p-2 opacity-0 shadow-xl shadow-purple-950/10 backdrop-blur-2xl transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+              <div className="invisible absolute left-0 top-full mt-2 w-56 translate-y-1 rounded-lg border border-white/70 bg-white/90 p-2 opacity-0 shadow-xl shadow-purple-950/10 backdrop-blur-xl transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                 {section.links.map((link) => {
                   const linkPath = link.href.split('#')[0];
                   const fragment = link.href.includes('#') ? link.href.split('#')[1] : '';
@@ -202,7 +196,7 @@ export function Header() {
                     <Link
                       key={link.href}
                       href={fullPath}
-                      className="block rounded-xl px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-white/70 hover:text-foreground"
+                      className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-white/70 hover:text-foreground"
                     >
                       {t(link.labelKey)}
                     </Link>
@@ -213,13 +207,13 @@ export function Header() {
           ))}
           <Link
             href={href('/classes/schedule')}
-            className="whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/55 hover:text-foreground hover:shadow-sm"
+            className="whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm"
           >
             {t('common.nav.schedule', { defaultMessage: 'Schedule' })}
           </Link>
           <Link
             href={href('/news')}
-            className="whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/55 hover:text-foreground hover:shadow-sm"
+            className="whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm"
           >
             {t('common.nav.news')}
           </Link>
@@ -256,7 +250,7 @@ export function Header() {
         </div>
 
         <button
-          className="rounded-2xl border border-white/60 bg-white/55 p-2 shadow-sm backdrop-blur-xl transition-all hover:bg-white/80 active:scale-95 lg:hidden"
+          className="glass-control p-1.5 transition-all hover:bg-white/80 active:scale-95 lg:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? t('common.accessibility.close') : t('common.accessibility.menu')}
         >
@@ -265,18 +259,18 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-white/60 bg-white/75 shadow-lg shadow-purple-950/10 backdrop-blur-2xl lg:hidden">
-          <div className="container py-4 space-y-1">
+        <div className="max-h-[calc(100svh-3rem)] overflow-y-auto border-t border-white/60 bg-white/80 shadow-lg shadow-purple-950/10 backdrop-blur-xl lg:hidden">
+          <div className="container space-y-2 py-2">
             <Link
               href={href('/')}
-              className="block rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
+              className="block rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
               onClick={() => setMobileOpen(false)}
             >
               {t('common.nav.home')}
             </Link>
             {navSections.map((section) => (
-              <div key={section.key}>
-                <span className="block rounded-xl px-3 py-2 text-sm font-semibold text-foreground">
+              <div key={section.key} className="rounded-lg border border-white/60 bg-white/50 p-1 shadow-sm">
+                <span className="block px-2 py-1 text-xs font-semibold uppercase text-muted-foreground">
                   {t(section.labelKey)}
                 </span>
                 {section.links.map((link) => {
@@ -287,7 +281,7 @@ export function Header() {
                     <Link
                       key={link.href}
                       href={fullPath}
-                      className="block rounded-xl px-3 py-1.5 text-sm text-muted-foreground transition-all hover:bg-white/60 hover:text-foreground"
+                      className="block rounded-md px-2 py-1.5 text-sm font-medium text-foreground transition-all hover:bg-white/70"
                       onClick={() => setMobileOpen(false)}
                     >
                       {t(link.labelKey)}
@@ -298,45 +292,45 @@ export function Header() {
             ))}
             <Link
               href={href('/classes/schedule')}
-              className="block rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
+              className="block rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
               onClick={() => setMobileOpen(false)}
             >
               {t('common.nav.schedule', { defaultMessage: 'Schedule' })}
             </Link>
             <Link
               href={href('/news')}
-              className="block rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
+              className="block rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
               onClick={() => setMobileOpen(false)}
             >
               {t('common.nav.news')}
             </Link>
-            <div className="pt-4">
+            <div className="sticky bottom-0 -mx-1 rounded-lg border border-white/60 bg-white/80 p-1.5 shadow-lg shadow-purple-950/10 backdrop-blur-xl">
               <a
                 href={configuredHref(ctaHref)}
-                className="mb-2 flex w-full items-center rounded-2xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-all active:scale-[0.98]"
+                className="mb-1.5 flex h-9 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all active:scale-[0.98]"
                 onClick={() => setMobileOpen(false)}
               >
                 {ctaLabel}
               </a>
               {authenticated ? (
                 <>
-                  <Link href={href('/admin/dashboard')} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-all hover:bg-white/60" onClick={() => setMobileOpen(false)}>
+                  <Link href={href('/admin/dashboard')} className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60" onClick={() => setMobileOpen(false)}>
                     <LayoutDashboard className="h-4 w-4" />
                     {t('admin.dashboard.title')}
                   </Link>
-                  <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-all hover:bg-white/60" onClick={() => { handleLogout(); setMobileOpen(false); }}>
+                  <button className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60" onClick={() => { handleLogout(); setMobileOpen(false); }}>
                     <LogOut className="h-4 w-4" />
                     {t('admin.common.logout')}
                   </button>
                 </>
               ) : settings.show_admin_login ? (
-                <Link href={href('/admin/login')} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-foreground transition-all hover:bg-white/60" onClick={() => setMobileOpen(false)}>
+                <Link href={href('/admin/login')} className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60" onClick={() => setMobileOpen(false)}>
                   <LogIn className="h-4 w-4" />
                   {t('admin.login.signIn')}
                 </Link>
               ) : null}
             </div>
-            <div className="pt-4 border-t border-border mt-4">
+            <div className="border-t border-white/60 pt-2">
               <LanguageSwitcher />
             </div>
           </div>

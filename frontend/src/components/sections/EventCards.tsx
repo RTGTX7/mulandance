@@ -7,6 +7,7 @@ import { Calendar, Clock, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { performanceApi, type PerformanceItem } from '@/lib/api';
+import { AnimatedLineHeading, RevealOnScroll } from '@/components/motion/ScrollEffects';
 
 interface Event {
   id: string;
@@ -71,9 +72,9 @@ export function EventCards() {
   return (
     <section className="section-padding">
       <div className="container">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-10 gap-4">
+        <div className="mb-5 flex flex-col gap-2 md:mb-10 md:flex-row md:items-end md:justify-between md:gap-4">
           <div>
-            <h2 className="heading-lg mb-2">{t('home.events.title')}</h2>
+            <AnimatedLineHeading text={t('home.events.title')} align="left" className="mb-2" />
             <p className="text-lead">{t('home.events.subtitle')}</p>
           </div>
           <Link href={`/${locale}/performances`}>
@@ -83,53 +84,114 @@ export function EventCards() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <Link key={event.id} href={event.href.startsWith('/') ? `/${locale}${event.href}` : event.href} className="block h-full text-left">
-              <Card className="card-hover h-full group cursor-pointer flex flex-col">
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-purple-400/10 rounded-t-lg overflow-hidden relative">
-                  {event.coverImage && (
-                    <img
-                      src={event.coverImage}
-                      alt={event.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-3 left-3">
-                    <Badge variant="secondary" className="bg-white/90 text-primary">
-                      {event.type === 'performance' ? 'Performance' : 'Workshop'}
-                    </Badge>
+        <div className="relative md:hidden">
+          <div className="absolute bottom-3 left-[19px] top-3 w-px bg-primary/18" aria-hidden="true" />
+          <div className="space-y-3">
+            {events.map((event, index) => (
+              <RevealOnScroll key={event.id} delay={index * 80}>
+                <Link
+                  href={event.href.startsWith('/') ? `/${locale}${event.href}` : event.href}
+                  className="group relative grid grid-cols-[40px_1fr] gap-2"
+                >
+                  <div className="relative z-10 flex justify-center pt-4">
+                    <span className="flex h-3.5 w-3.5 rounded-full border-2 border-white bg-secondary shadow-sm shadow-purple-950/10" />
                   </div>
-                </div>
-                <CardHeader className="pb-2">
-                  <CardTitle className="heading-sm group-hover:text-secondary transition-colors text-base line-clamp-2 min-h-[48px]">
-                    {event.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col">
-                  <p className="text-sm text-muted-foreground mb-4 flex-1 line-clamp-3">
-                    {event.description}
-                  </p>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 shrink-0" />
-                      <span>{event.date}</span>
+                  <div className="grid min-w-0 grid-cols-[72px_1fr] gap-3 rounded-lg border border-white/70 bg-white/75 p-2.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl transition-all group-hover:bg-white/90">
+                    <div className="relative h-[76px] overflow-hidden rounded-lg bg-gradient-to-br from-primary/20 via-purple-300/20 to-secondary/15">
+                      {event.coverImage && (
+                        <img
+                          src={event.coverImage}
+                          alt={event.title}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+                      <span className="absolute bottom-1.5 left-1.5 rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
+                        {eventTypeLabel(event.type, t)}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 shrink-0" />
-                      <span>{event.time}</span>
-                    </div>
-                    {event.location && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 shrink-0" />
-                        <span>{event.location}</span>
+
+                    <div className="min-w-0">
+                      <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold leading-none text-secondary">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        <span>{formatShortDate(event.date, locale)}</span>
+                        {event.time && (
+                          <>
+                            <span className="text-muted-foreground/45">/</span>
+                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{event.time}</span>
+                          </>
+                        )}
                       </div>
-                    )}
+                      <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-secondary">
+                        {event.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-1 text-xs leading-snug text-muted-foreground">
+                        {event.description}
+                      </p>
+                      {event.location && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] leading-snug text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{event.location}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+                </Link>
+              </RevealOnScroll>
+            ))}
+          </div>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
+          {events.map((event, index) => (
+            <RevealOnScroll key={event.id} delay={index * 90}>
+              <Link href={event.href.startsWith('/') ? `/${locale}${event.href}` : event.href} className="block h-full text-left">
+                <Card className="card-hover h-full group cursor-pointer flex flex-col">
+                  <div className="relative aspect-[16/9] overflow-hidden rounded-t-lg bg-gradient-to-br from-primary/20 to-purple-400/10 md:aspect-[16/10]">
+                    {event.coverImage && (
+                      <img
+                        src={event.coverImage}
+                        alt={event.title}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-2 left-2 md:bottom-3 md:left-3">
+                      <Badge variant="secondary" className="bg-white/90 text-primary">
+                        {eventTypeLabel(event.type, t)}
+                      </Badge>
+                    </div>
+                  </div>
+                  <CardHeader className="pb-1.5">
+                    <CardTitle className="line-clamp-2 min-h-[38px] text-base transition-colors group-hover:text-secondary md:min-h-[44px]">
+                      {event.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col">
+                    <p className="mb-3 line-clamp-2 flex-1 text-sm text-muted-foreground md:line-clamp-3">
+                      {event.description}
+                    </p>
+                    <div className="space-y-1.5 text-xs leading-snug text-muted-foreground md:text-sm">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 shrink-0" />
+                        <span>{event.date}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 shrink-0" />
+                        <span>{event.time}</span>
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 shrink-0" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </RevealOnScroll>
           ))}
         </div>
       </div>
@@ -154,4 +216,18 @@ function performanceToEvent(item: PerformanceItem): Event {
     href: `/performances/${item.slug}`,
     coverImage: item.cover_image,
   };
+}
+
+function formatShortDate(date: string, locale: string) {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return date;
+
+  return new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+  }).format(parsed);
+}
+
+function eventTypeLabel(type: Event['type'], t: ReturnType<typeof useTranslations>) {
+  return type === 'performance' ? t('performanceTimeline.type.performance') : t('performanceTimeline.type.event');
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from '@/components/ui/i18n-client';
-import { Phone, MapPin, Youtube } from 'lucide-react';
+import { Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -36,31 +36,36 @@ export function CTABanner() {
 
   const title = customCta?.title || t('home.cta.title');
   const subtitle = customCta?.subtitle || t('home.cta.subtitle');
+  const subtitleParts = subtitle.split('|').map((part) => part.trim()).filter(Boolean);
   const note = customCta?.note || t('about.joinUs.subtitle');
   const primaryHref = localHref(customCta?.primary?.href || '/classes/register');
   const secondaryHref = localHref(customCta?.secondary?.href || '/about/contact');
 
   return (
-    <section className="py-20 bg-gradient-to-br from-primary via-purple-800 to-primary/90 text-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 -translate-y-1/3" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-secondary rounded-full -translate-x-1/2 translate-y-1/2" />
-      </div>
-
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary via-purple-800 to-primary/90 py-7 text-white md:py-16">
       <div className="container relative z-10 text-center">
-        <h2 className="heading-xl mb-4 text-white">{title}</h2>
-        <p className="text-lg md:text-xl text-white/80 mb-6 max-w-2xl mx-auto">
-          {subtitle}
+        <h2 className="mb-2 text-2xl font-bold leading-tight text-white md:text-4xl">{title}</h2>
+        <p className="mx-auto mb-3 flex max-w-2xl flex-col items-center gap-0.5 text-sm font-semibold leading-snug text-white/85 sm:flex-row sm:justify-center sm:gap-2 md:mb-5 md:text-lg">
+          {subtitleParts.length > 1 ? (
+            subtitleParts.map((part, index) => (
+              <span key={part} className="inline-flex items-center gap-2">
+                {index > 0 && <span className="hidden text-white/45 sm:inline">|</span>}
+                <span>{part}</span>
+              </span>
+            ))
+          ) : (
+            subtitle
+          )}
         </p>
-        <p className="text-body text-white/60 mb-10 max-w-xl mx-auto">
+        <p className="mx-auto mb-4 max-w-xl text-sm leading-relaxed text-white/72 md:mb-8 md:text-base">
           {note}
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="mx-auto grid w-full max-w-md grid-cols-2 gap-2 md:flex md:max-w-none md:justify-center md:gap-3">
           <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined}>
             <Button 
-              size="lg" 
-              className="bg-white text-primary hover:bg-white/90 !px-8 text-base font-semibold shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              size="lg"
+              className="h-11 w-full rounded-lg bg-white px-3 text-sm font-semibold text-primary shadow-lg transition-all duration-300 hover:bg-white/90 hover:shadow-xl md:w-auto md:px-6"
             >
               {customCta?.primary?.label || t('home.cta.register')}
             </Button>
@@ -69,31 +74,31 @@ export function CTABanner() {
             <Button 
               size="lg" 
               variant="outline"
-              className="border-2 border-white bg-white text-primary hover:bg-white/90 hover:border-white !px-8 text-base font-semibold shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              className="h-11 w-full rounded-lg border border-white bg-white px-3 text-sm font-semibold text-primary shadow-lg transition-all duration-300 hover:border-white hover:bg-white/90 hover:shadow-xl md:w-auto md:px-6"
             >
               {customCta?.secondary?.label || t('home.cta.contact')}
             </Button>
           </Link>
         </div>
 
-        <div className="flex items-center justify-center gap-6 mt-10">
+        <div className="mt-4 flex flex-col items-center justify-center gap-1.5 sm:flex-row sm:gap-5 md:mt-8">
           <a
             href="https://www.youtube.com/@mulandancestudio21"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-sm text-white/72 transition-colors hover:text-white"
           >
-            <Youtube className="h-5 w-5" />
-            <span className="text-sm">@mulandancestudio21</span>
+            <Youtube className="h-4 w-4" />
+            <span>@mulandancestudio21</span>
           </a>
           <a
             href="https://www.rednote.com/user/profile/5b8ab7c50ddda30001575476"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-sm text-white/72 transition-colors hover:text-white"
           >
             <XiaohongshuIcon />
-            <span className="text-sm">Mulan Dance Studio</span>
+            <span>Mulan Dance Studio</span>
           </a>
         </div>
       </div>

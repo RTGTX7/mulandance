@@ -108,7 +108,7 @@ export function HeroCarousel() {
 
   return (
     <section
-      className="relative h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden"
+      className="relative h-[62svh] min-h-[410px] max-h-[540px] overflow-hidden md:h-[70vh] md:min-h-[560px] md:max-h-[800px]"
       aria-label={t('common.sections.featuredPerformances')}
     >
       <div
@@ -133,41 +133,36 @@ export function HeroCarousel() {
         )
       )}
 
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(201,169,110,0.2),transparent_40%)]" />
-      </div>
-
-      <div className="relative h-full container flex flex-col justify-center items-center text-center text-white px-4">
+      <div className="relative h-full container flex flex-col justify-center items-center px-4 pb-14 pt-4 text-center text-white md:pb-20 md:pt-6">
         <div
           className={`max-w-3xl transition-all duration-500 ${
             isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
           }`}
         >
-          <span className="inline-block px-3 py-1 mb-6 text-xs font-semibold tracking-wider uppercase rounded-full bg-white/20 backdrop-blur-sm">
+          <span className="mb-3 inline-block rounded-lg bg-white/20 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-normal backdrop-blur-sm md:mb-6 md:text-xs">
             {slide.badge || t('common.appName')}
           </span>
-          <h1 className="heading-xl text-white mb-4 leading-tight">
+          <h1 className="heading-xl mb-3 text-white md:mb-4">
             {slide.title}
           </h1>
-          <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="mx-auto mb-5 max-w-2xl text-sm leading-relaxed text-white/80 md:mb-8 md:text-xl">
             {slide.subtitle}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined}>
+          <div className="mx-auto flex w-full max-w-sm justify-center gap-2 sm:max-w-none md:gap-4">
+            <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined} className="min-w-0 flex-1 sm:flex-none">
               <Button 
                 size="lg" 
-                className="bg-white text-primary hover:bg-white/90 !px-8 transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                className="w-full px-3 bg-white text-primary transition-all duration-300 hover:bg-white/90 hover:shadow-xl sm:w-auto"
               >
                 {slide.primary?.label || t('home.hero.slides.0.cta1')}
               </Button>
             </Link>
-            <Link href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined}>
+            <Link href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined} className="min-w-0 flex-1 sm:flex-none">
               <Button
                 size="lg"
-                className="bg-white/95 text-primary hover:bg-white !px-8 font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                className="w-full px-3 bg-white/90 font-semibold text-primary shadow-lg transition-all duration-300 hover:bg-white hover:shadow-2xl sm:w-auto"
               >
-                <Play className="mr-2 h-4 w-4" />
+                <Play className="mr-1.5 h-4 w-4" />
                 {slide.secondary?.label || t('home.hero.slides.0.cta2')}
               </Button>
             </Link>
@@ -175,10 +170,10 @@ export function HeroCarousel() {
         </div>
 
         {slides.length > 1 && (
-        <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-3">
+        <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-2 md:bottom-8 md:gap-3">
           <button
             onClick={prev}
-            className="p-2 rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors"
+            className="rounded-lg bg-white/10 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-white/20 md:p-2"
             aria-label={t('common.accessibility.previous')}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -188,8 +183,8 @@ export function HeroCarousel() {
               <button
                 key={index}
                 onClick={() => goTo(index)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === current ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'
+                className={`h-1.5 rounded-full transition-all duration-300 md:h-2 ${
+                  index === current ? 'w-7 bg-white md:w-8' : 'w-1.5 bg-white/40 hover:bg-white/60 md:w-2'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
@@ -197,7 +192,7 @@ export function HeroCarousel() {
           </div>
           <button
             onClick={next}
-            className="p-2 rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors"
+            className="rounded-lg bg-white/10 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-white/20 md:p-2"
             aria-label={t('common.accessibility.next')}
           >
             <ChevronRight className="h-5 w-5" />

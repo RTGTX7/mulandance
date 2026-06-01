@@ -60,17 +60,17 @@ export function Footer() {
   ].filter((item) => item.href);
 
   return (
-    <footer className="border-t border-white/60 bg-white/55 shadow-inner shadow-white/40 backdrop-blur-2xl">
-      <div className="section-padding container">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
-          <div>
-            <h3 className="heading-sm mb-4 text-primary">
+    <footer className="border-t border-white/60 bg-white/70 shadow-inner shadow-white/40 backdrop-blur-xl">
+      <div className="container py-7 md:py-14">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-6 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+          <div className="col-span-2 lg:col-span-1">
+            <h3 className="mb-2 text-xl font-bold leading-tight text-primary md:text-2xl">
               {settings.site_name || t('common.appName')}
             </h3>
-            <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+            <p className="mb-3 max-w-xl text-sm leading-relaxed text-muted-foreground md:max-w-none">
               {settings.footer_description || t('about.intro_intro')}
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {socialLinks.map(({ icon: Icon, href: socialHref, label }) => (
                 <a
                   key={label}
@@ -78,9 +78,9 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/55 text-muted-foreground shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-white/80 hover:text-secondary"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/10 bg-white/45 text-primary shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-white/80 hover:text-secondary"
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                 </a>
               ))}
               {settings.xiaohongshu_url && (
@@ -89,7 +89,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="RedNote"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/55 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-secondary"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#fe2442]/20 bg-[#fe2442] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#e81f3b]"
                 >
                   <Image src="/xiaohongshu-icon.svg" alt="" width={16} height={16} />
                 </a>
@@ -98,10 +98,10 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="heading-sm mb-4 text-sm font-semibold">
+            <h4 className="mb-2 text-sm font-semibold leading-tight text-foreground">
               {t('common.footer.quickLinks')}
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {[
                 { label: t('common.nav.about'), path: '/about' },
                 { label: t('common.nav.programs'), path: '/programs' },
@@ -118,22 +118,22 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="heading-sm mb-4 text-sm font-semibold">
+            <h4 className="mb-2 text-sm font-semibold leading-tight text-foreground">
               {t('common.footer.contact')}
             </h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+            <ul className="space-y-2">
+              <li className="flex items-start gap-1.5 text-sm leading-snug text-muted-foreground">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>{settings.contact_address || t('common.footer.address')}</span>
               </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="h-4 w-4 shrink-0" />
+              <li className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Phone className="h-3.5 w-3.5 shrink-0" />
                 <a href={`tel:${settings.contact_phone}`} className="transition-colors hover:text-foreground">
                   {settings.contact_phone || t('common.footer.phone')}
                 </a>
               </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4 shrink-0" />
+              <li className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Mail className="h-3.5 w-3.5 shrink-0" />
                 <a href={`mailto:${settings.contact_email}`} className="transition-colors hover:text-foreground">
                   {settings.contact_email || t('common.footer.email')}
                 </a>
@@ -141,18 +141,18 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
-            <h4 className="heading-sm mb-4 text-sm font-semibold">
+          <div className="col-span-2 lg:col-span-1">
+            <h4 className="mb-2 text-sm font-semibold leading-tight text-foreground">
               {settings.footer_newsletter_title || t('common.footer.newsletter')}
             </h4>
-            <p className="mb-3 text-sm text-muted-foreground">
+            <p className="mb-3 max-w-xl text-sm leading-relaxed text-muted-foreground md:max-w-none">
               {settings.footer_newsletter_text || t('about.joinUs.subtitle')}
             </p>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/60 pt-8 sm:flex-row">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-6 flex flex-col items-start justify-between gap-2 border-t border-white/60 pt-4 sm:flex-row sm:items-center md:mt-8">
+          <p className="text-xs leading-snug text-muted-foreground">
             {new Date().getFullYear()} {settings.site_name || t('common.appName')}. {settings.copyright_text || t('common.footer.copyright')}
           </p>
           <div className="flex gap-4 text-xs text-muted-foreground">

@@ -139,8 +139,8 @@ export function AdminSectionTabs() {
   const activeGroup = visibleGroups.find((group) => group.tabs.some((tab) => tab.key === activeKey));
 
   return (
-    <div className="w-full rounded-2xl border border-white/60 bg-white/65 p-2 shadow-sm shadow-purple-950/5 backdrop-blur-2xl">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="w-full rounded-lg border border-white/60 bg-white/75 p-1.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-wrap lg:overflow-visible lg:pb-0">
         {visibleGroups.map((group) => {
           const GroupIcon = group.icon;
           const groupActive = activeGroup?.key === group.key;
@@ -154,23 +154,23 @@ export function AdminSectionTabs() {
                   type="button"
                   size="sm"
                   variant={groupActive ? 'default' : 'ghost'}
-                  className={`h-10 shrink-0 rounded-xl px-3 text-sm ${
+                  className={`h-8 shrink-0 rounded-lg px-2.5 text-xs md:h-9 md:text-sm ${
                     groupActive
                       ? 'bg-purple-600 text-white shadow-sm shadow-purple-900/20 hover:bg-purple-700'
                       : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'
                   }`}
                 >
-                  <GroupIcon className="mr-1.5 h-4 w-4" />
-                  <span>{groupLabel}</span>
+                  <GroupIcon className="mr-1.5 h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="whitespace-nowrap">{groupLabel}</span>
                   {currentInGroup && (
                     <span className={`ml-1 hidden max-w-[150px] truncate text-xs md:inline ${groupActive ? 'text-white/75' : 'text-muted-foreground'}`}>
                       / {t(currentInGroup.labelKey, { defaultMessage: currentInGroup.key })}
                     </span>
                   )}
-                  <ChevronDown className="ml-1.5 h-3.5 w-3.5" />
+                  <ChevronDown className="ml-1 h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-64">
+              <DropdownMenuContent align="start" className="min-w-56 max-w-[calc(100vw-1.5rem)]">
                 <DropdownMenuLabel className="flex items-center justify-between gap-3">
                   <span>{groupLabel}</span>
                   <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-700">
@@ -200,7 +200,7 @@ export function AdminSectionTabs() {
           );
         })}
         {activeTab && (
-          <div className="ml-auto hidden items-center rounded-xl border border-white/60 bg-white/55 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-xl lg:flex">
+          <div className="ml-auto hidden items-center rounded-lg border border-white/60 bg-white/60 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-xl lg:flex">
             {labels.current}: <span className="ml-1 font-semibold text-foreground">{t(activeTab.labelKey, { defaultMessage: activeTab.key })}</span>
           </div>
         )}

@@ -338,8 +338,8 @@ export default function ClassroomsPage() {
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <CalendarDays className="h-8 w-8 text-purple-600" />
             <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t('classroomsPage.introTitle')}</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                先填写时间、教室和联系方式。下一页会继续收集人数、用途细节和设备需求，完成后才会发送到后台。
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {t('classroomsPage.introText')}
             </p>
             <div className="mt-5 space-y-3 text-sm text-slate-600">
               {[
@@ -349,8 +349,8 @@ export default function ClassroomsPage() {
                 t('classroomsPage.tipNotes'),
               ].map((tip) => (
                 <div key={tip} className="flex items-start gap-2 leading-6">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                  {tip}
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <span>{tip}</span>
                 </div>
               ))}
             </div>

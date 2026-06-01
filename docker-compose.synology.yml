@@ -1,26 +1,22 @@
 services:
   backend:
     image: rtgtx7/mulanstudio:backend-latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    env_file:
-      - ./.env
+    container_name: mulandance-backend
     environment:
-      ENVIRONMENT: ${ENVIRONMENT:-production}
-      DEBUG: ${DEBUG:-false}
+      ENVIRONMENT: production
+      DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:-change_me_to_a_long_random_secret}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@mulanstudio.ca}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set_a_strong_admin_password}
       ADMIN_FIRST_NAME: ${ADMIN_FIRST_NAME:-Mulan}
       ADMIN_LAST_NAME: ${ADMIN_LAST_NAME:-Admin}
-      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/app.db}
-      DATA_DIR: ${DATA_DIR:-/app/data}
-      NEWS_FILES_DIR: ${NEWS_FILES_DIR:-/app/data/news}
-      UPLOADS_DIR: ${UPLOADS_DIR:-/app/data/uploads}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      DATABASE_URL: sqlite:////app/data/app.db
+      DATA_DIR: /app/data
+      NEWS_FILES_DIR: /app/data/news
+      UPLOADS_DIR: /app/data/uploads
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:9005}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-http://localhost:3000,http://127.0.0.1:3000}
-      USE_FILE_STORAGE: ${USE_FILE_STORAGE:-true}
+      USE_FILE_STORAGE: "true"
       AI_MAX_URLS: ${AI_MAX_URLS:-10}
       AI_MAX_IMAGES_PER_URL: ${AI_MAX_IMAGES_PER_URL:-5}
       AI_ENABLED: ${AI_ENABLED:-false}
@@ -36,21 +32,14 @@ services:
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
     volumes:
-      - ${HOST_DATA_DIR:-./data}:/app/data
+      - /volume1/docker/mulandance/data:/app/data
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-9005}:8000"
     restart: unless-stopped
 
   frontend:
     image: rtgtx7/mulanstudio:frontend-latest
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-}
-    env_file:
-      - ./.env
+    container_name: mulandance-frontend
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}

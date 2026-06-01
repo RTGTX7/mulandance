@@ -58,9 +58,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+    <div className="flex min-h-[calc(100svh-3rem)] items-start justify-center bg-gradient-to-br from-primary/5 to-secondary/5 px-3 pb-6 pt-24 md:min-h-screen md:items-center md:py-6">
+      <Card className="w-full max-w-sm border-white/70 bg-white/75">
+        <CardHeader className="px-4 text-center md:px-5">
           <CardTitle className="heading-md">{t('admin.login.title')}</CardTitle>
           <CardDescription>
             {t('admin.login.noAccount')}
@@ -74,9 +74,9 @@ export default function LoginPage() {
               <p className="text-sm text-muted-foreground mt-2">Redirecting to dashboard...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-1">
+                <label htmlFor="email" className="mb-1 block text-sm font-medium">
                   {t('admin.login.email')}
                 </label>
                 <Input
@@ -90,7 +90,7 @@ export default function LoginPage() {
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-1">
+                <label htmlFor="password" className="mb-1 block text-sm font-medium">
                   {t('admin.login.password')}
                 </label>
                 <Input
@@ -106,7 +106,7 @@ export default function LoginPage() {
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="h-10 w-full" disabled={loading}>
                 {loading ? t('common.loading') : t('admin.login.signIn')}
               </Button>
             </form>

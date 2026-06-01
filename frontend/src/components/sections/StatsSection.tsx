@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import { Users, Award, CalendarDays, Users as TeacherIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { homepageApi, type HomepageStat } from '@/lib/api';
+import { AnimatedNumber, RevealOnScroll } from '@/components/motion/ScrollEffects';
 
 const stats = [
   {
@@ -54,25 +55,21 @@ export function StatsSection() {
   }, [locale]);
 
   return (
-    <section className="py-16 md:py-20 bg-gradient-to-r from-primary to-purple-700 text-white relative overflow-hidden">
-      {/* 装饰背景 */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3" />
-      </div>
-
+    <section className="relative overflow-hidden bg-gradient-to-r from-primary to-purple-700 py-6 text-white md:py-14">
       <div className="container relative z-10">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+        <div className="grid grid-cols-4 gap-2 md:gap-5">
           {displayStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={`${stat.label}-${index}`} className="text-center group">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/15 backdrop-blur-sm mb-4 group-hover:bg-white/25 group-hover:scale-110 transition-all duration-300">
-                  <Icon className="h-7 w-7 text-secondary" />
+              <RevealOnScroll key={`${stat.label}-${index}`} delay={index * 90} className="group min-w-0 text-center">
+                <div className="mb-1.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 transition-all duration-300 group-hover:bg-white/25 md:mb-2 md:h-12 md:w-12">
+                  <Icon className="h-4 w-4 text-secondary md:h-6 md:w-6" />
                 </div>
-                <p className="text-3xl md:text-4xl font-bold mb-2 text-white">{stat.value}</p>
-                <p className="text-sm md:text-base text-white/80 font-medium">{stat.label}</p>
-              </div>
+                <p className="mb-0.5 text-lg font-bold leading-none text-white md:text-4xl md:leading-tight">
+                  <AnimatedNumber value={stat.value} />
+                </p>
+                <p className="text-[11px] font-medium leading-tight text-white/80 md:text-base md:leading-snug">{stat.label}</p>
+              </RevealOnScroll>
             );
           })}
         </div>
