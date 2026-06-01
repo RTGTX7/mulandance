@@ -249,13 +249,16 @@ export function Header() {
           ) : null}
         </div>
 
-        <button
-          className="glass-control p-1.5 transition-all hover:bg-white/80 active:scale-95 lg:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? t('common.accessibility.close') : t('common.accessibility.menu')}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5 lg:hidden">
+          <LanguageSwitcher compact />
+          <button
+            className="glass-control p-1.5 transition-all hover:bg-white/80 active:scale-95"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? t('common.accessibility.close') : t('common.accessibility.menu')}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
@@ -329,9 +332,6 @@ export function Header() {
                   {t('admin.login.signIn')}
                 </Link>
               ) : null}
-            </div>
-            <div className="border-t border-white/60 pt-2">
-              <LanguageSwitcher />
             </div>
           </div>
         </div>
