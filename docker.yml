@@ -6,8 +6,8 @@ services:
       ENVIRONMENT: production
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:-change_me_to_a_long_random_secret}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@mulanstudio.ca}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set_a_strong_admin_password}
+      ADMIN_EMAIL: "admin@mulanstudio.ca"
+      ADMIN_PASSWORD: "MuLanStudio!2026#Admin_7Qx9"
       ADMIN_FIRST_NAME: ${ADMIN_FIRST_NAME:-Mulan}
       ADMIN_LAST_NAME: ${ADMIN_LAST_NAME:-Admin}
       DATABASE_URL: sqlite:////app/data/app.db
