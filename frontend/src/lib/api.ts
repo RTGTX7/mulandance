@@ -499,19 +499,19 @@ export const performanceApi = {
   },
 
   getBySlug: (slug: string, locale?: string) =>
-    api.get<PerformanceItem>(`/v1/events/performances/slug/${slug}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+    api.get<PerformanceItem>(`/v1/events/performances/slug/${encodeURIComponent(slug)}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
 
   get: (id: string, locale?: string) =>
-    api.get<PerformanceItem>(`/v1/events/performances/${id}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+    api.get<PerformanceItem>(`/v1/events/performances/${encodeURIComponent(id)}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
 
   create: (body: PerformanceBody) =>
     api.post<PerformanceItem>('/v1/events/performances', body),
 
   update: (id: string, body: Partial<PerformanceBody>) =>
-    api.put<PerformanceItem>(`/v1/events/performances/${id}`, body),
+    api.put<PerformanceItem>(`/v1/events/performances/${encodeURIComponent(id)}`, body),
 
   remove: (id: string) =>
-    api.delete<Record<string, unknown>>(`/v1/events/performances/${id}`),
+    api.delete<Record<string, unknown>>(`/v1/events/performances/${encodeURIComponent(id)}`),
 };
 
 // ====================================================================

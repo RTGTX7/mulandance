@@ -16,6 +16,14 @@ def _ensure_performance_columns(db: Session) -> None:
     ensure_text_column(db, "performances")
 
 
+def _find_performance(db: Session, identifier: str) -> Performance | None:
+    return (
+        db.query(Performance)
+        .filter((Performance.id == identifier) | (Performance.slug == identifier))
+        .first()
+    )
+
+
 def _performance_response(
     performance: Performance,
     locale: str | None = None,
@@ -113,7 +121,7 @@ def get_performance_by_slug(slug: str, locale: Optional[str] = Query(None), db: 
 @router.get("/performances/{performance_id}", response_model=PerformanceResponse)
 def get_performance(performance_id: str, locale: Optional[str] = Query(None), db: Session = Depends(get_db)):
     _ensure_performance_columns(db)
-    performance = db.query(Performance).filter(Performance.id == performance_id).first()
+    performance = _find_performance(db, performance_id)
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")
     return _performance_response(performance, locale, include_translations=True)
@@ -126,7 +134,7 @@ def update_performance(
     db: Session = Depends(get_db),
 ):
     _ensure_performance_columns(db)
-    performance = db.query(Performance).filter(Performance.id == performance_id).first()
+    performance = _find_performance(db, performance_id)
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")
 
@@ -134,7 +142,10 @@ def update_performance(
     translations = updates.pop("translations", None)
     new_slug = updates.get("slug")
     if new_slug and new_slug != performance.slug:
-        existing = db.query(Performance).filter(Performance.slug == new_slug).first()
+        existing = db.query(Performance).filter(
+            Performance.slug == new_slug,
+            Performance.id != performance.id,
+        ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Performance slug already exists")
 
@@ -150,7 +161,7 @@ def update_performance(
 
 @router.delete("/performances/{performance_id}")
 def delete_performance(performance_id: str, db: Session = Depends(get_db)):
-    performance = db.query(Performance).filter(Performance.id == performance_id).first()
+    performance = _find_performance(db, performance_id)
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")
 
