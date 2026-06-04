@@ -55,12 +55,7 @@ def _safe_original_name(filename: str) -> str:
 
 
 def _public_upload_url(relative_path: str, request: Request) -> str:
-    configured_base = (settings.PUBLIC_BASE_URL or "").rstrip("/")
-    if configured_base and "localhost" not in configured_base and "127.0.0.1" not in configured_base:
-        base = configured_base
-    else:
-        base = str(request.base_url).rstrip("/")
-    return f"{base}/static/uploads/{relative_path}"
+    return f"/static/uploads/{relative_path}"
 
 
 # Ensure StaticFiles mount exists

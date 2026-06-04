@@ -1,6 +1,6 @@
 services:
   backend:
-    image: rtgtx7/mulandance:backend-latest
+    image: rtgtx7/mulanstudio:backend-latest
     container_name: mulandance-backend
     environment:
       ENVIRONMENT: production
@@ -14,7 +14,7 @@ services:
       DATA_DIR: /app/data
       NEWS_FILES_DIR: /app/data/news
       UPLOADS_DIR: /app/data/uploads
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:9005}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-http://localhost:3000,http://127.0.0.1:3000}
       USE_FILE_STORAGE: "true"
       AI_MAX_URLS: ${AI_MAX_URLS:-10}
@@ -33,17 +33,16 @@ services:
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
     volumes:
       - /volume1/docker/mulandance/data:/app/data
-    ports:
-      - "${BACKEND_PORT:-9005}:8000"
+    expose:
+      - "8000"
     restart: unless-stopped
 
   frontend:
-    image: rtgtx7/mulandance:frontend-latest
+    image: rtgtx7/mulanstudio:frontend-latest
     container_name: mulandance-frontend
     environment:
       NODE_ENV: production
       API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:8000}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     depends_on:
       - backend

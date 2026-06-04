@@ -17,6 +17,7 @@ import {
   uploadApi,
 } from '@/lib/api';
 import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
+import { toPublicMediaUrl } from '@/lib/media';
 import { cn } from '@/lib/utils';
 import { Eye, ImagePlus, Loader2, Plus, Save, Trash2, Video } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
@@ -466,10 +467,10 @@ export default function AdminHomepagePage() {
 
                       <div className="space-y-3">
                         <div className="aspect-video overflow-hidden rounded-md border bg-slate-100">
-                          {slide.image_url && isVideoUrl(slide.image_url) ? (
-                            <video src={slide.image_url} className="h-full w-full object-cover" controls muted playsInline />
+                          {toPublicMediaUrl(slide.image_url) && isVideoUrl(toPublicMediaUrl(slide.image_url)) ? (
+                            <video src={toPublicMediaUrl(slide.image_url)} className="h-full w-full object-cover" controls muted playsInline />
                           ) : slide.image_url ? (
-                            <img src={slide.image_url} alt="" className="h-full w-full object-cover" />
+                            <img src={toPublicMediaUrl(slide.image_url)} alt="" className="h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{labels.common.noMedia}</div>
                           )}

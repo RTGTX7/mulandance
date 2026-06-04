@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef, type TouchEvent } from 'react
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { homepageApi, type HomepageHeroSlide } from '@/lib/api';
+import { toPublicMediaUrl } from '@/lib/media';
 
 function isVideoUrl(url: string) {
   return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
@@ -125,6 +126,7 @@ export function HeroCarousel() {
   };
 
   const renderSlide = (slide: HomepageHeroSlide, index: number) => {
+    const mediaUrl = toPublicMediaUrl(slide.image_url || '');
     const primaryHref = href(slide.primary?.href || '/programs');
     const secondaryHref = href(slide.secondary?.href || 'https://www.youtube.com/@mulandancestudio21');
 
@@ -135,12 +137,12 @@ export function HeroCarousel() {
         aria-hidden={index !== current}
       >
         <div className={`absolute inset-0 bg-gradient-to-br ${slide.overlay || defaultSlides[0].overlay}`} />
-        {slide.image_url && (
-          isVideoUrl(slide.image_url) ? (
+        {mediaUrl && (
+          isVideoUrl(mediaUrl) ? (
             <video
-              key={slide.image_url}
+              key={mediaUrl}
               className="absolute inset-0 h-full w-full object-cover opacity-45"
-              src={slide.image_url}
+              src={mediaUrl}
               autoPlay
               muted
               loop
@@ -149,7 +151,7 @@ export function HeroCarousel() {
           ) : (
             <div
               className="absolute inset-0 bg-cover bg-center opacity-45"
-              style={{ backgroundImage: `url(${slide.image_url})` }}
+              style={{ backgroundImage: `url(${mediaUrl})` }}
             />
           )
         )}
