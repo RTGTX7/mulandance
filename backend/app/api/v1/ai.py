@@ -56,7 +56,7 @@ def _runtime_ai_config(db: Session) -> AiRuntimeConfig:
         api_base_url=settings.ai_api_base_url or app_settings.AI_API_BASE_URL,
         api_key=settings.ai_api_key or app_settings.AI_API_KEY,
         model=settings.ai_model or app_settings.AI_MODEL,
-        timeout_seconds=settings.ai_timeout_seconds or app_settings.AI_TIMEOUT_SECONDS,
+        timeout_seconds=max(settings.ai_timeout_seconds or 0, app_settings.AI_TIMEOUT_SECONDS or 600, 600),
     )
 
 

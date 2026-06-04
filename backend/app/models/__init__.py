@@ -302,7 +302,7 @@ class SystemSettings(Base):
     ai_api_base_url = Column(String(1000), default="https://api.openai.com/v1")
     ai_api_key = Column(Text, default="")
     ai_model = Column(String(200), default="")
-    ai_timeout_seconds = Column(Integer, default=60)
+    ai_timeout_seconds = Column(Integer, default=600)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

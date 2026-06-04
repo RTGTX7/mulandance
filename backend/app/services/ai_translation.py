@@ -1,5 +1,6 @@
 import json
 import re
+import socket
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -64,6 +65,35 @@ def _strip_json_fence(content: str) -> str:
     return match.group(1).strip() if match else text
 
 
+def _provider_error_message(status_code: int, body: str) -> str:
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError:
+        parsed = None
+
+    message = ""
+    if isinstance(parsed, dict):
+        error = parsed.get("error")
+        if isinstance(error, dict):
+            message = str(error.get("message") or error.get("detail") or "")
+        elif isinstance(error, str):
+            message = error
+        elif isinstance(parsed.get("detail"), str):
+            message = str(parsed["detail"])
+        elif isinstance(parsed.get("message"), str):
+            message = str(parsed["message"])
+
+    if not message:
+        message = body[:500]
+
+    if "Operation canceled" in message:
+        message = (
+            f"{message} The local LLM server canceled model loading/generation before the app timeout. "
+            "Keep the model warm or choose a loaded model, then retry."
+        )
+    return f"AI provider error {status_code}: {message}"
+
+
 def _call_chat_completion(
     messages: list[dict[str, str]],
     *,
@@ -77,6 +107,7 @@ def _call_chat_completion(
         "model": resolved.model,
         "messages": messages,
         "temperature": temperature,
+        "stream": True,
         "response_format": {"type": "json_object"},
     }
 
@@ -92,21 +123,57 @@ def _call_chat_completion(
             method="POST",
         )
         with urllib.request.urlopen(request, timeout=resolved.timeout_seconds) as response:
+            if body.get("stream"):
+                content_parts: list[str] = []
+                for raw_line in response:
+                    line = raw_line.decode("utf-8", errors="replace").strip()
+                    if not line or not line.startswith("data:"):
+                        continue
+                    event = line.removeprefix("data:").strip()
+                    if event == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(event)
+                    except json.JSONDecodeError:
+                        continue
+                    choices = chunk.get("choices")
+                    if not isinstance(choices, list) or not choices:
+                        continue
+                    choice = choices[0]
+                    if not isinstance(choice, dict):
+                        continue
+                    delta = choice.get("delta")
+                    if isinstance(delta, dict) and isinstance(delta.get("content"), str):
+                        content_parts.append(delta["content"])
+                    elif isinstance(choice.get("text"), str):
+                        content_parts.append(choice["text"])
+                    message = choice.get("message")
+                    if isinstance(message, dict) and isinstance(message.get("content"), str):
+                        content_parts.append(message["content"])
+                return {"choices": [{"message": {"content": "".join(content_parts)}}]}
+
             raw = response.read().decode("utf-8")
         return json.loads(raw)
 
     try:
-        return send(payload)
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        if exc.code == 400 and "response_format" in body:
-            payload.pop("response_format", None)
-            return send(payload)
-        raise RuntimeError(f"AI provider error {exc.code}: {body[:500]}") from exc
+        while True:
+            try:
+                return send(payload)
+            except urllib.error.HTTPError as exc:
+                body = exc.read().decode("utf-8", errors="replace")
+                if exc.code == 400 and "response_format" in body and "response_format" in payload:
+                    payload.pop("response_format", None)
+                    continue
+                if exc.code == 400 and "stream" in body and payload.get("stream"):
+                    payload["stream"] = False
+                    continue
+                raise RuntimeError(_provider_error_message(exc.code, body)) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"AI provider network error: {exc.reason}") from exc
-    except TimeoutError as exc:
-        raise RuntimeError("AI provider request timed out") from exc
+    except (TimeoutError, socket.timeout) as exc:
+        raise RuntimeError(f"AI provider request timed out after {resolved.timeout_seconds} seconds") from exc
+    except OSError as exc:
+        raise RuntimeError(f"AI provider connection error: {exc}") from exc
 
 
 def chat_json(

@@ -1,6 +1,6 @@
 import os
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 # Resolve absolute DB path relative to the backend directory.
@@ -16,6 +16,8 @@ _DATABASE_URL = f"sqlite:///{_DB_PATH_FWSLASH}"
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
+
     PROJECT_NAME: str = "Grace Dance Academy API"
     DATABASE_URL: str = _DATABASE_URL
     SECRET_KEY: str = "change_me_in_production"
@@ -40,7 +42,7 @@ class Settings(BaseSettings):
     AI_API_BASE_URL: str = "https://api.openai.com/v1"
     AI_API_KEY: str = ""
     AI_MODEL: str = ""
-    AI_TIMEOUT_SECONDS: int = 60
+    AI_TIMEOUT_SECONDS: int = 600
     AI_MAX_URLS: int = 10
     AI_MAX_IMAGES_PER_URL: int = 5
     ADMIN_EMAIL: str = ""
@@ -60,10 +62,6 @@ class Settings(BaseSettings):
             if normalized in {"0", "false", "no", "off", "release", "production", "prod"}:
                 return False
         return value
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 @lru_cache()

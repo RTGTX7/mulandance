@@ -401,7 +401,7 @@ def _migrate_system_settings_if_needed():
         if "ai_model" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_model VARCHAR(200) DEFAULT ''"))
         if "ai_timeout_seconds" not in columns:
-            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_timeout_seconds INTEGER DEFAULT 60"))
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_timeout_seconds INTEGER DEFAULT 600"))
         conn.commit()
     except Exception as e:
         logger.error(f"System settings migration failed: {e}", exc_info=True)

@@ -56,7 +56,7 @@ const defaultAiSettings: AiProviderSettings = {
   provider: 'openai_compatible',
   api_base_url: 'https://api.openai.com/v1',
   model: '',
-  timeout_seconds: 60,
+  timeout_seconds: 600,
   api_key_set: false,
   api_key_masked: '',
 };
@@ -219,7 +219,7 @@ export default function AdminSettingsPage() {
     provider: 'openai_compatible',
     api_base_url: 'https://api.openai.com/v1',
     model: '',
-    timeout_seconds: 60,
+    timeout_seconds: 600,
     api_key: '',
     clear_api_key: false,
   });
@@ -605,7 +605,7 @@ export default function AdminSettingsPage() {
                       min={5}
                       max={300}
                       value={aiForm.timeout_seconds}
-                      onChange={(e) => setAiField('timeout_seconds', Math.max(5, Math.min(300, Number(e.target.value) || 60)))}
+                      onChange={(e) => setAiField('timeout_seconds', Math.max(5, Math.min(900, Number(e.target.value) || 600)))}
                     />
                   </label>
 

@@ -119,7 +119,7 @@ class AiProviderSettings(BaseModel):
     provider: str = Field(default="openai_compatible", max_length=100)
     api_base_url: str = Field(default="https://api.openai.com/v1", max_length=1000)
     model: str = Field(default="", max_length=200)
-    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    timeout_seconds: int = Field(default=600, ge=5, le=900)
     api_key_set: bool = False
     api_key_masked: str = ""
 
@@ -129,6 +129,6 @@ class AiProviderSettingsUpdate(BaseModel):
     provider: str = Field(default="openai_compatible", max_length=100)
     api_base_url: str = Field(default="https://api.openai.com/v1", max_length=1000)
     model: str = Field(default="", max_length=200)
-    timeout_seconds: int = Field(default=60, ge=5, le=300)
+    timeout_seconds: int = Field(default=600, ge=5, le=900)
     api_key: str | None = Field(default=None, max_length=4000)
     clear_api_key: bool = False

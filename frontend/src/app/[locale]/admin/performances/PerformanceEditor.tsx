@@ -49,6 +49,25 @@ function toDateTimeInput(date: Date, hour = '19:00') {
   return `${toDateInput(date)}T${hour}`;
 }
 
+function toLocalDateTimeInput(value?: string) {
+  if (!value) return '';
+  const text = value.trim();
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(text);
+  if (!hasTimezone && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text)) {
+    return text.slice(0, 16);
+  }
+
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text.slice(0, 16);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${toDateInput(date)}T${hours}:${minutes}`;
+}
+
+function localDateTimeForApi(value: string) {
+  return value.length === 16 ? `${value}:00` : value;
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -63,8 +82,8 @@ function formFromPerformance(item: PerformanceItem): FormState {
     title: item.title,
     slug: item.slug,
     description: item.description || '',
-    start: item.start_date.slice(0, 16),
-    end: item.end_date.slice(0, 16),
+    start: toLocalDateTimeInput(item.start_date),
+    end: toLocalDateTimeInput(item.end_date),
     venue: item.venue || '',
     cover_image: item.cover_image || '',
     is_current: item.is_current,
@@ -77,8 +96,8 @@ function bodyFromForm(form: FormState): PerformanceBody {
     title: form.title,
     slug: form.slug || slugify(form.title),
     description: form.description,
-    start_date: new Date(form.start).toISOString(),
-    end_date: new Date(form.end || form.start).toISOString(),
+    start_date: localDateTimeForApi(form.start),
+    end_date: localDateTimeForApi(form.end || form.start),
     venue: form.venue,
     cover_image: form.cover_image,
     is_current: form.is_current,
