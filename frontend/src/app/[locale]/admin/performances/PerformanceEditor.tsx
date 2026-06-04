@@ -69,12 +69,13 @@ function localDateTimeForApi(value: string) {
 }
 
 function slugify(value: string) {
-  return value
+  const slug = value
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^a-z0-9\u3400-\u9fff]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80);
+  return slug || `performance-${Date.now()}`;
 }
 
 function formFromPerformance(item: PerformanceItem): FormState {
@@ -152,7 +153,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
       setForm((prev) => ({
         ...prev,
         [key]: value,
-        slug: key === 'title' && !editId ? slugify(value) : prev.slug,
+        slug: key === 'title' && !editId && (!prev.slug || prev.slug.startsWith('performance-')) ? slugify(value) : prev.slug,
       }));
       return;
     }
