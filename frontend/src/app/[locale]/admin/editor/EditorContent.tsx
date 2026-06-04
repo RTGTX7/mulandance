@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/ui/back-button";
+import { dateLocaleFor } from "@/lib/i18n";
 import {
   Bold,
   Italic,
@@ -129,8 +130,8 @@ export interface ArticleData {
 }
 
 const SUPPORTED_LOCALES = [
-  { code: "en", label: "EN", name: "English" },
   { code: "zh", label: "中文", name: "简体中文" },
+  { code: "en", label: "EN", name: "English" },
   { code: "fr", label: "FR", name: "French" },
 ];
 
@@ -231,7 +232,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     cover_image: "",
     category_slugs: [],
     tag_slugs: [],
-    locale: "en",
+    locale: "zh",
     is_published: false,
   });
 
@@ -239,6 +240,12 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const bodyText = form.body ?? "";
   const isVersionedArticle = Boolean(articleGroup || baseSlug || editSlug);
   const sharedArticleSlug = articleGroup?.shared_slug || baseSlug || editSlug || form.slug;
+
+  const draftStorageKey = (localeCode?: string) => {
+    const scope = editSlug || baseSlug || "new";
+    const language = localeCode || requestedLocale || form.locale || "zh";
+    return `draft_${scope}_${language}`;
+  };
 
   const loadTaxonomy = useCallback(async () => {
     try {
@@ -315,14 +322,16 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     if (editSlug) {
       loadArticle();
     } else {
-      loadDraft();
       if (baseSlug || requestedLocale) {
         setForm((prev) => ({
           ...prev,
           slug: baseSlug || prev.slug,
           locale: requestedLocale || prev.locale,
         }));
+        loadDraft(requestedLocale || "zh");
         if (baseSlug) loadArticleGroup(baseSlug);
+      } else {
+        loadDraft("zh");
       }
       setLoading(false);
     }
@@ -409,9 +418,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     setLoading(false);
   };
 
-  const loadDraft = () => {
+  const loadDraft = (localeCode?: string) => {
     try {
-      const saved = localStorage.getItem(`draft_${editSlug || "new"}`);
+      const saved = localStorage.getItem(draftStorageKey(localeCode));
       if (saved) {
         const draft: ArticleData = JSON.parse(saved);
         // Defensive: normalize draft fields
@@ -426,7 +435,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           cover_image: typeof coverVal === "string" && !coverVal.startsWith("data:image/") ? coverVal : "",
           category_slugs: draft.category_slugs || [],
           tag_slugs: draft.tag_slugs || [],
-          locale: draft.locale ?? "en",
+          locale: draft.locale ?? localeCode ?? "zh",
           is_published: draft.is_published ?? false,
           published_at: draft.published_at,
         });
@@ -463,7 +472,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const autoSave = () => {
     try {
       localStorage.setItem(
-        `draft_${editSlug || "new"}`,
+        draftStorageKey(form.locale),
         JSON.stringify(form)
       );
       setLastSaved(new Date().toLocaleTimeString());
@@ -525,7 +534,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         cover_image: coverImageText || undefined,
         category_slugs: form.category_slugs,
         tag_slugs: form.tag_slugs,
-        locale: form.locale || "en",
+        locale: form.locale || "zh",
         is_published: published || form.is_published,
         published_at: form.published_at || undefined,
       };
@@ -552,6 +561,10 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           slug: slugValue,
           locale: draft.locale,
         });
+      }
+
+      if (published) {
+        await newsApi.togglePublish(slugValue, true);
       }
 
       console.log("[Save] Success:", result);
@@ -694,7 +707,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString(locale === "zh" ? "zh-CN" : locale, {
+    return date.toLocaleDateString(dateLocaleFor(locale), {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -759,9 +772,11 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       body: nextPending[activeDraft.locale]?.fields.body || activeDraft.fields.body || prev.body,
       cover_image: importedCover || prev.cover_image,
       published_at: sourcePublishedAt || prev.published_at,
+      category_slugs: importItem?.suggested_category_slugs?.length ? importItem.suggested_category_slugs : prev.category_slugs,
+      tag_slugs: importItem?.suggested_tag_slugs?.length ? importItem.suggested_tag_slugs : prev.tag_slugs,
       slug: prev.slug || slugifyTitle(title),
     }));
-    setAiMessage(`已应用 ${usableDrafts.map((draft) => draft.locale.toUpperCase()).join(", ")} 草稿，点击保存会一起保存对应语言版本。`);
+      setAiMessage(`已应用 ${usableDrafts.map((draft) => draft.locale.toUpperCase()).join(", ")} 草稿。点击保存会先保存当前语言，并同步创建/更新其它语言版本。`);
   };
 
   const applyAiDraft = (draft: AiDraft, importItem?: AiArticleImportItem) => {
@@ -776,9 +791,11 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       body: bodyWithImportedImages(draft.fields.body ?? prev.body, importItem, title),
       cover_image: importedCover || prev.cover_image,
       published_at: sourcePublishedAt || prev.published_at,
+      category_slugs: importItem?.suggested_category_slugs?.length ? importItem.suggested_category_slugs : prev.category_slugs,
+      tag_slugs: importItem?.suggested_tag_slugs?.length ? importItem.suggested_tag_slugs : prev.tag_slugs,
       slug: prev.slug || slugifyTitle(title),
     }));
-    setAiMessage(`已应用 ${draft.locale.toUpperCase()} 草稿，检查后点击保存。`);
+    setAiMessage(`已应用 ${draft.locale.toUpperCase()} 草稿，检查后点击保存该语言版本。`);
   };
 
   const firstDraftTitle = (item: AiArticleImportItem, index: number) =>
@@ -876,7 +893,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     }
 
     setAiMessage(
-      `批量保存完成：新闻 ${newsCount} 条，演出 ${performanceCount} 条。${failures.length ? `失败 ${failures.length} 条：${failures.join("；")}` : ""}`
+    `批量保存完成：文章 ${newsCount} 条，演出 ${performanceCount} 条。${failures.length ? `失败 ${failures.length} 条：${failures.join("；")}` : ""}`
     );
     setAiBatchSaving(false);
   };
@@ -899,7 +916,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     setAiImportItems([]);
     try {
       const result = await aiApi.translate({
-        module: "news",
+        module: "articles",
         source_locale: form.locale || "zh",
         target_locales: targets,
         fields,
@@ -1135,8 +1152,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 <p className="text-sm font-medium text-slate-800">语言版本</p>
                 <p className="text-xs text-slate-500">
                   {missingVersions.length > 0
-                    ? `Missing ${missingVersions.map((item) => item.label).join(", ")} version`
-                    : "所有主要语言版本已创建"}
+                    ? `下一步：用 AI 翻译或手动创建 ${missingVersions.map((item) => item.label).join(", ")} 版本`
+                    : "中文、英文、法文版本已创建"}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1177,7 +1194,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                   AI 草稿助手
                 </CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  生成翻译或从链接提取内容，只会填入草稿，不会自动发布。
+                  先创建当前语言文章；然后用 AI 翻译或手动切换语言补齐另外两个版本。AI 只生成草稿，不会自动发布。
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1189,7 +1206,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     className="shrink-0"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
-                    语言同步
+                    同步三语草稿
                   </Button>
                 )}
                 {aiImportItems.length > 0 && (
@@ -1256,7 +1273,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 <div className="flex flex-col gap-1">
                   <div>
                     <div className="text-sm font-medium text-slate-800">AI 生成草稿预览</div>
-                    <p className="text-xs text-slate-500">确认三种语言内容后，点击右上角“语言同步”。</p>
+                    <p className="text-xs text-slate-500">确认三种语言内容后，点击右上角“同步三语草稿”，再用普通保存按钮保存。</p>
                   </div>
                 </div>
                 <div className="grid gap-2 md:grid-cols-3">
@@ -1287,7 +1304,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                             ? "bg-pink-100 text-pink-700"
                             : "bg-blue-100 text-blue-700"
                         }`}>
-                          {(item.content_type || "news") === "performance" ? "演出" : "新闻"}
+                          {(item.content_type || "news") === "performance" ? "演出" : "文章"}
                         </span>
                         <div className="truncate font-medium">{item.source.title || item.source.url}</div>
                       </div>
@@ -1308,7 +1325,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                         </div>
                       )}
                       {(item.source.media?.length || 0) > 0 && (
-                        <div className="mt-3 grid grid-cols-4 gap-2">
+                        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {(item.source.media || []).slice(0, 4).map((media) => (
                             <img
                               key={media.url}
@@ -1468,7 +1485,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           {/* Content Area */}
           {showPreview ? (
             <div 
-              className="min-h-[400px] p-6 prose max-w-none prose-sm prose-headings:font-semibold prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-lg"
+              className="min-h-[280px] p-4 prose max-w-none prose-sm prose-headings:font-semibold prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-lg md:min-h-[400px] md:p-6"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           ) : (
@@ -1476,7 +1493,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               ref={textareaRef}
               value={form.body}
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-              className="w-full min-h-[400px] p-4 resize-y font-mono text-sm border-none bg-transparent focus-visible:ring-0 leading-relaxed"
+              className="w-full min-h-[280px] p-4 resize-y font-mono text-sm border-none bg-transparent focus-visible:ring-0 leading-relaxed md:min-h-[400px]"
               placeholder={t("admin.editor.body")}
             />
           )}

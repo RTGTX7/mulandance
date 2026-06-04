@@ -540,7 +540,7 @@
       "invalid": "Invalid email or password"
     },
     "dashboard": {
-      "title": "News Articles",
+      "title": "Articles",
       "totalArticles": "Total Articles",
       "published": "Published",
       "drafts": "Drafts",
@@ -584,7 +584,7 @@
     },
     "articles": {
       "title": "Articles",
-      "subtitle": "Manage news, announcements, and posts.",
+      "subtitle": "Manage articles, announcements, and posts.",
       "edit": "Edit",
       "view": "View",
       "delete": "Delete",
@@ -608,7 +608,7 @@
       "unpublishedStatus": "Unpublished",
       "draft": "Draft",
       "noArticles": "No articles yet",
-      "noArticlesDesc": "Create your first article to publish news or announcements.",
+      "noArticlesDesc": "Create your first article to publish an update or announcement.",
       "newArticle": "New Article",
       "publishedBadge": "Published",
       "unpublishedBadge": "Unpublished",
@@ -636,7 +636,7 @@
       "title": "Manage Categories",
       "noCategories": "No categories yet. Add your first one!",
       "addTitle": "Add New Category",
-      "addDescription": "Create a new news category.",
+      "addDescription": "Create a new article category.",
       "slug": "Slug",
       "nameEn": "Name (English)",
       "nameZh": "Name (中文)",
@@ -650,7 +650,7 @@
       "title": "Manage Tags",
       "noTags": "No tags yet. Add your first one!",
       "addTitle": "Add New Tag",
-      "addDescription": "Create a new news tag.",
+      "addDescription": "Create a new article tag.",
       "slug": "Slug",
       "nameEn": "Name (English)",
       "nameZh": "Name (中文)",
@@ -694,7 +694,7 @@
     },
     "performances": {
       "calendarTitle": "Performance Calendar",
-      "dashboardTitle": "Performance",
+      "dashboardTitle": "Performances",
       "dashboardSubtitle": "Manage performance pages, homepage highlights, and event listings.",
       "listTitle": "All Performances",
       "newPerformance": "New Performance",

@@ -17,11 +17,11 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import { dateLocaleFor } from '@/lib/i18n';
+import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
 
 const requiredLocales = [
-  { code: 'en', label: 'EN', name: 'English' },
   { code: 'zh', label: '简体', name: '简体中文' },
+  { code: 'en', label: 'EN', name: 'English' },
   { code: 'fr', label: 'FR', name: 'French' },
 ];
 
@@ -92,8 +92,10 @@ function createdYear(group: NewsArticleGroup) {
 }
 
 function primaryTranslation(group: NewsArticleGroup, uiLocale: string) {
+  const contentLocale = articleLocaleFor(uiLocale);
   return (
-    group.translations.find((item) => item.locale === uiLocale) ||
+    group.translations.find((item) => item.locale === contentLocale) ||
+    group.translations.find((item) => item.locale === 'zh') ||
     group.translations.find((item) => item.locale === 'en') ||
     group.translations[0]
   );

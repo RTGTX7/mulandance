@@ -14,7 +14,7 @@ export default function ContactPage() {
   return (
     <div className="pt-16">
       {/* Hero Section */}
-      <section className="relative h-[300px] bg-gradient-to-r from-blue-600 to-indigo-600 overflow-hidden">
+      <section className="relative min-h-[210px] overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 py-8 md:h-[300px] md:py-0">
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white relative z-10 px-4">

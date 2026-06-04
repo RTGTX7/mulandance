@@ -104,7 +104,7 @@ export default function SchedulePage() {
             <CardContent className="p-8 text-sm text-slate-500">{t('common.ui.loading')}</CardContent>
           </Card>
         ) : (
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <section className="content-glass-section p-4 md:p-5">
             <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-950">
@@ -128,7 +128,46 @@ export default function SchedulePage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="mobile-card-list">
+              {grouped.map((day) => (
+                <div key={day.day} className="rounded-xl border border-white/70 bg-white/[0.78] p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-950">{day.label}</h3>
+                      <p className="text-xs text-slate-500">
+                        {interpolate(t('classes.schedulePage.dayCount'), { count: day.items.length })}
+                      </p>
+                    </div>
+                  </div>
+                  {day.items.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-slate-200 px-3 py-5 text-center text-xs text-slate-400">
+                      {t('classes.schedulePage.noCourse')}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {day.items.map((item) => (
+                        <article key={item.id} className="rounded-lg border border-purple-100 bg-purple-50/75 p-3 text-xs shadow-sm">
+                          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/[0.85] px-2 py-1 font-semibold text-purple-700">
+                            <Clock3 className="h-3.5 w-3.5" />
+                            {formatTimeRange(item)}
+                          </div>
+                          <h4 className="text-sm font-semibold leading-5 text-slate-950">{item.title}</h4>
+                          {item.description && <p className="mt-1 line-clamp-3 leading-5 text-slate-600">{item.description}</p>}
+                          {authenticated && item.location && (
+                            <div className="mt-2 flex items-start gap-1.5 leading-5 text-slate-500">
+                              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                              <span>{item.location}</span>
+                            </div>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="desktop-wide-grid overflow-x-auto">
               <div className="grid min-w-[1120px] grid-cols-7 overflow-hidden rounded-lg border border-slate-200">
                 {grouped.map((day) => (
                   <div key={day.day} className="min-h-[460px] border-r border-slate-200 last:border-r-0">
@@ -180,7 +219,7 @@ export default function SchedulePage() {
         )}
 
         {policy && (
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="content-glass-section p-4 md:p-6">
             <h2 className="text-2xl font-semibold text-slate-950">{policy.title}</h2>
             <div
               className="prose prose-slate mt-5 max-w-none prose-headings:font-semibold prose-li:my-1 prose-p:leading-7"

@@ -401,6 +401,26 @@ def _homepage_single_from_raw(raw) -> HomepageSettings | None:
         return None
 
 
+def _merge_homepage_with_defaults(value: HomepageSettings | None, locale: str) -> HomepageSettings:
+    defaults = _homepage_defaults(locale)
+    if value is None:
+        return defaults
+
+    return HomepageSettings(
+        hero_slides=value.hero_slides or defaults.hero_slides,
+        stats=value.stats or defaults.stats,
+        cta=value.cta if any(
+            [
+                value.cta.title,
+                value.cta.subtitle,
+                value.cta.note,
+                value.cta.primary.label,
+                value.cta.secondary.label,
+            ]
+        ) else defaults.cta,
+    )
+
+
 def _homepage_bundle(settings: SystemSettings) -> HomepageSettingsBundle:
     if not settings.homepage_json:
         return HomepageSettingsBundle(
@@ -416,9 +436,9 @@ def _homepage_bundle(settings: SystemSettings) -> HomepageSettingsBundle:
 
     if isinstance(raw, dict) and any(locale in raw for locale in LOCALES):
         return HomepageSettingsBundle(
-            zh=_homepage_single_from_raw(raw.get("zh")) or _homepage_defaults("zh"),
-            en=_homepage_single_from_raw(raw.get("en")) or _homepage_defaults("en"),
-            fr=_homepage_single_from_raw(raw.get("fr")) or _homepage_defaults("fr"),
+            zh=_merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("zh")), "zh"),
+            en=_merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("en")), "en"),
+            fr=_merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("fr")), "fr"),
         )
 
     legacy = _homepage_single_from_raw(raw)
@@ -524,17 +544,21 @@ def update_homepage_settings_bundle(
 @router.put("/homepage", response_model=HomepageSettings)
 def update_homepage_settings(
     payload: HomepageSettingsUpdate,
+    locale: str = "zh",
     user: User = Depends(require_admin_or_editor),
     db: Session = Depends(get_db),
 ):
     settings = _get_or_create_system_settings(db)
     bundle = _homepage_bundle(settings)
-    bundle.zh = payload
+    target_locale = normalize_locale(locale)
+    if target_locale not in LOCALES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported locale")
+    setattr(bundle, target_locale, payload)
     settings.homepage_json = bundle.model_dump_json()
 
     db.commit()
     db.refresh(settings)
-    return _homepage_to_response(settings, "zh")
+    return _homepage_to_response(settings, target_locale)
 
 
 @router.get("/ai", response_model=AiProviderSettings)

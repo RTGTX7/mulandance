@@ -42,7 +42,7 @@ export default function ProgramsPage() {
 
   return (
     <div className="pt-16">
-      <section className="relative h-[340px] bg-gradient-to-r from-primary to-purple-700 overflow-hidden">
+      <section className="relative min-h-[220px] overflow-hidden bg-gradient-to-r from-primary to-purple-700 py-8 md:h-[340px] md:py-0">
         <div className="absolute inset-0 bg-black/30" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-32 bg-gradient-to-b from-transparent via-purple-700/35 to-accent/20" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 bg-gradient-to-b from-transparent via-purple-500/20 to-accent/20 blur-xl" />
@@ -58,7 +58,7 @@ export default function ProgramsPage() {
       </section>
 
       <section className="section-padding bg-accent/20">
-        <div className="container space-y-20">
+        <div className="container space-y-10 md:space-y-20">
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -76,7 +76,7 @@ export default function ProgramsPage() {
 
               return (
                 <div key={program.id} id={program.slug} className="scroll-mt-24">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                  <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-12">
                     <div className={index % 2 === 1 ? 'lg:order-2' : ''}>
                       <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${visual.color} text-white mb-6`}>
                         <Icon className="h-7 w-7" />
@@ -91,11 +91,11 @@ export default function ProgramsPage() {
                         </Link>
                       )}
                     </div>
-                    <div className={`rounded-2xl overflow-hidden shadow-xl ${index % 2 === 1 ? 'lg:order-1' : ''}`}>
+                    <div className={`overflow-hidden rounded-2xl shadow-xl ${index % 2 === 1 ? 'lg:order-1' : ''}`}>
                       {program.cover_image ? (
-                        <img src={program.cover_image} alt={program.name} className="w-full h-[400px] object-cover" />
+                        <img src={program.cover_image} alt={program.name} className="h-64 w-full object-cover sm:h-80 md:h-[400px]" />
                       ) : (
-                        <div className="flex h-[400px] items-center justify-center bg-white text-muted-foreground">
+                        <div className="flex h-64 items-center justify-center bg-white text-muted-foreground sm:h-80 md:h-[400px]">
                           {program.name}
                         </div>
                       )}

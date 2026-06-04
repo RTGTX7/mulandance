@@ -2,6 +2,11 @@ export function getApiBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_API_URL;
   if (configured) return configured.replace(/\/$/, '');
 
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:8000`;
+  }
+
   return '';
 }
 
@@ -822,7 +827,7 @@ export type HomepageSettingsBundle = Record<LocaleCode, HomepageSettings>;
 export const homepageApi = {
   get: (locale?: string) => api.get<HomepageSettings>(`/v1/settings/homepage${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
   getAll: () => api.get<HomepageSettingsBundle>('/v1/settings/homepage/all'),
-  update: (body: HomepageSettings) => api.put<HomepageSettings>('/v1/settings/homepage', body),
+  update: (body: HomepageSettings, locale?: string) => api.put<HomepageSettings>(`/v1/settings/homepage${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, body),
   updateAll: (body: HomepageSettingsBundle) => api.put<HomepageSettingsBundle>('/v1/settings/homepage/all', body),
 };
 

@@ -23,6 +23,22 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
 BACKUP_VERSION = 1
 BACKUP_PREFIX = "mulandance-content"
 
+EDITABLE_CONTENT_SCOPES = [
+    "website_settings_and_ai_configuration",
+    "homepage_content",
+    "articles_categories_tags_and_markdown_bodies",
+    "performances",
+    "programs_and_program_modules",
+    "class_schedules",
+    "faculty_members",
+    "classroom_rentals_requests_and_internal_bookings",
+    "pricing_program_and_classroom_rental_content",
+    "school_policy_and_static_page_content",
+    "registration_links_and_registration_settings",
+    "uploaded_images_videos_and_files",
+    "users_profiles_roles_and_admin_accounts",
+]
+
 
 def require_super_admin(token: str = Depends(oauth2_scheme)) -> str:
     payload = decode_token(token)
@@ -81,6 +97,29 @@ def _snapshot_database(target: Path) -> None:
         source.close()
 
 
+def _database_table_counts() -> dict[str, int]:
+    db_path = _sqlite_path()
+    if not db_path.exists():
+        return {}
+
+    connection = sqlite3.connect(str(db_path))
+    try:
+        cursor = connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )
+        tables = [row[0] for row in cursor.fetchall()]
+        counts: dict[str, int] = {}
+        for table in tables:
+            try:
+                count_cursor = connection.execute(f'SELECT COUNT(*) FROM "{table}"')
+                counts[table] = int(count_cursor.fetchone()[0])
+            except sqlite3.Error:
+                counts[table] = -1
+        return counts
+    finally:
+        connection.close()
+
+
 def _iter_data_files() -> list[Path]:
     data_dir = Path(settings.DATA_DIR)
     if not data_dir.exists():
@@ -106,6 +145,7 @@ def create_backup_file(kind: str = "manual") -> Path:
     data_dir = Path(settings.DATA_DIR)
     files = _iter_data_files()
     total_bytes = sum(path.stat().st_size for path in files)
+    table_counts = _database_table_counts()
 
     with tempfile.TemporaryDirectory() as tmp:
         temp_db = Path(tmp) / "database.sqlite"
@@ -118,15 +158,39 @@ def create_backup_file(kind: str = "manual") -> Path:
             "includes": {
                 "database": "database.sqlite",
                 "data": "data/",
+                "editable_content_scopes": EDITABLE_CONTENT_SCOPES,
             },
             "counts": {
                 "data_files": len(files),
                 "data_bytes": total_bytes,
+                "database_tables": len(table_counts),
+                "database_rows": table_counts,
             },
         }
 
+        contents_readme = "\n".join(
+            [
+                "Mulan Dance content backup",
+                f"Created at: {created_at.isoformat()}",
+                f"Kind: {kind}",
+                "",
+                "This archive contains:",
+                "- database.sqlite: all SQLite database tables and rows",
+                "- data/: editable content files, uploaded media, pages, news markdown, and generated assets",
+                "",
+                "Editable content scopes covered:",
+                *[f"- {scope}" for scope in EDITABLE_CONTENT_SCOPES],
+                "",
+                "Database table row counts:",
+                *[f"- {table}: {count}" for table, count in table_counts.items()],
+                "",
+                "Restore warning: restoring this backup replaces the current database and data content.",
+            ]
+        )
+
         with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
             archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+            archive.writestr("BACKUP_CONTENTS.txt", contents_readme)
             archive.write(temp_db, "database.sqlite")
             for path in files:
                 archive.write(path, PurePosixPath("data", path.relative_to(data_dir).as_posix()).as_posix())

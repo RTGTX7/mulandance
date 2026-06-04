@@ -17,17 +17,17 @@ export default function AboutPage() {
   return (
     <div className="pt-16">
       {/* Hero Section */}
-      <section className="relative h-[300px] bg-gradient-to-r from-primary to-purple-700 overflow-hidden">
+      <section className="relative min-h-[210px] overflow-hidden bg-gradient-to-r from-primary to-purple-700 py-8 md:h-[300px] md:py-0">
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-white relative z-10 px-4">
+          <div className="relative z-10 px-4 text-center text-white">
             <Breadcrumbs
               items={[
                 { label: t('common.nav.about'), href: '/about' },
               ]}
             />
             <h1 className="heading-xl mb-4 text-white">{t('about.title')}</h1>
-            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-white/90 md:text-xl">
               {t('about.intro_intro')}
             </p>
           </div>
@@ -38,7 +38,7 @@ export default function AboutPage() {
       <section className="section-padding">
         <div className="container">
           {/* About Content */}
-          <div className="space-y-12 mb-12">
+          <div className="mb-10 space-y-8 md:mb-12 md:space-y-12">
             <section>
               <h2 className="heading-lg mb-4">{t('about.philosophy.heading')}</h2>
               <p className="text-lead mb-4">{t('about.philosophy.desc')}</p>
@@ -68,7 +68,7 @@ export default function AboutPage() {
           </div>
 
           {/* Coming Soon Section */}
-          <div className="bg-accent/30 rounded-2xl p-12 text-center">
+          <div className="content-glass-section bg-accent/30 p-5 text-center md:p-12">
             <h2 className="heading-lg mb-4">Coming Soon</h2>
             <p className="text-lead text-muted-foreground mb-6">
               More content is under development.

@@ -16,7 +16,7 @@ import {
   isAuthenticated,
   uploadApi,
 } from '@/lib/api';
-import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { Eye, ImagePlus, Loader2, Plus, Save, Trash2, Video } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
@@ -155,16 +155,12 @@ export default function AdminHomepagePage() {
   const labels = adminUiText(locale);
   const languageOptions = adminContentLanguageOptions(locale);
   const [forms, setForms] = useState<HomepageSettingsBundle>(defaultHomepageBundle);
-  const [contentLocale, setContentLocale] = useState<PolicyLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<PolicyLocale>('zh');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {

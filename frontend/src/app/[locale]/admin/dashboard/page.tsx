@@ -7,7 +7,7 @@ import { useTranslations } from '@/components/ui/i18n-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { CheckCircle, FileText, Tag, Folder, CalendarDays, Pencil } from 'lucide-react';
-import { dateLocaleFor } from '@/lib/i18n';
+import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
 
 interface Stats {
   total: number;
@@ -28,8 +28,10 @@ function latestDate(group: NewsArticleGroup) {
 }
 
 function primaryTranslation(group: NewsArticleGroup, uiLocale: string) {
+  const contentLocale = articleLocaleFor(uiLocale);
   return (
-    group.translations.find((item) => item.locale === uiLocale) ||
+    group.translations.find((item) => item.locale === contentLocale) ||
+    group.translations.find((item) => item.locale === 'zh') ||
     group.translations.find((item) => item.locale === 'en') ||
     group.translations[0]
   );

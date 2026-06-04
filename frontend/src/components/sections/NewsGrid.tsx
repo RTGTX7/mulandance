@@ -1,12 +1,13 @@
 ﻿'use client';
 
-import { useTranslations } from '@/components/ui/i18n-client';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, truncate } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { newsApi } from '@/lib/api';
+import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
 import { useEffect, useState } from 'react';
 import { AnimatedLineHeading, RevealOnScroll } from '@/components/motion/ScrollEffects';
 
@@ -22,12 +23,14 @@ interface NewsArticle {
 
 export function NewsGrid() {
   const t = useTranslations();
+  const locale = useLocale();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     newsApi
-      .list({ limit: 6 })
+      .list({ limit: 6, locale: articleLocaleFor(locale) })
       .then((data) => {
         setArticles(data as NewsArticle[]);
         setLoading(false);
@@ -35,17 +38,7 @@ export function NewsGrid() {
       .catch(() => {
         setLoading(false);
       });
-  }, []);
-
-  const getLocalePrefix = () => {
-    try {
-      return new URL(window.location.href).pathname.split('/')[1] || 'en';
-    } catch {
-      return 'en';
-    }
-  };
-
-  const locale = getLocalePrefix();
+  }, [locale]);
 
   return (
     <section className="section-padding bg-white/30">
@@ -99,7 +92,7 @@ export function NewsGrid() {
                           <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {article.published_at
-                              ? formatDate(article.published_at.split('T')[0], 'en-US')
+                              ? formatDate(article.published_at.split('T')[0], dateLocaleFor(locale))
                               : ''}
                           </span>
                         </div>
@@ -154,7 +147,7 @@ export function NewsGrid() {
                             <span className="text-xs text-muted-foreground">
                               <Calendar className="inline h-3 w-3 mr-1" />
                               {article.published_at
-                                ? formatDate(article.published_at.split('T')[0], 'en-US')
+                                ? formatDate(article.published_at.split('T')[0], dateLocaleFor(locale))
                                 : ''}
                             </span>
                           </div>

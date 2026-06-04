@@ -154,23 +154,49 @@ def _clean_slug_for_file(slug: str) -> str:
     return clean_slug or "article"
 
 
-def _markdown_file_path(slug: str, published_at: Optional[datetime] = None) -> Path:
-    """New canonical markdown path: data/news/YYYY/slug.md."""
+def _markdown_file_path(slug: str, published_at: Optional[datetime] = None, locale: Optional[str] = None) -> Path:
+    """New canonical markdown path: data/news/YYYY/slug.locale.md.
+
+    Locale is included for article translations so zh/en/fr versions never
+    overwrite each other's markdown body. Legacy callers without a locale keep
+    using the historical data/news/YYYY/slug.md path.
+    """
     date_value = published_at or datetime.utcnow()
-    return _get_news_dir() / str(date_value.year) / f"{_clean_slug_for_file(slug)}.md"
+    clean_slug = _clean_slug_for_file(slug)
+    normalized_locale = _article_locale(locale)
+    filename = f"{clean_slug}.{normalized_locale}.md" if normalized_locale else f"{clean_slug}.md"
+    return _get_news_dir() / str(date_value.year) / filename
 
 
-def _find_markdown_file(slug: str, preferred_date: Optional[datetime] = None) -> Optional[Path]:
+def _find_markdown_file(slug: str, preferred_date: Optional[datetime] = None, locale: Optional[str] = None) -> Optional[Path]:
     news_dir = _get_news_dir()
-    preferred = _markdown_file_path(slug, preferred_date)
+    preferred = _markdown_file_path(slug, preferred_date, locale)
     if preferred.exists():
         return preferred
+
+    clean_slug = _clean_slug_for_file(slug)
+    normalized_locale = _article_locale(locale)
+    locale_patterns = [
+        f"*/{clean_slug}.{normalized_locale}.md",
+        f"*-{clean_slug}.{normalized_locale}.md",
+    ] if normalized_locale else []
+    locale_matches = sorted(
+        [match for pattern in locale_patterns for match in news_dir.glob(pattern)],
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    if locale_matches:
+        return locale_matches[0]
+
+    # Backward compatibility: older translated articles were stored as slug.md.
+    legacy_translation_path = _markdown_file_path(slug, preferred_date)
+    if legacy_translation_path.exists():
+        return legacy_translation_path
 
     legacy_preferred = news_dir / _generate_filename(slug, preferred_date)
     if legacy_preferred.exists():
         return legacy_preferred
 
-    clean_slug = _clean_slug_for_file(slug)
     matches = sorted(
         [
             *news_dir.glob(f"*/{clean_slug}.md"),
@@ -279,7 +305,7 @@ def _get_translation_with_relations(
 
     body = translation.body or ""
     if include_html and settings.USE_FILE_STORAGE:
-        filepath = _find_markdown_file(translation.slug, translation.published_at)
+        filepath = _find_markdown_file(translation.slug, translation.published_at, translation.locale)
         if filepath:
             post = _read_markdown_file(filepath)
             if post:
@@ -498,7 +524,7 @@ def create_article_translation(
             for field, value in update_fields.items():
                 setattr(existing_trans, field, value)
             if settings.USE_FILE_STORAGE and body_content is not None:
-                filepath = _markdown_file_path(group_slug, existing_trans.published_at or datetime.utcnow())
+                filepath = _markdown_file_path(group_slug, existing_trans.published_at or datetime.utcnow(), existing_trans.locale)
                 metadata = {
                     "title": existing_trans.title,
                     "slug": group_slug,
@@ -580,7 +606,7 @@ def create_article_translation(
 
     # Write markdown file
     if settings.USE_FILE_STORAGE:
-        filepath = _markdown_file_path(group_slug, published_at or now)
+        filepath = _markdown_file_path(group_slug, published_at or now, data.locale)
         metadata = {
             "title": data.title,
             "slug": group_slug,
@@ -660,7 +686,7 @@ def update_article_translation(
 
         # Update markdown file if body changed
         if settings.USE_FILE_STORAGE and ("body" in update_fields or "title" in update_fields):
-            filepath = _markdown_file_path(group.shared_slug, translation.published_at or now)
+            filepath = _markdown_file_path(group.shared_slug, translation.published_at or now, translation.locale)
             metadata = {
                 "title": translation.title,
                 "slug": group.shared_slug,
@@ -669,7 +695,7 @@ def update_article_translation(
                 "locale": translation.locale,
             }
             if body_content is None:
-                existing_file = _find_markdown_file(group.shared_slug, translation.published_at)
+                existing_file = _find_markdown_file(group.shared_slug, translation.published_at, translation.locale)
                 if existing_file:
                     post = _read_markdown_file(existing_file)
                     body_content = post.content if post else ""
@@ -717,7 +743,7 @@ def delete_article_group(db: Session, slug: str) -> bool:
     # Delete markdown file
     if settings.USE_FILE_STORAGE:
         for translation in db.query(ArticleTranslation).filter(ArticleTranslation.group_id == group.id).all():
-            filepath = _find_markdown_file(group.shared_slug, translation.published_at)
+            filepath = _find_markdown_file(group.shared_slug, translation.published_at, translation.locale)
             if filepath and filepath.exists():
                 filepath.unlink()
 

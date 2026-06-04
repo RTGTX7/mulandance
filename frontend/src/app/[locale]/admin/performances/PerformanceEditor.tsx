@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { aiApi, isAuthenticated, performanceApi, type AiDraft, type PerformanceBody, type PerformanceItem } from '@/lib/api';
-import { adminContentLanguageOptions, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions } from '@/lib/admin-i18n';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
@@ -97,17 +97,13 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
     start: toDateTimeInput(new Date()),
     end: toDateTimeInput(new Date(), '21:00'),
   }));
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [loading, setLoading] = useState(Boolean(editId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiDrafts, setAiDrafts] = useState<AiDraft[]>([]);
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -327,7 +323,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
                       AI 中英法填充
                     </div>
                     <p className="mt-1 text-xs text-purple-900/70">
-                      先填写任意一个语言，AI 会生成并应用中文、英文、法语字段，检查后再保存。
+                      建议先填写中文主内容，再用 AI 生成 English / Français，或手动切换语言补齐字段，检查后再保存。
                     </p>
                   </div>
                   <Button type="button" variant="outline" onClick={handleAiFillAllLanguages} disabled={aiLoading}>

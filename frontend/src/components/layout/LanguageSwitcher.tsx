@@ -14,7 +14,8 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
 
   const handleLocaleChange = (newLocale: string) => {
     const cleanPath = stripLocaleFromPathname(pathname);
-    router.push(`/${newLocale}${cleanPath === '/' ? '' : cleanPath}`);
+    const query = typeof window !== 'undefined' ? window.location.search : '';
+    router.push(`/${newLocale}${cleanPath === '/' ? '' : cleanPath}${query}`);
     router.refresh();
   };
 

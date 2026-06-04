@@ -135,7 +135,45 @@ export default function AdminClassroomsDashboardPage() {
             {loading ? (
               <p className="text-sm text-muted-foreground">{labels.resources.listLoading}</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="mobile-card-list">
+                {calendarDays.map((day) => (
+                  <div key={day.day} className="rounded-xl border border-white/70 bg-white/[0.78] p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
+                    <h3 className="mb-3 text-sm font-semibold text-slate-950">{day.label}</h3>
+                    {day.bookings.length === 0 ? (
+                      <div className="rounded-lg border border-dashed px-3 py-5 text-center text-xs text-slate-400">
+                        {text.noApproved}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {day.bookings.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => router.push(`/${locale}/admin/classrooms/approved?id=${item.id}`)}
+                            className={`w-full rounded-lg border px-3 py-2 text-left text-xs leading-5 transition-colors hover:border-primary/40 ${
+                              item.room === 'large'
+                                ? 'border-purple-200 bg-purple-50 text-purple-900'
+                                : 'border-amber-200 bg-amber-50 text-amber-900'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 font-semibold">
+                              <span>{text.rooms[item.room]}</span>
+                              <span>{item.start_time}-{item.end_time}</span>
+                            </div>
+                            <div className="mt-1 font-medium text-slate-950">{item.title}</div>
+                            <div className="text-slate-600">
+                              {item.teacher_name || item.applicant_name || text.ownerMissing}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="desktop-wide-grid overflow-x-auto">
                 <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-lg border">
                   {calendarDays.map((day) => (
                     <div key={day.day} className="min-h-[300px] border-r last:border-r-0">
@@ -177,6 +215,7 @@ export default function AdminClassroomsDashboardPage() {
                   ))}
                 </div>
               </div>
+              </>
             )}
           </CardContent>
         </Card>

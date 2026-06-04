@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { adminContentLanguageOptions, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions } from '@/lib/admin-i18n';
 import { CalendarClock, Clock3, Eye } from 'lucide-react';
 
 const roomKeys: ClassroomRoom[] = ['large', 'small'];
@@ -89,15 +89,11 @@ export default function InternalClassroomsPage() {
   const languageOptions = adminContentLanguageOptions(locale);
   const [bookings, setBookings] = useState<ClassroomBooking[]>([]);
   const [form, setForm] = useState<ClassroomBookingBody>(initialForm);
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<ClassroomBooking | null>(null);
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {

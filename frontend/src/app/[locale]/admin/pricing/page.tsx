@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { type AiDraft, SystemSettings, isAuthenticated, settingsApi, uploadApi } from '@/lib/api';
-import { adminContentLanguageOptions, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { DollarSign, ImagePlus, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
@@ -222,6 +222,90 @@ function stringify(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
+function programItemsText(content: ProgramPricingContent) {
+  return content.items.map((item) => `${item.program} | ${item.hours}`).join('\n');
+}
+
+function infoCardsText(content: ProgramPricingContent) {
+  return content.infoCards.map((card) => `${card.title} :: ${card.body}`).join('\n');
+}
+
+function paymentColumnsText(content: ProgramPricingContent) {
+  return content.payment.columns.map((column) => `${column.title} :: ${column.items.join(' | ')}`).join('\n');
+}
+
+function rentalItemsText(content: ClassroomPricingContent) {
+  return content.items.map((item) => `${item.key} | ${item.hourlyTime} | ${item.halfDayTime} | ${item.fullDayTime}`).join('\n');
+}
+
+function applyProgramItemsText(content: ProgramPricingContent, text?: string): ProgramPricingContent {
+  if (!text?.trim()) return content;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return {
+    ...content,
+    items: content.items.map((item, index) => {
+      const parts = (lines[index] || '').split('|').map((part) => part.trim());
+      return {
+        ...item,
+        program: parts[0] || item.program,
+        hours: parts[1] || item.hours,
+      };
+    }),
+  };
+}
+
+function applyInfoCardsText(content: ProgramPricingContent, text?: string): ProgramPricingContent {
+  if (!text?.trim()) return content;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return {
+    ...content,
+    infoCards: content.infoCards.map((card, index) => {
+      const [title, body] = (lines[index] || '').split('::').map((part) => part.trim());
+      return {
+        ...card,
+        title: title || card.title,
+        body: body || card.body,
+      };
+    }),
+  };
+}
+
+function applyPaymentColumnsText(content: ProgramPricingContent, text?: string): ProgramPricingContent {
+  if (!text?.trim()) return content;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return {
+    ...content,
+    payment: {
+      ...content.payment,
+      columns: content.payment.columns.map((column, index) => {
+        const [title, items] = (lines[index] || '').split('::').map((part) => part.trim());
+        return {
+          ...column,
+          title: title || column.title,
+          items: items ? items.split('|').map((item) => item.trim()).filter(Boolean) : column.items,
+        };
+      }),
+    },
+  };
+}
+
+function applyRentalItemsText(content: ClassroomPricingContent, text?: string): ClassroomPricingContent {
+  if (!text?.trim()) return content;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return {
+    ...content,
+    items: content.items.map((item, index) => {
+      const [, hourlyTime, halfDayTime, fullDayTime] = (lines[index] || '').split('|').map((part) => part.trim());
+      return {
+        ...item,
+        hourlyTime: hourlyTime || item.hourlyTime,
+        halfDayTime: halfDayTime || item.halfDayTime,
+        fullDayTime: fullDayTime || item.fullDayTime,
+      };
+    }),
+  };
+}
+
 function CurrencyPriceInput({
   currency,
   price,
@@ -252,7 +336,7 @@ export default function AdminPricingPage() {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
   const languageOptions = adminContentLanguageOptions(locale);
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [programContent, setProgramContent] = useState<Record<ContentLocale, ProgramPricingContent>>(defaultProgramContent);
   const [classroomContent, setClassroomContent] = useState<Record<ContentLocale, ClassroomPricingContent>>(defaultClassroomContent);
@@ -261,10 +345,6 @@ export default function AdminPricingPage() {
   const [uploadingClassroomImage, setUploadingClassroomImage] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -316,6 +396,50 @@ export default function AdminPricingPage() {
             ...(body ? { items: body.split(/\r?\n/).map((line) => line.replace(/^[-*]\s*/, '').trim()).filter(Boolean) } : {}),
           },
         };
+      });
+      return next;
+    });
+  }
+
+  function applyPricingAiDrafts(drafts: AiDraft[]) {
+    setProgramContent((current) => {
+      const next = { ...current };
+      drafts.forEach((draft) => {
+        if (!['zh', 'en', 'fr'].includes(draft.locale)) return;
+        const localeKey = draft.locale as ContentLocale;
+        let content = next[localeKey];
+        content = applyProgramItemsText(content, draft.fields.program_items_text);
+        content = applyInfoCardsText(content, draft.fields.info_cards_text);
+        content = applyPaymentColumnsText(content, draft.fields.payment_columns_text);
+        next[localeKey] = {
+          ...content,
+          payment: {
+            ...content.payment,
+            title: draft.fields.payment_title || content.payment.title,
+          },
+        };
+      });
+      return next;
+    });
+
+    setClassroomContent((current) => {
+      const next = { ...current };
+      drafts.forEach((draft) => {
+        if (!['zh', 'en', 'fr'].includes(draft.locale)) return;
+        const localeKey = draft.locale as ContentLocale;
+        let content = applyRentalItemsText(next[localeKey], draft.fields.rental_items_text);
+        const rentalNotesBody = draft.fields.rental_notes_body || '';
+        content = {
+          ...content,
+          notes: {
+            ...content.notes,
+            title: draft.fields.rental_notes_title || content.notes.title,
+            items: rentalNotesBody
+              ? rentalNotesBody.split(/\r?\n/).map((line) => line.replace(/^[-*]\s*/, '').trim()).filter(Boolean)
+              : content.notes.items,
+          },
+        };
+        next[localeKey] = content;
       });
       return next;
     });
@@ -418,13 +542,37 @@ export default function AdminPricingPage() {
           </div>
 
           <Card>
-            <CardContent className="flex flex-wrap items-center gap-2 py-4">
-              <span className="mr-1 text-sm font-medium text-muted-foreground">Editing Language</span>
-              {languageOptions.map((option) => (
-                <Button key={option.value} type="button" variant={contentLocale === option.value ? 'default' : 'outline'} onClick={() => setContentLocale(option.value)}>
-                  {option.label}
-                </Button>
-              ))}
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Content Language / 中英法内容</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                先编辑中文，再用 AI 生成 English / Français；价格数字、货币和图片不会由 AI 修改。
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-sm font-medium text-muted-foreground">Editing Language</span>
+                {languageOptions.map((option) => (
+                  <Button key={option.value} type="button" variant={contentLocale === option.value ? 'default' : 'outline'} onClick={() => setContentLocale(option.value)}>
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              <AiLocaleSyncPanel
+                module="pricing"
+                sourceLocale={contentLocale}
+                title="AI Pricing 中英法同步"
+                description="翻译课程名称、时长、说明卡、付款说明、租赁时间单位和租赁说明；保留价格数字、货币、图片 URL 不变。"
+                fields={{
+                  program_items_text: programItemsText(currentProgram),
+                  info_cards_text: infoCardsText(currentProgram),
+                  payment_title: currentProgram.payment.title,
+                  payment_columns_text: paymentColumnsText(currentProgram),
+                  rental_items_text: rentalItemsText(currentClassroom),
+                  rental_notes_title: currentClassroom.notes.title,
+                  rental_notes_body: currentClassroom.notes.items.join('\n'),
+                }}
+                onApply={applyPricingAiDrafts}
+              />
             </CardContent>
           </Card>
 
@@ -455,7 +603,35 @@ export default function AdminPricingPage() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
+                  <div className="grid gap-3 lg:hidden">
+                    {currentProgram.items.map((item, index) => (
+                      <div key={`${contentLocale}-mobile-${index}`} className="space-y-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
+                        <label className="block space-y-1">
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">Program</span>
+                          <Input value={item.program} onChange={(event) => updateProgramRow(index, 'program', event.target.value)} />
+                        </label>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Monthly</span>
+                            <CurrencyPriceInput currency={item.monthlyCurrency} price={item.monthlyPrice} onCurrencyChange={(value) => updateProgramRow(index, 'monthlyCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'monthlyPrice', value)} />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Term</span>
+                            <CurrencyPriceInput currency={item.termCurrency} price={item.termPrice} onCurrencyChange={(value) => updateProgramRow(index, 'termCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'termPrice', value)} />
+                          </label>
+                        </div>
+                        <label className="block space-y-1">
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">Duration</span>
+                          <Input value={item.hours} onChange={(event) => updateProgramRow(index, 'hours', event.target.value)} />
+                        </label>
+                        <Button type="button" variant="ghost" size="sm" className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto" onClick={() => updateProgramContent((content) => ({ ...content, items: content.items.filter((_, itemIndex) => itemIndex !== index) }))}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="hidden overflow-x-auto lg:block">
                     <div className="min-w-[920px] rounded-md border">
                       <div className="grid grid-cols-[2fr_1fr_1fr_1.15fr_44px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
                         <div>Program</div>
@@ -531,16 +707,61 @@ export default function AdminPricingPage() {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-5">
-                  <AiLocaleSyncPanel
-                    module="classrooms"
-                    sourceLocale={contentLocale}
-                    fields={{
-                      notes_title: currentClassroom.notes.title,
-                      notes_body: currentClassroom.notes.items.join('\n'),
-                    }}
-                    onApply={applyClassroomAiDrafts}
-                  />
-                  <div className="overflow-x-auto">
+                  <div className="grid gap-3 lg:hidden">
+                    {currentClassroom.items.map((item, index) => (
+                      <div key={`${contentLocale}-rental-mobile-${index}`} className="space-y-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
+                        <label className="block space-y-1">
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">Room</span>
+                          <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={item.key} onChange={(event) => updateClassroomRow(index, 'key', event.target.value as ClassroomPricingItem['key'])}>
+                            <option value="large">Large Room</option>
+                            <option value="small">Small Room</option>
+                          </select>
+                        </label>
+                        <label className="block space-y-1">
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">Image</span>
+                          <div className="flex min-w-0 gap-2">
+                            {item.image_url ? <img src={item.image_url} alt="" className="h-10 w-14 shrink-0 rounded-md border object-cover" /> : null}
+                            <Input value={item.image_url} onChange={(event) => updateClassroomRow(index, 'image_url', event.target.value)} placeholder="Image URL" />
+                            <Button type="button" variant="outline" size="icon" disabled={uploadingClassroomImage === `${contentLocale}-${index}`} onClick={() => document.getElementById(`classroom-image-mobile-${contentLocale}-${index}`)?.click()} aria-label="Upload classroom image">
+                              {uploadingClassroomImage === `${contentLocale}-${index}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                            </Button>
+                            <input id={`classroom-image-mobile-${contentLocale}-${index}`} type="file" accept="image/*" className="hidden" onChange={(event) => uploadClassroomImage(index, event)} />
+                          </div>
+                        </label>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Hourly Price</span>
+                            <CurrencyPriceInput currency={item.hourlyCurrency} price={item.hourlyPrice} onCurrencyChange={(value) => updateClassroomRow(index, 'hourlyCurrency', value)} onPriceChange={(value) => updateClassroomRow(index, 'hourlyPrice', value)} />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Hourly Time</span>
+                            <Input value={item.hourlyTime} onChange={(event) => updateClassroomRow(index, 'hourlyTime', event.target.value)} />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Half Day Price</span>
+                            <CurrencyPriceInput currency={item.halfDayCurrency} price={item.halfDayPrice} onCurrencyChange={(value) => updateClassroomRow(index, 'halfDayCurrency', value)} onPriceChange={(value) => updateClassroomRow(index, 'halfDayPrice', value)} />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Half Day Time</span>
+                            <Input value={item.halfDayTime} onChange={(event) => updateClassroomRow(index, 'halfDayTime', event.target.value)} />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Full Day Price</span>
+                            <CurrencyPriceInput currency={item.fullDayCurrency} price={item.fullDayPrice} onCurrencyChange={(value) => updateClassroomRow(index, 'fullDayCurrency', value)} onPriceChange={(value) => updateClassroomRow(index, 'fullDayPrice', value)} />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">Full Day Time</span>
+                            <Input value={item.fullDayTime} onChange={(event) => updateClassroomRow(index, 'fullDayTime', event.target.value)} />
+                          </label>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto" onClick={() => updateClassroomContent((content) => ({ ...content, items: content.items.filter((_, itemIndex) => itemIndex !== index) }))}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="hidden overflow-x-auto lg:block">
                     <div className="min-w-[1320px] rounded-md border">
                       <div className="grid grid-cols-[0.7fr_1.5fr_1fr_0.75fr_1fr_0.75fr_1fr_0.75fr_44px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
                         <div>Room</div>

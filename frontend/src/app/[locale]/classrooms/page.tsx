@@ -214,7 +214,7 @@ export default function ClassroomsPage() {
       <main className="section-padding bg-slate-100">
         <div className="container space-y-8">
 
-        <section id="schedule" className="scroll-mt-24 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+        <section id="schedule" className="content-glass-section scroll-mt-24 p-4 md:p-5">
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-950">
@@ -253,7 +253,37 @@ export default function ClassroomsPage() {
               {t('common.ui.loading')}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="mobile-card-list">
+              {calendarDays.map((day) => (
+                <div key={day.day} className="rounded-xl border border-white/70 bg-white/[0.78] p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
+                  <h3 className="mb-3 text-sm font-semibold text-slate-950">{day.label}</h3>
+                  {day.bookings.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-slate-200 px-3 py-5 text-center text-xs text-slate-400">
+                      {t('classroomsPage.available')}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {day.bookings.map((item) => {
+                        const room = rooms.find((entry) => entry.key === item.room) || rooms[0];
+                        return (
+                          <div key={item.id} className={`rounded-lg border px-3 py-2 text-xs leading-5 ${room.tone}`}>
+                            <div className="flex items-center justify-between gap-2 font-semibold">
+                              <span>{room.label}</span>
+                              <span className="whitespace-nowrap">{item.start_time}-{item.end_time}</span>
+                            </div>
+                            <div className="mt-1 font-medium text-slate-900">{item.title}</div>
+                            <div className="text-slate-600">{bookingOwner(item)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="desktop-wide-grid overflow-x-auto">
               <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-lg border border-slate-200">
                 {calendarDays.map((day) => (
                   <div key={day.day} className="min-h-[260px] border-r border-slate-200 last:border-r-0">
@@ -290,6 +320,7 @@ export default function ClassroomsPage() {
                 ))}
               </div>
             </div>
+            </>
           )}
         </section>
 
@@ -335,7 +366,7 @@ export default function ClassroomsPage() {
         </section>
 
         <section id="book" className="scroll-mt-24 grid grid-cols-1 gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="content-glass-section p-4 md:p-6">
             <CalendarDays className="h-8 w-8 text-purple-600" />
             <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t('classroomsPage.introTitle')}</h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -508,8 +539,8 @@ export default function ClassroomsPage() {
                   </div>
                 )}
 
-                <div className="md:col-span-2 flex justify-end">
-                  <Button type="submit" disabled={saving || Boolean(selectedConflict)}>
+                <div className="mobile-action-row md:col-span-2">
+                  <Button type="submit" disabled={saving || Boolean(selectedConflict)} className="w-full sm:w-auto">
                     <Send className="mr-2 h-4 w-4" />
                     {saving ? t('classroomsPage.submitting') : t('classroomsPage.submit')}
                   </Button>

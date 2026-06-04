@@ -17,7 +17,7 @@ import {
   settingsApi,
   uploadApi,
 } from '@/lib/api';
-import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { Download, ImagePlus, KeyRound, Loader2, Mail, Save, Settings, Upload } from 'lucide-react';
 
@@ -161,7 +161,7 @@ export default function AdminSettingsPage() {
   const backupText = locale.startsWith('zh')
     ? {
         title: '网站设置与内容备份',
-        subtitle: '导出数据库、新闻/页面内容、上传图片视频和系统配置。代码更新或 Docker 重新部署前先导出一份快照。',
+        subtitle: '导出所有后台编辑内容：网站设置、首页、文章、演出、课程、排课、教师、教室、价格、政策页面、用户/权限、上传图片视频和系统配置。代码更新或 Docker 重新部署前先导出一份快照。',
         export: '导出完整快照',
         restore: '恢复备份',
         choose: '选择备份 zip',
@@ -179,7 +179,7 @@ export default function AdminSettingsPage() {
     : locale.startsWith('fr')
       ? {
           title: 'Parametres et sauvegarde du site',
-          subtitle: 'Exporte la base de donnees, le contenu, les medias televerses et la configuration.',
+          subtitle: 'Exporte tout le contenu modifiable: parametres, accueil, articles, spectacles, programmes, horaires, enseignants, salles, tarifs, politiques, utilisateurs, medias et configuration.',
           export: 'Exporter un instantane complet',
           restore: 'Restaurer la sauvegarde',
           choose: 'Choisir un zip',
@@ -196,7 +196,7 @@ export default function AdminSettingsPage() {
         }
       : {
           title: 'Website Settings and Content Backup',
-          subtitle: 'Export the database, content files, uploaded media, and system configuration before code or Docker updates.',
+          subtitle: 'Export all admin-edited content: website settings, homepage, articles, performances, programs, schedules, faculty, classrooms, pricing, policies, users/roles, uploaded media, and system configuration before code or Docker updates.',
           export: 'Export Full Snapshot',
           restore: 'Restore Backup',
           choose: 'Choose backup zip',
@@ -223,7 +223,7 @@ export default function AdminSettingsPage() {
     api_key: '',
     clear_api_key: false,
   });
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -234,10 +234,6 @@ export default function AdminSettingsPage() {
   const [backupError, setBackupError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   const refreshBackupList = useCallback(async () => {
     try {
@@ -657,7 +653,7 @@ export default function AdminSettingsPage() {
                     <div className="rounded-lg border bg-background/70 p-4">
                       <h3 className="text-sm font-semibold text-foreground">{backupText.export}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        database.sqlite + data/uploads + data/news + data/pages + settings
+                        database.sqlite + all data files: uploads, articles/news markdown, pages, pricing, homepage, performances, programs, schedules, faculty, classrooms, users/roles, and settings
                       </p>
                       <Button type="button" className="mt-4" onClick={exportBackup} disabled={backupLoading}>
                         {backupLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}

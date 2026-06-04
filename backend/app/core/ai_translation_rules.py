@@ -21,6 +21,7 @@ MODULE_FIELD_ALLOWLIST = {
         "description",
         "body",
     },
+    "articles": {"title", "summary", "body"},
     "news": {"title", "summary", "body"},
     "events": {"title", "summary", "description", "body", "location"},
     "performances": {"title", "description", "venue"},
@@ -28,6 +29,15 @@ MODULE_FIELD_ALLOWLIST = {
     "schedules": {"title", "summary", "description", "body", "location"},
     "faculty": {"name", "title", "role", "bio", "specialties", "achievements"},
     "classrooms": {"name", "title", "description", "features", "notes_title", "notes_body", "body"},
+    "pricing": {
+        "program_items_text",
+        "info_cards_text",
+        "payment_title",
+        "payment_columns_text",
+        "rental_items_text",
+        "rental_notes_title",
+        "rental_notes_body",
+    },
     "settings": {"site_name", "tagline", "school_policy", "body"},
     "school_policy": {"title", "body", "body_markdown"},
 }

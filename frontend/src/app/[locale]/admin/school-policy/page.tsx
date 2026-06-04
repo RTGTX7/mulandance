@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { type AiDraft, type LocaleCode, type SchoolPolicy, type SchoolPolicyBundle, isAuthenticated, settingsApi } from '@/lib/api';
-import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { FileText, Loader2, Save } from 'lucide-react';
 
@@ -38,7 +38,7 @@ export default function AdminSchoolPolicyPage() {
   const locale = pathname.split('/')[1] || 'en';
   const labels = adminUiText(locale);
   const localeOptions = adminContentLanguageOptions(locale);
-  const [contentLocale, setContentLocale] = useState<PolicyLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<PolicyLocale>('zh');
   const [policies, setPolicies] = useState<SchoolPolicyBundle>(defaultPolicies);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,10 +68,6 @@ export default function AdminSchoolPolicyPage() {
           saved: 'School policies saved',
           loading: 'Loading school policies...',
         };
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -214,7 +210,7 @@ export default function AdminSchoolPolicyPage() {
                   <Textarea
                     value={currentPolicy.body_markdown}
                     onChange={(event) => setPolicyField(contentLocale, 'body_markdown', event.target.value)}
-                    className="min-h-[520px] font-mono text-sm"
+                    className="min-h-[320px] font-mono text-sm md:min-h-[520px]"
                   />
                 </label>
               </CardContent>

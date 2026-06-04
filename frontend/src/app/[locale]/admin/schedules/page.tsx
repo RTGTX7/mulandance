@@ -13,7 +13,7 @@ import {
   isAuthenticated,
   scheduleApi,
 } from '@/lib/api';
-import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
 
@@ -104,17 +104,13 @@ export default function AdminSchedulesPage() {
   const languageOptions = adminContentLanguageOptions(locale);
   const [items, setItems] = useState<CourseScheduleItem[]>([]);
   const [form, setForm] = useState<CourseScheduleItemBody>(initialForm);
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [switchLoading, setSwitchLoading] = useState<string | null>(null);
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {

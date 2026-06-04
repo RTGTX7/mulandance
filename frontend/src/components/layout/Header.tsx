@@ -250,6 +250,16 @@ export function Header() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 lg:hidden">
+          {authenticated && (
+            <Link
+              href={href('/admin/dashboard')}
+              className="glass-control inline-flex h-8 items-center gap-1.5 px-2 text-xs font-semibold text-primary transition-all hover:bg-white/80 active:scale-95"
+              aria-label={t('admin.dashboard.title')}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden min-[390px]:inline">Dashboard</span>
+            </Link>
+          )}
           <LanguageSwitcher compact />
           <button
             className="glass-control p-1.5 transition-all hover:bg-white/80 active:scale-95"

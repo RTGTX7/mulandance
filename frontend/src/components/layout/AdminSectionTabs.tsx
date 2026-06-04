@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -117,8 +118,11 @@ export function AdminSectionTabs() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
-  const labels = groupLabels[locale === 'zh' || locale === 'fr' ? locale : 'en'];
+  const labels = groupLabels[locale === 'zh' || locale === 'zh-Hant' || locale === 'fr' ? (locale === 'fr' ? 'fr' : 'zh') : 'en'];
   const [role, setRole] = useState<AdminRole | null>(null);
+  const activeTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const activeMobileGroupRef = useRef<HTMLButtonElement | null>(null);
+  const [mobileGroupKey, setMobileGroupKey] = useState<AdminGroup['key'] | null>(null);
 
   useEffect(() => {
     usersApi.me()
@@ -137,10 +141,93 @@ export function AdminSectionTabs() {
   const activeKey = allTabs.find((tab) => pathname.includes(tab.href))?.key ?? 'dashboard';
   const activeTab = visibleTabs.find((tab) => tab.key === activeKey);
   const activeGroup = visibleGroups.find((group) => group.tabs.some((tab) => tab.key === activeKey));
+  const selectedMobileGroup = visibleGroups.find((group) => group.key === (mobileGroupKey || activeGroup?.key)) || visibleGroups[0];
+
+  useEffect(() => {
+    activeMobileGroupRef.current?.scrollIntoView({
+      behavior: 'auto',
+      block: 'nearest',
+      inline: 'center',
+    });
+  }, [activeKey, visibleGroups.length]);
+
+  useEffect(() => {
+    if (activeGroup && !mobileGroupKey) {
+      setMobileGroupKey(activeGroup.key);
+    }
+  }, [activeGroup, mobileGroupKey]);
 
   return (
-    <div className="w-full rounded-lg border border-white/60 bg-white/75 p-1.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-wrap lg:overflow-visible lg:pb-0">
+    <div className="relative -mx-2 w-[calc(100%+1rem)] rounded-lg border border-white/60 bg-white/75 p-1.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl sm:mx-0 sm:w-full">
+      <div className="pointer-events-none absolute bottom-1.5 left-0 top-1.5 z-10 w-5 bg-gradient-to-r from-white/90 to-transparent lg:hidden" />
+      <div className="pointer-events-none absolute bottom-1.5 right-0 top-1.5 z-10 w-5 bg-gradient-to-l from-white/90 to-transparent lg:hidden" />
+
+      <div
+        className="flex touch-pan-x items-center gap-1.5 overflow-x-scroll overscroll-x-contain scroll-px-4 px-3 pb-2 pt-0.5 [scrollbar-color:rgba(107,33,168,0.42)_transparent] [scrollbar-width:thin] lg:hidden"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        aria-label="Admin function groups"
+      >
+        {visibleGroups.map((group) => {
+          const GroupIcon = group.icon;
+          const groupActive = activeGroup?.key === group.key;
+          const selected = selectedMobileGroup?.key === group.key;
+          const currentInGroup = group.tabs.find((tab) => tab.key === activeKey);
+          const groupLabel = labels[group.key];
+
+          return (
+            <button
+              key={group.key}
+              ref={groupActive ? activeMobileGroupRef : undefined}
+              type="button"
+              onClick={() => setMobileGroupKey(group.key)}
+              className={`inline-flex h-9 min-w-max shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                selected
+                  ? 'bg-purple-600 text-white shadow-sm shadow-purple-900/20'
+                  : 'bg-white/45 text-gray-650 hover:bg-white/80 hover:text-gray-950'
+              }`}
+              aria-expanded={selected}
+            >
+              <GroupIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap">{groupLabel}</span>
+              {currentInGroup && (
+                <span className={`max-w-[6.75rem] truncate text-[11px] ${selected ? 'text-white/75' : 'text-muted-foreground'}`}>
+                  / {t(currentInGroup.labelKey, { defaultMessage: currentInGroup.key })}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedMobileGroup && (
+        <div className="mt-1.5 grid grid-cols-2 gap-1.5 px-1 pb-1 lg:hidden">
+          {selectedMobileGroup.tabs.map((tab) => {
+            const Icon = tab.icon;
+            const active = activeKey === tab.key;
+            const label = t(tab.labelKey, { defaultMessage: tab.key === 'accounts' ? 'Accounts' : tab.key });
+
+            return (
+              <Link
+                key={tab.key}
+                href={`/${locale}${tab.href}`}
+                className={`inline-flex min-h-9 min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                  active
+                    ? 'border border-purple-200 bg-purple-50 text-purple-700'
+                    : 'border border-white/60 bg-white/45 text-gray-650 hover:bg-white/85 hover:text-gray-950'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 truncate">{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      <div
+        className="hidden items-center gap-1.5 lg:flex lg:flex-wrap"
+        aria-label="Admin function sections"
+      >
         {visibleGroups.map((group) => {
           const GroupIcon = group.icon;
           const groupActive = activeGroup?.key === group.key;
@@ -151,10 +238,11 @@ export function AdminSectionTabs() {
             <DropdownMenu key={group.key}>
               <DropdownMenuTrigger asChild>
                 <Button
+                  ref={groupActive ? activeTriggerRef : undefined}
                   type="button"
                   size="sm"
                   variant={groupActive ? 'default' : 'ghost'}
-                  className={`h-8 shrink-0 rounded-lg px-2.5 text-xs md:h-9 md:text-sm ${
+                  className={`h-9 min-w-max shrink-0 rounded-lg px-3 text-xs md:h-9 md:text-sm ${
                     groupActive
                       ? 'bg-purple-600 text-white shadow-sm shadow-purple-900/20 hover:bg-purple-700'
                       : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'
@@ -163,7 +251,7 @@ export function AdminSectionTabs() {
                   <GroupIcon className="mr-1.5 h-3.5 w-3.5 md:h-4 md:w-4" />
                   <span className="whitespace-nowrap">{groupLabel}</span>
                   {currentInGroup && (
-                    <span className={`ml-1 hidden max-w-[150px] truncate text-xs md:inline ${groupActive ? 'text-white/75' : 'text-muted-foreground'}`}>
+                    <span className={`ml-1 max-w-[7.5rem] truncate text-[11px] sm:max-w-[10rem] md:text-xs ${groupActive ? 'text-white/75' : 'text-muted-foreground'}`}>
                       / {t(currentInGroup.labelKey, { defaultMessage: currentInGroup.key })}
                     </span>
                   )}

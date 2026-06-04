@@ -15,7 +15,7 @@ import {
   isAuthenticated,
   uploadApi,
 } from '@/lib/api';
-import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { Edit2, ImagePlus, Loader2, Save, Trash2, UsersRound, X } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
@@ -76,7 +76,7 @@ export default function AdminFacultyPage() {
   const languageOptions = adminContentLanguageOptions(locale);
   const [members, setMembers] = useState<FacultyMember[]>([]);
   const [form, setForm] = useState<FacultyMemberBody>(emptyForm);
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -87,10 +87,6 @@ export default function AdminFacultyPage() {
     () => [...members].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
     [members]
   );
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {

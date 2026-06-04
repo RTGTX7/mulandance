@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { newsApi, performanceApi, type NewsArticle, type PerformanceItem } from '@/lib/api';
-import { dateLocaleFor } from '@/lib/i18n';
+import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
 import { CalendarDays, Clock, FileText, MapPin, Newspaper } from 'lucide-react';
 
 type TimelineType = 'performance' | 'competition' | 'camp' | 'event' | 'other';
@@ -49,7 +49,7 @@ export default function PerformancesPage() {
   useEffect(() => {
     Promise.all([
       performanceApi.list({ current: true, locale }),
-      newsApi.list({ category: 'performances', locale, limit: 6 }).catch(() => []),
+      newsApi.list({ category: 'performances', locale: articleLocaleFor(locale), limit: 6 }).catch(() => []),
     ])
       .then(([performanceItems, newsItems]) => {
         setPerformances(performanceItems);

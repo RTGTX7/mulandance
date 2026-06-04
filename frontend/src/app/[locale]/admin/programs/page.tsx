@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { type AiDraft, ProgramBody, ProgramItem, isAuthenticated, programApi, uploadApi } from '@/lib/api';
-import { adminContentLanguageOptions, adminUiText, contentLocaleFromPath } from '@/lib/admin-i18n';
+import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn, generateSlug } from '@/lib/utils';
 import { BookOpen, Edit2, ImagePlus, Loader2, Save, Trash2, X } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
@@ -65,7 +65,7 @@ export default function AdminProgramsPage() {
   const languageOptions = adminContentLanguageOptions(locale);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [form, setForm] = useState(emptyForm);
-  const [contentLocale, setContentLocale] = useState<ContentLocale>(() => contentLocaleFromPath(locale));
+  const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -76,10 +76,6 @@ export default function AdminProgramsPage() {
     () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
     [programs]
   );
-
-  useEffect(() => {
-    setContentLocale(contentLocaleFromPath(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {

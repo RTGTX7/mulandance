@@ -22,7 +22,7 @@ export default function ChineseDancePage() {
   return (
     <div className="pt-16">
       {/* Hero Section */}
-      <section className="relative h-[400px] bg-gradient-to-r from-red-600 to-pink-600 overflow-hidden">
+      <section className="relative min-h-[270px] overflow-hidden bg-gradient-to-r from-red-600 to-pink-600 py-8 md:h-[400px] md:py-0">
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white relative z-10 px-4">
@@ -33,7 +33,7 @@ export default function ChineseDancePage() {
               ]}
             />
             <h1 className="heading-xl mb-4 text-white">{t('programs.chinese.title')}</h1>
-            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8">
+            <p className="mx-auto mb-5 max-w-2xl text-sm leading-relaxed text-white/90 md:mb-8 md:text-xl">
               {t('programs.chinese.description')}
             </p>
             <Link href={registerHref}>
@@ -48,7 +48,7 @@ export default function ChineseDancePage() {
       {/* Content Section */}
       <section className="section-padding">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+          <div className="mb-10 grid grid-cols-1 items-center gap-6 md:mb-16 lg:grid-cols-2 lg:gap-12">
             <div>
               <h2 className="heading-lg mb-6">{t('programs.chinese.title')}</h2>
               <p className="text-lead text-muted-foreground mb-6">
@@ -59,7 +59,7 @@ export default function ChineseDancePage() {
               </p>
             </div>
             <div className="rounded-2xl overflow-hidden shadow-xl">
-              <img src="/programs/chinese-dance.jpg" alt="Chinese Dance" className="w-full h-[400px] object-cover" />
+              <img src="/programs/chinese-dance.jpg" alt="Chinese Dance" className="h-64 w-full object-cover sm:h-80 md:h-[400px]" />
             </div>
           </div>
 

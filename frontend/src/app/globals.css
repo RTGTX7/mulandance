@@ -155,7 +155,7 @@
 @layer components {
   /* --- 页面区块间距 --- */
   .section-padding {
-    @apply py-8 md:py-16 lg:py-20;
+    @apply py-7 md:py-16 lg:py-20;
   }
 
   .section-padding-narrow {
@@ -173,7 +173,7 @@
 
   /* --- 标题样式 --- */
   .heading-xl {
-    @apply text-3xl md:text-5xl lg:text-6xl font-bold tracking-normal;
+    @apply text-[2rem] md:text-5xl lg:text-6xl font-bold tracking-normal;
     line-height: 1.08;
   }
 
@@ -253,7 +253,7 @@
 
   /* --- 卡片样式 --- */
   .card {
-    @apply rounded-lg border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur-2xl transition-all duration-300;
+    @apply rounded-xl border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur-2xl transition-all duration-300;
   }
 
   .card-hover {
@@ -342,11 +342,11 @@
   }
 
   .glass-panel {
-    @apply rounded-lg border border-white/60 bg-white/70 shadow-soft backdrop-blur-xl;
+    @apply rounded-xl border border-white/60 bg-white/70 shadow-soft backdrop-blur-xl;
   }
 
   .glass-panel-strong {
-    @apply rounded-lg border border-white/70 bg-white/80 shadow-medium backdrop-blur-xl;
+    @apply rounded-xl border border-white/70 bg-white/80 shadow-medium backdrop-blur-xl;
   }
 
   .glass-toolbar {
@@ -360,6 +360,27 @@
   .glass-control {
     @apply rounded-lg border border-white/60 bg-white/60 shadow-sm backdrop-blur-xl;
   }
+
+  .mobile-scroll-panel {
+    @apply -mx-3 overflow-x-auto px-3 pb-2 [scrollbar-width:thin] sm:mx-0 sm:px-0;
+  }
+
+  .mobile-card-list {
+    @apply grid gap-3 md:hidden;
+  }
+
+  .desktop-wide-grid {
+    @apply hidden md:block;
+  }
+
+  .content-glass-section {
+    @apply rounded-xl border border-white/[0.65] bg-white/[0.72] shadow-sm shadow-purple-950/5 backdrop-blur-xl;
+  }
+
+  .mobile-action-row {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end;
+  }
+
 
   .interactive-lift {
     @apply transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-medium active:translate-y-0 active:scale-[0.98];
@@ -384,18 +405,37 @@
   }
 
   .container {
-    padding-left: 0.875rem;
-    padding-right: 0.875rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .section-padding {
+    padding-top: 1.75rem;
+    padding-bottom: 1.75rem;
+  }
+
+  .section-padding-narrow {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
   }
 
   .heading-xl {
-    font-size: 2.25rem;
-    line-height: 1.05;
+    font-size: clamp(2rem, 9vw, 2.55rem);
+    line-height: 1.04;
   }
 
   .heading-lg {
-    font-size: 1.7rem;
+    font-size: clamp(1.55rem, 6.8vw, 1.9rem);
     line-height: 1.12;
+  }
+
+  .heading-md {
+    font-size: 1.35rem;
+  }
+
+  .text-lead {
+    font-size: 0.95rem;
+    line-height: 1.6;
   }
 
   .card,
@@ -404,6 +444,18 @@
   .glass-toolbar {
     box-shadow: 0 8px 22px hsl(270 35% 18% / 0.07);
     backdrop-filter: blur(14px);
+  }
+
+  .prose {
+    font-size: 0.95rem;
+  }
+
+  .prose img,
+  .prose video,
+  .prose iframe {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.875rem;
   }
 }
 

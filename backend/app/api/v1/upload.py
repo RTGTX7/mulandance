@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -54,8 +54,12 @@ def _safe_original_name(filename: str) -> str:
     return clean[:80] or "file"
 
 
-def _public_upload_url(relative_path: str) -> str:
-    base = (settings.PUBLIC_BASE_URL or "http://localhost:8000").rstrip("/")
+def _public_upload_url(relative_path: str, request: Request) -> str:
+    configured_base = (settings.PUBLIC_BASE_URL or "").rstrip("/")
+    if configured_base and "localhost" not in configured_base and "127.0.0.1" not in configured_base:
+        base = configured_base
+    else:
+        base = str(request.base_url).rstrip("/")
     return f"{base}/static/uploads/{relative_path}"
 
 
@@ -73,7 +77,7 @@ def ensure_static_mount(app) -> None:
 
 
 @router.post("/image")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(request: Request, file: UploadFile = File(...)):
     """Upload an image file and return its URL.
     
     Accepted image types: PNG, JPG, JPEG, GIF, WEBP, SVG
@@ -116,7 +120,7 @@ async def upload_image(file: UploadFile = File(...)):
         f.write(file_contents)
     
     # Build the public URL
-    public_url = _public_upload_url(relative_path)
+    public_url = _public_upload_url(relative_path, request)
     
     return {
         "url": public_url,
@@ -128,7 +132,7 @@ async def upload_image(file: UploadFile = File(...)):
 
 
 @router.post("/video")
-async def upload_video(file: UploadFile = File(...)):
+async def upload_video(request: Request, file: UploadFile = File(...)):
     """Upload a homepage/background video and return its URL.
 
     Accepted video types: MP4, WEBM, OGG, MOV.
@@ -164,7 +168,7 @@ async def upload_video(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(file_contents)
 
-    public_url = _public_upload_url(relative_path)
+    public_url = _public_upload_url(relative_path, request)
     return {
         "url": public_url,
         "filename": filename,
@@ -175,7 +179,7 @@ async def upload_video(file: UploadFile = File(...)):
 
 
 @router.post("/file")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(request: Request, file: UploadFile = File(...)):
     """Upload a general document/file to data/uploads/files/YYYY/MM/."""
     allowed_types = {
         "application/pdf",
@@ -216,7 +220,7 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(file_contents)
 
-    public_url = _public_upload_url(relative_path)
+    public_url = _public_upload_url(relative_path, request)
     return {
         "url": public_url,
         "filename": filename,

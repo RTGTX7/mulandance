@@ -42,7 +42,7 @@ export default function LeadershipPage() {
 
   return (
     <div className="pt-16">
-      <section className="relative h-[300px] overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600">
+      <section className="relative min-h-[210px] overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-600 py-8 md:h-[300px] md:py-0">
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative z-10 px-4 text-center text-white">
@@ -53,7 +53,7 @@ export default function LeadershipPage() {
               ]}
             />
             <h1 className="heading-xl mb-4 text-white">{t('about.leadership.title')}</h1>
-            <p className="mx-auto max-w-2xl text-lg text-white/90 md:text-xl">
+            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-white/90 md:text-xl">
               {t('about.leadership.founderRole')}
             </p>
           </div>
@@ -72,7 +72,7 @@ export default function LeadershipPage() {
               Faculty profiles are being updated.
             </div>
           ) : (
-            <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-10 grid grid-cols-1 gap-4 md:mb-12 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
               {sortedFaculty.map((member) => {
                 const specialties = splitLines(member.specialties);
                 const achievements = splitLines(member.achievements);

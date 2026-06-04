@@ -555,7 +555,9 @@ const uiText = {
 } as const;
 
 export function contentLocaleFromPath(locale: string | undefined): AdminContentLocale {
-  return locale === 'zh' || locale === 'fr' ? locale : 'en';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  if (locale === 'fr') return 'fr';
+  return 'en';
 }
 
 export function adminUiText(locale: string | undefined) {
