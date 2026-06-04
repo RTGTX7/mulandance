@@ -264,7 +264,7 @@ def _download_image(url: str) -> ImportedMedia:
     file_path = upload_dir / filename
     file_path.write_bytes(data)
     return ImportedMedia(
-        url=f"{(settings.PUBLIC_BASE_URL or 'http://localhost:8000').rstrip('/')}/static/uploads/{relative_path}",
+        url=f"/static/uploads/{relative_path}",
         path=relative_path,
         source_url=final_url,
         content_type=content_type,

@@ -1,3 +1,6 @@
+import threading
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -9,6 +12,8 @@ from app.core.config import settings as app_settings
 from app.api.v1.settings import _get_or_create_system_settings
 from app.schemas.ai import (
     AiArticleImportItem,
+    AiArticleImportJobCreateResponse,
+    AiArticleImportJobStatusResponse,
     AiArticleImportRequest,
     AiArticleImportResponse,
     AiTranslateRequest,
@@ -27,6 +32,9 @@ from app.services.url_importer import import_urls
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
+
+_ai_import_jobs: dict[str, dict] = {}
+_ai_import_jobs_lock = threading.Lock()
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -56,7 +64,7 @@ def _runtime_ai_config(db: Session) -> AiRuntimeConfig:
         api_base_url=settings.ai_api_base_url or app_settings.AI_API_BASE_URL,
         api_key=settings.ai_api_key or app_settings.AI_API_KEY,
         model=settings.ai_model or app_settings.AI_MODEL,
-        timeout_seconds=max(settings.ai_timeout_seconds or 0, app_settings.AI_TIMEOUT_SECONDS or 600, 600),
+        timeout_seconds=settings.ai_timeout_seconds or app_settings.AI_TIMEOUT_SECONDS or 600,
     )
 
 
@@ -76,42 +84,10 @@ def _source_with_manual_text(source: ImportedSource, manual_text: str | None) ->
     return source.model_copy(update={"text": manual_text.strip()})
 
 
-@router.post("/translate", response_model=AiTranslateResponse)
-def translate_content(
-    payload: AiTranslateRequest,
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    try:
-        config = _runtime_ai_config(db)
-        return translate_fields(
-            module=payload.module,
-            source_locale=payload.source_locale,
-            target_locales=payload.target_locales,
-            fields=payload.fields,
-            tone=payload.tone,
-            config=config,
-        )
-    except AiConfigurationError as exc:
-        raise ai_unavailable_exception(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-
-
-@router.post("/import-article-urls", response_model=AiArticleImportResponse)
-def import_article_urls(
+def _generate_imported_article_response(
     payload: AiArticleImportRequest,
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    try:
-        config = _runtime_ai_config(db)
-        ensure_ai_configured(config)
-    except AiConfigurationError as exc:
-        raise ai_unavailable_exception(exc) from exc
-
+    config: AiRuntimeConfig,
+) -> AiArticleImportResponse:
     try:
         sources = import_urls(payload.urls)
     except Exception as exc:
@@ -172,3 +148,95 @@ def import_article_urls(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
     return AiArticleImportResponse(items=items, warnings=warnings)
+
+
+def _set_import_job(job_id: str, **updates) -> None:
+    with _ai_import_jobs_lock:
+        job = _ai_import_jobs.get(job_id, {})
+        job.update(updates)
+        _ai_import_jobs[job_id] = job
+
+
+def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRuntimeConfig) -> None:
+    _set_import_job(job_id, status="running")
+    try:
+        result = _generate_imported_article_response(payload, config)
+        _set_import_job(job_id, status="succeeded", result=result, error="")
+    except HTTPException as exc:
+        _set_import_job(job_id, status="failed", error=str(exc.detail))
+    except Exception as exc:
+        _set_import_job(job_id, status="failed", error=str(exc))
+
+
+@router.post("/translate", response_model=AiTranslateResponse)
+def translate_content(
+    payload: AiTranslateRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        config = _runtime_ai_config(db)
+        return translate_fields(
+            module=payload.module,
+            source_locale=payload.source_locale,
+            target_locales=payload.target_locales,
+            fields=payload.fields,
+            tone=payload.tone,
+            config=config,
+        )
+    except AiConfigurationError as exc:
+        raise ai_unavailable_exception(exc) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+
+@router.post("/import-article-urls/jobs", response_model=AiArticleImportJobCreateResponse)
+def create_import_article_urls_job(
+    payload: AiArticleImportRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        config = _runtime_ai_config(db)
+        ensure_ai_configured(config)
+    except AiConfigurationError as exc:
+        raise ai_unavailable_exception(exc) from exc
+
+    job_id = uuid.uuid4().hex
+    _set_import_job(job_id, status="pending", result=None, error="")
+    thread = threading.Thread(target=_run_import_job, args=(job_id, payload, config), daemon=True)
+    thread.start()
+    return AiArticleImportJobCreateResponse(job_id=job_id, status="pending")
+
+
+@router.get("/import-article-urls/jobs/{job_id}", response_model=AiArticleImportJobStatusResponse)
+def get_import_article_urls_job(
+    job_id: str,
+    user: User = Depends(require_admin),
+):
+    with _ai_import_jobs_lock:
+        job = _ai_import_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI import job not found")
+    return AiArticleImportJobStatusResponse(
+        job_id=job_id,
+        status=job.get("status", "pending"),
+        result=job.get("result"),
+        error=job.get("error", ""),
+    )
+
+
+@router.post("/import-article-urls", response_model=AiArticleImportResponse)
+def import_article_urls(
+    payload: AiArticleImportRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        config = _runtime_ai_config(db)
+        ensure_ai_configured(config)
+        return _generate_imported_article_response(payload, config)
+    except AiConfigurationError as exc:
+        raise ai_unavailable_exception(exc) from exc

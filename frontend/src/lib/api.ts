@@ -318,6 +318,18 @@ export interface AiArticleImportResponse {
   warnings?: string[];
 }
 
+export interface AiArticleImportJobCreateResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+}
+
+export interface AiArticleImportJobStatusResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  result?: AiArticleImportResponse | null;
+  error?: string;
+}
+
 export interface PerformanceItem {
   id: string;
   slug: string;
@@ -443,6 +455,10 @@ export const newsApi = {
     api.put<NewsArticle>(`/v1/news/${slug}/status`, { is_published: published }),
 };
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export const aiApi = {
   translate: (body: {
     module: string;
@@ -452,7 +468,7 @@ export const aiApi = {
     tone?: string;
   }) => api.post<AiTranslateResponse>('/v1/ai/translate', body),
 
-  importArticleUrls: (body: {
+  importArticleUrls: async (body: {
     urls: string[];
     source_locale: string;
     target_locales: string[];
@@ -462,7 +478,15 @@ export const aiApi = {
     tag_slugs?: string[];
     available_category_slugs?: string[];
     available_tag_slugs?: string[];
-  }) => api.post<AiArticleImportResponse>('/v1/ai/import-article-urls', body),
+  }) => {
+    const job = await api.post<AiArticleImportJobCreateResponse>('/v1/ai/import-article-urls/jobs', body);
+    while (true) {
+      await wait(2500);
+      const status = await api.get<AiArticleImportJobStatusResponse>(`/v1/ai/import-article-urls/jobs/${job.job_id}`);
+      if (status.status === 'succeeded' && status.result) return status.result;
+      if (status.status === 'failed') throw new Error(status.error || 'AI import failed');
+    }
+  },
 };
 
 export const performanceApi = {

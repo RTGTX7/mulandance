@@ -253,7 +253,7 @@ def _ai_settings_to_response(settings: SystemSettings) -> AiProviderSettings:
         provider=settings.ai_provider or app_settings.AI_PROVIDER or "openai_compatible",
         api_base_url=settings.ai_api_base_url or app_settings.AI_API_BASE_URL or "https://api.openai.com/v1",
         model=settings.ai_model or app_settings.AI_MODEL or "",
-        timeout_seconds=max(settings.ai_timeout_seconds or 0, app_settings.AI_TIMEOUT_SECONDS or 600, 600),
+        timeout_seconds=settings.ai_timeout_seconds or app_settings.AI_TIMEOUT_SECONDS or 600,
         api_key_set=bool(api_key),
         api_key_masked=_mask_secret(api_key),
     )

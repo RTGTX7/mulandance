@@ -368,7 +368,7 @@ export default function AdminSettingsPage() {
         provider: aiForm.provider,
         api_base_url: aiForm.api_base_url,
         model: aiForm.model,
-        timeout_seconds: aiForm.timeout_seconds,
+        timeout_seconds: Math.max(5, Math.min(900, Number(aiForm.timeout_seconds) || 600)),
         clear_api_key: aiForm.clear_api_key,
       };
       if (aiForm.api_key?.trim()) {
@@ -603,9 +603,9 @@ export default function AdminSettingsPage() {
                     <Input
                       type="number"
                       min={5}
-                      max={300}
-                      value={aiForm.timeout_seconds}
-                      onChange={(e) => setAiField('timeout_seconds', Math.max(5, Math.min(900, Number(e.target.value) || 600)))}
+                      max={900}
+                      value={aiForm.timeout_seconds || ''}
+                      onChange={(e) => setAiField('timeout_seconds', e.target.value === '' ? 0 : Math.min(900, Number(e.target.value) || 0))}
                     />
                   </label>
 

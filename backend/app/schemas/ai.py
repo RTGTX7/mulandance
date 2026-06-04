@@ -75,3 +75,15 @@ class AiArticleImportItem(BaseModel):
 class AiArticleImportResponse(BaseModel):
     items: list[AiArticleImportItem]
     warnings: list[str] = []
+
+
+class AiArticleImportJobCreateResponse(BaseModel):
+    job_id: str
+    status: str = "pending"
+
+
+class AiArticleImportJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    result: AiArticleImportResponse | None = None
+    error: str = ""

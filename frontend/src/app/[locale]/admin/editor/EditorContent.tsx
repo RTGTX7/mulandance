@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/ui/back-button";
 import { dateLocaleFor } from "@/lib/i18n";
+import { toPublicMediaUrl } from "@/lib/media";
 import {
   Bold,
   Italic,
@@ -526,12 +527,16 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         setForm((f) => ({ ...f, slug: slugValue }));
       }
       
+      const activeImportItem = aiImportItems[0];
+      const importedCoverImage = importedMediaUrls(activeImportItem)[0];
+      const bodyWithImages = bodyWithImportedImages(bodyText, activeImportItem, titleText);
+
       const data = {
         title: titleText,
         slug: slugValue,
         summary: summaryText || undefined,
-        body: bodyText,
-        cover_image: coverImageText || undefined,
+        body: bodyWithImages,
+        cover_image: coverImageText || importedCoverImage || undefined,
         category_slugs: form.category_slugs,
         tag_slugs: form.tag_slugs,
         locale: form.locale || "zh",
@@ -557,7 +562,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           ...data,
           title: draftTitle,
           summary: draft.fields.summary || summaryText || undefined,
-          body: draft.fields.body || bodyText,
+          body: bodyWithImportedImages(draft.fields.body || bodyWithImages, activeImportItem, draftTitle),
           slug: slugValue,
           locale: draft.locale,
         });
@@ -700,7 +705,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
   const importedMediaUrls = (item?: AiArticleImportItem) =>
     (item?.source.media || [])
-      .map((media) => media.url)
+      .map((media) => toPublicMediaUrl(media.url))
       .filter((url): url is string => Boolean(url));
 
   const formatSourceDate = (value?: string) => {
@@ -729,6 +734,20 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
     return body.trim() ? `${body.trim()}\n\n${imageMarkdown}` : imageMarkdown;
   };
+
+  const importItemWithImagesInEveryDraft = (item: AiArticleImportItem) => ({
+    ...item,
+    drafts: item.drafts.map((draft) => {
+      const title = draft.fields.title || firstDraftTitle(item, 0);
+      return {
+        ...draft,
+        fields: {
+          ...draft.fields,
+          body: bodyWithImportedImages(draft.fields.body || "", item, title),
+        },
+      };
+    }),
+  });
 
   const itemTitleFallback = (item?: AiArticleImportItem) => item?.source.title || "Imported image";
 
@@ -960,8 +979,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         available_category_slugs: categories.map((category) => category.slug),
         available_tag_slugs: tags.map((tag) => tag.slug),
       });
-      setAiImportItems(result.items || []);
-      setAiDrafts(result.items?.[0]?.drafts || []);
+      const normalizedItems = (result.items || []).map(importItemWithImagesInEveryDraft);
+      setAiImportItems(normalizedItems);
+      setAiDrafts(normalizedItems[0]?.drafts || []);
       setAiMessage(result.warnings?.length ? result.warnings.join("；") : "链接草稿已生成。");
     } catch (err) {
       const message = err instanceof Error ? err.message : "AI import failed";
@@ -972,7 +992,22 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     }
   };
 
-  const currentVersions = articleGroup?.translations || [];
+  const currentVersions = (() => {
+    const versions = [...(articleGroup?.translations || [])];
+    const activeLocale = form.locale || requestedLocale || "zh";
+    if (activeLocale && form.title && !versions.some((translation) => translation.locale === activeLocale)) {
+      versions.push({
+        id: form.id || activeLocale,
+        locale: activeLocale,
+        slug: sharedArticleSlug || form.slug,
+        title: form.title,
+        summary: form.summary,
+        is_published: form.is_published,
+        published_at: form.published_at,
+      });
+    }
+    return versions;
+  })();
   const missingVersions = SUPPORTED_LOCALES.filter(
     (item) => !currentVersions.some((translation) => translation.locale === item.code)
   );
@@ -1003,18 +1038,18 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 py-2.5 sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <BackButton fallbackRoute={`/${locale}/admin/articles`} />
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+              <h1 className="truncate text-lg font-bold text-gray-900 sm:text-2xl">
                 {editSlug
                   ? t("admin.editor.editArticle")
                   : t("admin.editor.newArticle")}
               </h1>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center justify-end gap-1.5 overflow-x-auto sm:flex-wrap sm:gap-2">
             {saveStatus === "saving" && (
               <span className="text-xs text-muted-foreground animate-pulse">
                 {t("admin.editor.autoSaving")}
@@ -1038,7 +1073,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               </span>
             )}
             
-            <VDivider />
+            <div className="hidden sm:block">
+              <VDivider />
+            </div>
             
             <Button
               variant="outline"
@@ -1073,7 +1110,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       </header>
 
       {/* Editor Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-4 space-y-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto space-y-3 px-3 py-3 sm:px-4 sm:py-4 sm:space-y-4">
         {/* Title */}
         <div>
           <input
@@ -1097,14 +1134,14 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 setForm((f) => ({ ...f, slug }));
               }
             }}
-            className="text-2xl font-bold border-b-2 border-border focus:border-primary py-2 px-0 h-auto outline-none"
+            className="w-full border-b-2 border-border px-0 py-1.5 text-xl font-bold outline-none focus:border-primary sm:py-2 sm:text-2xl"
             style={{ background: 'transparent' }}
           />
         </div>
 
         {/* Meta Row */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
             <span className="text-sm text-muted-foreground">/</span>
             <input
               type="text"
@@ -1114,18 +1151,18 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 setForm((f) => ({ ...f, slug: e.target.value }))
               }
               disabled={Boolean(baseSlug)}
-              className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-slate-50 disabled:text-slate-500"
+              className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-slate-50 disabled:text-slate-500 sm:w-48 sm:flex-none sm:px-3"
             />
           </div>
           
           {!isVersionedArticle && (
-            <div className="inline-flex h-8 rounded-md border border-slate-200 bg-white p-0.5">
+            <div className="inline-flex h-8 shrink-0 rounded-md border border-slate-200 bg-white p-0.5">
               {SUPPORTED_LOCALES.map((item) => (
                 <button
                   key={item.code}
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, locale: item.code }))}
-                  className={`rounded px-3 text-sm font-medium transition-colors ${
+                  className={`rounded px-2.5 text-sm font-medium transition-colors sm:px-3 ${
                     form.locale === item.code
                       ? "bg-purple-700 text-white"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
@@ -1146,8 +1183,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         </div>
 
         {(articleGroup || baseSlug || editSlug) && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+            <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-800">语言版本</p>
                 <p className="text-xs text-slate-500">
@@ -1156,7 +1193,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     : "中文、英文、法文版本已创建"}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
                 {SUPPORTED_LOCALES.map((item) => {
                   const existing = currentVersions.find((version) => version.locale === item.code);
                   const active = form.locale === item.code;
@@ -1165,7 +1202,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                       key={item.code}
                       type="button"
                       onClick={() => goToVersion(item.code)}
-                      className={`inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
+                      className={`inline-flex h-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-medium transition-colors sm:h-9 sm:gap-2 sm:px-3 sm:text-sm ${
                         active
                           ? "border-purple-700 bg-purple-700 text-white"
                           : existing
@@ -1174,7 +1211,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                       }`}
                     >
                       {item.label}
-                      <span className="ml-2 text-[10px] opacity-80">
+                      <span className="hidden text-[10px] opacity-80 sm:inline">
                         {existing ? (existing.is_published ? "已发布" : "草稿") : "Missing"}
                       </span>
                     </button>
@@ -1186,24 +1223,24 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         )}
 
         <Card className="border-purple-100 bg-white/80 shadow-sm">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <CardHeader className="p-3 pb-2 sm:p-6 sm:pb-3">
+            <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                   <Sparkles className="h-4 w-4 text-purple-700" />
                   AI 草稿助手
                 </CardTitle>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
                   先创建当前语言文章；然后用 AI 翻译或手动切换语言补齐另外两个版本。AI 只生成草稿，不会自动发布。
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid grid-cols-1 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
                 {aiDrafts.length > 0 && (
                   <Button
                     type="button"
                     variant="default"
                     onClick={() => applyAiDrafts(aiDrafts, aiImportItems[0])}
-                    className="shrink-0"
+                    className="h-9 shrink-0 text-xs sm:h-10 sm:text-sm"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
                     同步三语草稿
@@ -1215,7 +1252,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     variant="outline"
                     onClick={handleBatchSaveAiImports}
                     disabled={aiBatchSaving}
-                    className="shrink-0"
+                    className="h-9 shrink-0 text-xs sm:h-10 sm:text-sm"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {aiBatchSaving ? "保存中..." : "批量保存全部"}
@@ -1226,7 +1263,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                   variant="outline"
                   onClick={handleAiTranslate}
                   disabled={aiLoading}
-                  className="shrink-0"
+                  className="h-9 shrink-0 text-xs sm:h-10 sm:text-sm"
                 >
                   <Wand2 className="mr-2 h-4 w-4" />
                   {aiLoading ? "生成中..." : "翻译当前文章"}
@@ -1234,28 +1271,28 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+          <CardContent className="space-y-3 p-3 pt-1 sm:space-y-4 sm:p-6 sm:pt-0">
+            <div className="grid gap-2.5 lg:grid-cols-[1fr_1fr_220px]">
               <Textarea
                 value={aiUrls}
                 onChange={(event) => setAiUrls(event.target.value)}
                 placeholder="粘贴链接，一行一个。例：小红书帖子链接"
-                className="min-h-[96px]"
+                className="min-h-[72px] text-sm sm:min-h-[96px]"
               />
               <Textarea
                 value={aiManualText}
                 onChange={(event) => setAiManualText(event.target.value)}
                 placeholder="如果链接无法读取，可把帖子文字粘贴到这里"
-                className="min-h-[96px]"
+                className="min-h-[72px] text-sm sm:min-h-[96px]"
               />
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-[1fr_auto] gap-2 lg:flex lg:flex-col">
                 <input
                   value={aiInstruction}
                   onChange={(event) => setAiInstruction(event.target.value)}
                   placeholder="额外要求"
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:px-3"
                 />
-                <Button type="button" onClick={handleAiImportUrls} disabled={aiLoading}>
+                <Button type="button" onClick={handleAiImportUrls} disabled={aiLoading} className="h-9 px-3 text-xs sm:h-10 sm:text-sm">
                   <Sparkles className="mr-2 h-4 w-4" />
                   生成并分类
                 </Button>
@@ -1263,7 +1300,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
             </div>
 
             {aiMessage && (
-              <div className="rounded-md border border-purple-100 bg-purple-50 px-3 py-2 text-sm text-purple-900">
+              <div className="rounded-md border border-purple-100 bg-purple-50 px-2.5 py-2 text-xs leading-relaxed text-purple-900 sm:px-3 sm:text-sm">
                 {aiMessage}
               </div>
             )}
@@ -1276,14 +1313,14 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     <p className="text-xs text-slate-500">确认三种语言内容后，点击右上角“同步三语草稿”，再用普通保存按钮保存。</p>
                   </div>
                 </div>
-                <div className="grid gap-2 md:grid-cols-3">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   {aiDrafts.map((draft) => {
                     return (
-                      <div key={`${draft.locale}-${draft.fields.title || "draft"}`} className="rounded-lg border border-slate-200 bg-white p-3">
-                        <span className="text-sm font-semibold">{draft.locale.toUpperCase()}</span>
-                        <p className="mt-2 line-clamp-2 text-sm text-slate-700">{draft.fields.title || "未生成标题"}</p>
+                      <div key={`${draft.locale}-${draft.fields.title || "draft"}`} className="rounded-md border border-slate-200 bg-white p-2 sm:p-3">
+                        <span className="text-xs font-semibold sm:text-sm">{draft.locale.toUpperCase()}</span>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-700 sm:mt-2 sm:text-sm">{draft.fields.title || "未生成标题"}</p>
                         {draft.fields.summary && (
-                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{draft.fields.summary}</p>
+                          <p className="mt-1 hidden line-clamp-2 text-xs text-slate-500 sm:block">{draft.fields.summary}</p>
                         )}
                       </div>
                     );
@@ -1297,7 +1334,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 <div className="text-sm font-medium text-slate-800">导入来源</div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {aiImportItems.slice(0, 4).map((item) => (
-                    <div key={item.source.url} className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                    <div key={item.source.url} className="rounded-md border border-slate-200 bg-slate-50 p-2.5 text-sm sm:p-3">
                       <div className="flex items-center gap-2">
                         <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                           (item.content_type || "news") === "performance"
@@ -1325,7 +1362,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                         </div>
                       )}
                       {(item.source.media?.length || 0) > 0 && (
-                        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <div className="mt-2 grid grid-cols-4 gap-1.5 sm:mt-3 sm:gap-2">
                           {(item.source.media || []).slice(0, 4).map((media) => (
                             <img
                               key={media.url}
@@ -1348,13 +1385,13 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         </Card>
 
         {/* Summary & Cover Image */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 md:gap-3">
           <input
             type="text"
             placeholder={t("admin.editor.summary")}
             value={form.summary}
             onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:px-3"
           />
           <input
             type="text"
@@ -1363,21 +1400,21 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
             onChange={(e) =>
               setForm((f) => ({ ...f, cover_image: e.target.value }))
             }
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:px-3"
           />
         </div>
 
         {/* Categories */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">{t("admin.editor.categories")}</label>
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal sm:text-foreground">{t("admin.editor.categories")}</label>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {categories.map((cat) => (
               <Badge
                 key={cat.slug}
                 variant={
                   form.category_slugs.includes(cat.slug) ? "default" : "outline"
                 }
-                className="cursor-pointer transition-all hover:scale-105"
+                className="cursor-pointer px-2 py-0.5 text-[11px] transition-all hover:scale-105 sm:text-xs"
                 onClick={() => toggleCategory(cat.slug)}
                 style={
                   form.category_slugs.includes(cat.slug)
@@ -1392,16 +1429,16 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         </div>
 
         {/* Tags */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">{t("admin.editor.tags")}</label>
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal sm:text-foreground">{t("admin.editor.tags")}</label>
+          <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto pr-1 sm:max-h-none sm:gap-2 sm:overflow-visible sm:pr-0">
             {tags.map((tag) => (
               <Badge
                 key={tag.slug}
                 variant={
                   form.tag_slugs.includes(tag.slug) ? "secondary" : "outline"
                 }
-                className="cursor-pointer transition-all hover:scale-105"
+                className="cursor-pointer px-2 py-0.5 text-[11px] transition-all hover:scale-105 sm:text-xs"
                 onClick={() => toggleTag(tag.slug)}
               >
                 {tag.name_zh ? `${tag.name} (${tag.name_zh})` : tag.name}
@@ -1411,9 +1448,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         </div>
 
         {/* Editor Area */}
-        <Card className="flex flex-col">
+        <Card className="flex flex-col overflow-hidden">
           {/* Toolbar */}
-          <div className="flex items-center gap-0.5 border-b p-1.5 bg-muted/20 flex-wrap">
+          <div className="flex items-center gap-0.5 overflow-x-auto border-b bg-muted/20 p-1.5">
             {TOOLBAR_BUTTONS.map(({ icon: Icon, action, label }, i) => (
               <Button
                 key={i}
@@ -1426,7 +1463,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                 <Icon className="h-3.5 w-3.5" />
               </Button>
             ))}
-            <VDivider />
+            <div className="shrink-0">
+              <VDivider />
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -1470,12 +1509,14 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               className="hidden"
               onChange={handleFileSelect}
             />
-            <VDivider />
+            <div className="shrink-0">
+              <VDivider />
+            </div>
             <Button
               variant={showPreview ? "default" : "ghost"}
               size="sm"
               onClick={() => setShowPreview((p) => !p)}
-              className="h-7 px-2.5"
+              className="h-7 shrink-0 px-2.5 text-xs sm:text-sm"
             >
               <Eye className="h-3.5 w-3.5 mr-1" />
               {showPreview ? t("admin.editor.source") : t("admin.editor.preview")}
@@ -1485,7 +1526,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           {/* Content Area */}
           {showPreview ? (
             <div 
-              className="min-h-[280px] p-4 prose max-w-none prose-sm prose-headings:font-semibold prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-lg md:min-h-[400px] md:p-6"
+              className="prose min-h-[260px] max-w-none p-3 prose-sm prose-headings:font-semibold prose-img:rounded-lg prose-a:text-primary hover:prose-a:text-primary/80 md:min-h-[400px] md:p-6"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           ) : (
@@ -1493,18 +1534,18 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               ref={textareaRef}
               value={form.body}
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-              className="w-full min-h-[280px] p-4 resize-y font-mono text-sm border-none bg-transparent focus-visible:ring-0 leading-relaxed md:min-h-[400px]"
+              className="w-full min-h-[260px] resize-y border-none bg-transparent p-3 font-mono text-sm leading-relaxed focus-visible:ring-0 md:min-h-[400px] md:p-4"
               placeholder={t("admin.editor.body")}
             />
           )}
           
           {/* Status Bar */}
-          <div className="border-t p-2 flex justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-3">
+          <div className="flex justify-between gap-2 border-t p-2 text-[11px] text-muted-foreground sm:text-xs">
+            <span className="flex items-center gap-2 sm:gap-3">
               <span>{wordCount} {t("admin.editor.wordCount")}</span>
               <span>{charCount} {t("admin.editor.charCount")}</span>
             </span>
-            <span>Markdown supported</span>
+            <span className="hidden sm:inline">Markdown supported</span>
           </div>
         </Card>
       </main>

@@ -410,10 +410,14 @@ def list_article_groups(
             .filter(
                 ArticleTranslation.title.ilike(search_pattern)
                 | ArticleTranslation.summary.ilike(search_pattern)
+                | ArticleTranslation.slug.ilike(search_pattern)
             )
             .distinct()
         )
-        query = query.filter(ArticleGroup.id.in_(subq))
+        query = query.filter(
+            ArticleGroup.shared_slug.ilike(search_pattern)
+            | ArticleGroup.id.in_(subq)
+        )
 
     # Get latest published_at per group for sorting
     # (can't reference ArticleTranslation directly in GROUP BY without subquery)

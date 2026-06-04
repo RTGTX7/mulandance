@@ -238,17 +238,17 @@ export default function ArticlesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-5 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">文章管理</h1>
-              <p className="text-sm text-slate-500 mt-1">管理新闻、公告、文章和多语言版本。</p>
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-5 sm:py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">文章管理</h1>
+              <p className="mt-0.5 max-w-[15rem] text-xs leading-5 text-slate-500 sm:max-w-none sm:text-sm">管理新闻、公告、文章和多语言版本。</p>
             </div>
-            <div className="flex items-center gap-2">
-              <BackButton fallbackRoute={`/${locale}/admin/dashboard`} className="shrink-0" />
-              <Button onClick={() => router.push(`/${locale}/admin/editor`)}>
-                <Plus className="h-4 w-4 mr-2" />
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <BackButton fallbackRoute={`/${locale}/admin/dashboard`} className="h-9 shrink-0 px-2 text-xs sm:h-10 sm:px-3 sm:text-sm" />
+              <Button className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm" onClick={() => router.push(`/${locale}/admin/editor`)}>
+                <Plus className="mr-1.5 h-4 w-4 sm:mr-2" />
                 新建文章
               </Button>
             </div>
@@ -256,28 +256,28 @@ export default function ArticlesPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-5 py-6 space-y-5">
+      <main className="mx-auto max-w-7xl space-y-4 px-4 py-4 sm:px-5 sm:space-y-5 sm:py-6">
         {error && (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        <section className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_140px_160px_160px_120px]">
-            <div className="relative">
+        <section className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm sm:p-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-[1fr_140px_160px_160px_120px]">
+            <div className="relative col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="按标题、摘要或 slug 搜索..."
-                className="pl-9 bg-slate-50"
+                className="h-9 bg-slate-50 pl-9 text-sm sm:h-10"
               />
             </div>
             <select
               value={year}
               onChange={(event) => setYear(event.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
               <option value="all">全部年份</option>
               {years.map((item) => (
@@ -289,7 +289,7 @@ export default function ArticlesPage() {
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value as StatusFilter)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
               <option value="all">全部状态</option>
               <option value="published">有已发布版本</option>
@@ -299,7 +299,7 @@ export default function ArticlesPage() {
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as SortOrder)}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
               <option value="newest">最新优先</option>
               <option value="oldest">最旧优先</option>
@@ -307,7 +307,7 @@ export default function ArticlesPage() {
             <select
               value={showCount}
               onChange={(event) => setShowCount(Number(event.target.value))}
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
               {showOptions.map((item) => (
                 <option key={item} value={item}>
@@ -318,7 +318,7 @@ export default function ArticlesPage() {
           </div>
         </section>
 
-        <div className="flex items-center justify-between text-sm text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 sm:text-sm">
           <span>显示 {visibleGroups.length} / 共 {filtered.length} 篇文章</span>
           <span className="inline-flex items-center gap-1">
             <Languages className="h-4 w-4" />
@@ -362,11 +362,11 @@ export default function ArticlesPage() {
                   key={group.id}
                   className="bg-white border border-slate-200 rounded-md shadow-sm hover:border-slate-300 transition-colors"
                 >
-                  <div className="grid grid-cols-1 gap-2 p-3 lg:grid-cols-[minmax(260px,1fr)_minmax(260px,360px)_170px] lg:items-center">
+                  <div className="grid grid-cols-1 gap-2 p-3 sm:gap-3 lg:grid-cols-[minmax(260px,1fr)_minmax(260px,360px)_170px] lg:items-center">
                     <div className="min-w-0">
                       <div className="flex min-w-0 items-center gap-2">
                         <span className={`h-2 w-2 shrink-0 rounded-full ${hasPublished ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                        <h2 className="truncate text-sm font-semibold text-slate-950">
+                        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold leading-5 text-slate-950 sm:text-base">
                           {primary?.title || group.shared_slug}
                         </h2>
                         {missing.length > 0 && (
@@ -375,7 +375,7 @@ export default function ArticlesPage() {
                           </Badge>
                         )}
                       </div>
-                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-slate-500">
                         <span className="inline-flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
                           {latest}
@@ -410,7 +410,7 @@ export default function ArticlesPage() {
                       })}
                     </div>
 
-                    <div className="flex items-center gap-1 lg:justify-end">
+                    <div className="flex items-center gap-1 pt-0.5 lg:justify-end lg:pt-0">
                       <PublishSwitch checked={hasPublished} onCheckedChange={(checked) => updatePublished(group, checked)} />
                       <Button variant="ghost" size="sm" onClick={() => editVersion(group, primary?.locale || 'en')} title="编辑" className="h-7 w-7 p-0">
                         <Edit className="h-3.5 w-3.5" />
