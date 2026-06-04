@@ -276,7 +276,7 @@ def import_url(url: str) -> ImportedSource:
     warnings: list[str] = []
     try:
         html, content_type, final_url = _read_url(url, max_bytes=MAX_HTML_BYTES)
-    except (ValueError, urllib.error.URLError) as exc:
+    except (ValueError, urllib.error.URLError, TimeoutError, socket.timeout, OSError) as exc:
         return ImportedSource(url=url, warnings=[f"Fetch failed: {exc}"])
 
     if content_type and "html" not in content_type:

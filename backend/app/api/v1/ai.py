@@ -60,6 +60,22 @@ def _runtime_ai_config(db: Session) -> AiRuntimeConfig:
     )
 
 
+def _source_has_readable_content(source: ImportedSource) -> bool:
+    return bool(
+        (source.title or "").strip()
+        or (source.description or "").strip()
+        or (source.text or "").strip()
+        or source.media
+        or source.images
+    )
+
+
+def _source_with_manual_text(source: ImportedSource, manual_text: str | None) -> ImportedSource:
+    if _source_has_readable_content(source) or not (manual_text or "").strip():
+        return source
+    return source.model_copy(update={"text": manual_text.strip()})
+
+
 @router.post("/translate", response_model=AiTranslateResponse)
 def translate_content(
     payload: AiTranslateRequest,
@@ -96,7 +112,14 @@ def import_article_urls(
     except AiConfigurationError as exc:
         raise ai_unavailable_exception(exc) from exc
 
-    sources = import_urls(payload.urls)
+    try:
+        sources = import_urls(payload.urls)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not read source URL. If this is a Rednote/Xiaohongshu video post, paste the post text manually. ({exc})",
+        ) from exc
+
     if not sources and payload.manual_text:
         sources = [ImportedSource(url="manual-input", text=payload.manual_text)]
     if not sources:
@@ -105,6 +128,13 @@ def import_article_urls(
     items: list[AiArticleImportItem] = []
     warnings: list[str] = []
     for source in sources:
+        source = _source_with_manual_text(source, payload.manual_text)
+        if not _source_has_readable_content(source):
+            reason = "; ".join(source.warnings or []) or "No readable text, image, or metadata was found."
+            warnings.append(
+                f"{source.url}: {reason} For Rednote/Xiaohongshu video posts, paste the caption or event details into the manual text box."
+            )
+            continue
         try:
             generated = generate_imported_content(
                 source=source,
@@ -134,5 +164,11 @@ def import_article_urls(
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
         except Exception as exc:
             warnings.append(f"{source.url}: {exc}")
+
+    if not items:
+        detail = "AI could not generate a draft from the provided source."
+        if warnings:
+            detail = f"{detail} {' '.join(warnings)}"
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
     return AiArticleImportResponse(items=items, warnings=warnings)
