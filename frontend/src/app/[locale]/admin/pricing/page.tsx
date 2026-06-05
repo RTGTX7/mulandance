@@ -46,6 +46,7 @@ type ProgramPricingContent = {
     column1Label: string;
     column2Label: string;
     column3Label: string;
+    paymentColumnsPerRow?: string;
   };
   items: ProgramPricingItem[];
   infoCards: InfoCard[];
@@ -105,6 +106,7 @@ const defaultProgramContent: Record<ContentLocale, ProgramPricingContent> = {
       column1Label: '课时单价',
       column2Label: '总价',
       column3Label: '有效期 / 付款说明',
+      paymentColumnsPerRow: '2',
     },
     items: defaultProgramItems,
     infoCards: [
@@ -126,6 +128,7 @@ const defaultProgramContent: Record<ContentLocale, ProgramPricingContent> = {
       column1Label: 'Unit Price',
       column2Label: 'Total Price',
       column3Label: 'Validity / Notes',
+      paymentColumnsPerRow: '2',
     },
     items: defaultProgramItems,
     infoCards: [
@@ -147,6 +150,7 @@ const defaultProgramContent: Record<ContentLocale, ProgramPricingContent> = {
       column1Label: 'Prix unitaire',
       column2Label: 'Prix total',
       column3Label: 'Validite / Notes',
+      paymentColumnsPerRow: '2',
     },
     items: defaultProgramItems,
     infoCards: [
@@ -248,6 +252,7 @@ function parseProgramContent(value: string | undefined, locale: ContentLocale): 
         column1Label: String(parsed.table?.column1Label || parsed.monthlyLabel || defaultProgramContent[locale].table.column1Label),
         column2Label: String(parsed.table?.column2Label || parsed.termLabel || defaultProgramContent[locale].table.column2Label),
         column3Label: String(parsed.table?.column3Label || parsed.durationLabel || defaultProgramContent[locale].table.column3Label),
+        paymentColumnsPerRow: String(parsed.table?.paymentColumnsPerRow || defaultProgramContent[locale].table.paymentColumnsPerRow || '2'),
       },
       items: parseProgramItems(parsed.items),
       infoCards: Array.isArray(parsed.infoCards) ? parsed.infoCards.map((item: InfoCard) => ({ title: String(item.title || ''), body: String(item.body || '') })) : defaultProgramContent[locale].infoCards,
@@ -287,6 +292,10 @@ function stringify(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
+function resizeWithFallback<T>(source: T[], targetSize: number, createItem: (index: number) => T) {
+  return Array.from({ length: targetSize }, (_, index) => source[index] ?? createItem(index));
+}
+
 function programItemsText(content: ProgramPricingContent) {
   return content.items.map((item) => `${item.program} | ${item.column3Value}`).join('\n');
 }
@@ -308,7 +317,14 @@ function applyProgramItemsText(content: ProgramPricingContent, text?: string): P
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   return {
     ...content,
-    items: content.items.map((item, index) => {
+    items: resizeWithFallback(content.items, Math.max(content.items.length, lines.length), () => ({
+      program: '',
+      column1Currency: '$',
+      column1Value: '',
+      column2Currency: '$',
+      column2Value: '',
+      column3Value: '',
+    })).map((item, index) => {
       const parts = (lines[index] || '').split('|').map((part) => part.trim());
       return {
         ...item,
@@ -324,7 +340,10 @@ function applyInfoCardsText(content: ProgramPricingContent, text?: string): Prog
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   return {
     ...content,
-    infoCards: content.infoCards.map((card, index) => {
+    infoCards: resizeWithFallback(content.infoCards, Math.max(content.infoCards.length, lines.length), () => ({
+      title: '',
+      body: '',
+    })).map((card, index) => {
       const [title, body] = (lines[index] || '').split('::').map((part) => part.trim());
       return {
         ...card,
@@ -342,7 +361,10 @@ function applyPaymentColumnsText(content: ProgramPricingContent, text?: string):
     ...content,
     payment: {
       ...content.payment,
-      columns: content.payment.columns.map((column, index) => {
+      columns: resizeWithFallback(content.payment.columns, Math.max(content.payment.columns.length, lines.length), () => ({
+        title: '',
+        items: [],
+      })).map((column, index) => {
         const [title, items] = (lines[index] || '').split('::').map((part) => part.trim());
         return {
           ...column,
@@ -359,7 +381,19 @@ function applyRentalItemsText(content: ClassroomPricingContent, text?: string): 
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   return {
     ...content,
-    items: content.items.map((item, index) => {
+    items: resizeWithFallback(content.items, Math.max(content.items.length, lines.length), (): ClassroomPricingItem => ({
+      key: 'large',
+      image_url: '',
+      hourlyCurrency: '$',
+      hourlyPrice: '',
+      hourlyTime: '',
+      halfDayCurrency: '$',
+      halfDayPrice: '',
+      halfDayTime: '',
+      fullDayCurrency: '$',
+      fullDayPrice: '',
+      fullDayTime: '',
+    })).map((item, index) => {
       const [, hourlyTime, halfDayTime, fullDayTime] = (lines[index] || '').split('|').map((part) => part.trim());
       return {
         ...item,
@@ -747,10 +781,16 @@ export default function AdminPricingPage() {
                     <CardTitle>Program Pricing Page Blocks</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">Controls the three info cards and payment options below the program price table.</p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, infoCards: [...content.infoCards, { title: '', body: '' }] }))}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Card
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, infoCards: [...content.infoCards, { title: '', body: '' }] }))}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Card
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, columns: [...content.payment.columns, { title: '', items: [] }] } }))}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Payment Card
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <div className="grid gap-3 lg:grid-cols-3">
@@ -769,11 +809,47 @@ export default function AdminPricingPage() {
                     <span className="text-sm font-medium">Payment section title</span>
                     <Input value={currentProgram.payment.title} onChange={(event) => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, title: event.target.value } }))} />
                   </label>
+                  <label className="block max-w-[220px] space-y-1">
+                    <span className="text-sm font-medium">Payment cards per row</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="4"
+                      value={currentProgram.table.paymentColumnsPerRow || '2'}
+                      onChange={(event) =>
+                        updateProgramContent((content) => ({
+                          ...content,
+                          table: {
+                            ...content.table,
+                            paymentColumnsPerRow: event.target.value || '2',
+                          },
+                        }))
+                      }
+                    />
+                  </label>
                   <div className="grid gap-3 lg:grid-cols-2">
                     {currentProgram.payment.columns.map((column, index) => (
                       <div key={`${contentLocale}-payment-${index}`} className="space-y-2 rounded-md border p-3">
                         <Input value={column.title} onChange={(event) => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, columns: content.payment.columns.map((item, itemIndex) => (itemIndex === index ? { ...item, title: event.target.value } : item)) } }))} placeholder="Column title" />
                         <Textarea value={column.items.join('\n')} onChange={(event) => updateProgramContent((content) => ({ ...content, payment: { ...content.payment, columns: content.payment.columns.map((item, itemIndex) => (itemIndex === index ? { ...item, items: event.target.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) } : item)) } }))} placeholder="One item per line" />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600"
+                          onClick={() =>
+                            updateProgramContent((content) => ({
+                              ...content,
+                              payment: {
+                                ...content.payment,
+                                columns: content.payment.columns.filter((_, itemIndex) => itemIndex !== index),
+                              },
+                            }))
+                          }
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
                       </div>
                     ))}
                   </div>
