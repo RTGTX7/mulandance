@@ -85,6 +85,23 @@ class ArticleGroupResponse(BaseModel):
         from_attributes = True
 
 
+class ArticleGroupListResponse(BaseModel):
+    items: List[ArticleGroupResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class BulkArticleStatusUpdateRequest(BaseModel):
+    slugs: List[str]
+    is_published: bool
+
+
+class BulkArticleStatusUpdateResponse(BaseModel):
+    updated: int
+    items: List[ArticleGroupResponse]
+
+
 class ArticleTranslationCreate(BaseModel):
     """Create a new article group with one translation."""
     slug: str  # shared slug (also used as base for locale slugs)

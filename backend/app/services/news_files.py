@@ -3,8 +3,9 @@ import re
 import uuid
 import html as html_lib
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 import frontmatter
 import mistune
@@ -131,6 +132,43 @@ def _select_translation(
                 return item
 
     return candidates[0]
+
+
+def normalize_source_url(url: str) -> str:
+    text = (url or "").strip()
+    if not text:
+        return ""
+
+    parts = urlsplit(text)
+    scheme = (parts.scheme or "https").lower()
+    netloc = parts.netloc.lower()
+    path = re.sub(r"/{2,}", "/", parts.path or "/").rstrip("/") or "/"
+
+    filtered_query = []
+    for key, value in parse_qsl(parts.query, keep_blank_values=False):
+        lowered = key.lower()
+        if lowered.startswith("utm_") or lowered in {
+            "fbclid",
+            "gclid",
+            "igshid",
+            "si",
+            "spm",
+            "mibextid",
+            "_r",
+            "_t",
+        }:
+            continue
+        filtered_query.append((key, value))
+
+    query = urlencode(filtered_query, doseq=True)
+    return urlunsplit((scheme, netloc, path, query, ""))
+
+
+def find_article_group_by_source_url(db: Session, source_url: str) -> Optional[ArticleGroup]:
+    normalized = normalize_source_url(source_url)
+    if not normalized:
+        return None
+    return db.query(ArticleGroup).filter(ArticleGroup.source_url == normalized).first()
 
 
 def _get_news_dir() -> Path:
@@ -428,9 +466,10 @@ def list_article_groups(
     category_slug: Optional[str] = None,
     tag_slug: Optional[str] = None,
     search: Optional[str] = None,
+    status: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-) -> List[Dict[str, Any]]:
+) -> Tuple[List[Dict[str, Any]], int]:
     """List article groups (shows one row per group in admin)."""
     query = db.query(ArticleGroup)
 
@@ -464,6 +503,36 @@ def list_article_groups(
             | ArticleGroup.id.in_(subq)
         )
 
+    normalized_status = (status or "").strip().lower()
+    if normalized_status == "published":
+        published_groups = (
+            db.query(ArticleTranslation.group_id)
+            .filter(ArticleTranslation.is_published.is_(True))
+            .distinct()
+            .subquery()
+        )
+        query = query.filter(ArticleGroup.id.in_(published_groups))
+    elif normalized_status == "draft":
+        draft_groups = (
+            db.query(ArticleTranslation.group_id)
+            .group_by(ArticleTranslation.group_id)
+            .having(func.max(case((ArticleTranslation.is_published.is_(True), 1), else_=0)) == 0)
+            .subquery()
+        )
+        query = query.filter(ArticleGroup.id.in_(draft_groups))
+    elif normalized_status == "missing":
+        locale_counts = (
+            db.query(
+                ArticleTranslation.group_id,
+                func.count(func.distinct(ArticleTranslation.locale)).label("locale_count"),
+            )
+            .group_by(ArticleTranslation.group_id)
+            .subquery()
+        )
+        query = query.outerjoin(locale_counts, ArticleGroup.id == locale_counts.c.group_id).filter(
+            func.coalesce(locale_counts.c.locale_count, 0) < 3
+        )
+
     # Get latest published_at per group for sorting
     # (can't reference ArticleTranslation directly in GROUP BY without subquery)
     subq = (
@@ -475,11 +544,12 @@ def list_article_groups(
         .group_by(ArticleTranslation.group_id)
         .subquery()
     )
-    query = query.outerjoin(subq, ArticleGroup.id == subq.c.group_id).order_by(
+    query = query.outerjoin(subq, ArticleGroup.id == subq.c.group_id).distinct(ArticleGroup.id).order_by(
         case((subq.c.latest_published.isnot(None), subq.c.latest_published), else_=ArticleGroup.created_at).desc()
     )
 
-    # Limit with offset on group query
+    total = query.order_by(None).count()
+
     groups = query.limit(limit).offset(offset).all()
 
     result = []
@@ -506,7 +576,36 @@ def list_article_groups(
 
         result.append(group_data)
 
-    return result
+    return result, total
+
+
+def bulk_toggle_publish(db: Session, slugs: List[str], published: bool) -> List[Dict[str, Any]]:
+    updated: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for slug in slugs:
+        normalized = (slug or "").strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        result = toggle_publish(db, normalized, published)
+        if result:
+            group = get_article_group_by_slug(db, normalized)
+            if group:
+                updated.append(group)
+    return updated
+
+
+def bulk_delete_article_groups(db: Session, slugs: List[str]) -> int:
+    deleted = 0
+    seen: set[str] = set()
+    for slug in slugs:
+        normalized = (slug or "").strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        if delete_article_group(db, normalized):
+            deleted += 1
+    return deleted
 
 
 def get_article_group_by_slug(db: Session, slug: str) -> Optional[Dict[str, Any]]:
@@ -866,7 +965,15 @@ def list_articles(
     """
     if settings.USE_FILE_STORAGE:
         # New group-based system
-        groups = list_article_groups(db, published_only, category_slug, tag_slug, search, limit, offset)
+        groups, _total = list_article_groups(
+            db,
+            published_only=published_only,
+            category_slug=category_slug,
+            tag_slug=tag_slug,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
         if locale:
             result = []
             for group in groups:

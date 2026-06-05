@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { performanceApi, type PerformanceItem } from '@/lib/api';
 import { AnimatedLineHeading, RevealOnScroll } from '@/components/motion/ScrollEffects';
+import { parseStableDateTime, stableDateKey } from '@/lib/utils';
 
 interface Event {
   id: string;
@@ -133,6 +134,12 @@ export function EventCards() {
                               <span className="truncate">{event.time}</span>
                             </span>
                           )}
+                          {event.location && (
+                            <span className="inline-flex min-w-0 items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5 shrink-0 text-secondary" />
+                              <span className="truncate">{event.location}</span>
+                            </span>
+                          )}
                         </div>
                         <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-secondary">
                           {event.title}
@@ -180,6 +187,12 @@ export function EventCards() {
                           <Clock className="h-4 w-4 shrink-0 text-secondary" />
                           {event.time}
                         </span>
+                        {event.location && (
+                          <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4 shrink-0 text-secondary" />
+                            <span className="truncate">{event.location}</span>
+                          </span>
+                        )}
                       </div>
                       <h3 className="mt-3 line-clamp-3 min-h-[4.8rem] text-[1.18rem] font-bold leading-snug text-slate-950 transition-colors group-hover:text-secondary">
                         {event.title}
@@ -197,8 +210,8 @@ export function EventCards() {
 }
 
 function performanceToEvent(item: PerformanceItem): Event {
-  const start = new Date(item.start_date);
-  const end = new Date(item.end_date);
+  const start = parseStableDateTime(item.start_date);
+  const end = parseStableDateTime(item.end_date);
   const allDay = start.getHours() === 0 && start.getMinutes() === 0
     && end.getHours() === 0 && end.getMinutes() === 0;
 
@@ -206,7 +219,7 @@ function performanceToEvent(item: PerformanceItem): Event {
     id: item.id,
     title: item.title,
     description: item.description || '',
-    date: start.toISOString().slice(0, 10),
+    date: stableDateKey(item.start_date),
     time: allDay ? 'All day' : start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     location: item.venue || '',
     type: 'performance',
@@ -218,7 +231,7 @@ function performanceToEvent(item: PerformanceItem): Event {
 }
 
 function formatShortDate(date: string, locale: string) {
-  const parsed = new Date(date);
+  const parsed = parseStableDateTime(date);
   if (Number.isNaN(parsed.getTime())) return date;
 
   return new Intl.DateTimeFormat(locale, {
@@ -232,8 +245,8 @@ function eventTypeLabel(type: Event['type'], t: ReturnType<typeof useTranslation
 }
 
 function eventStatus(event: Event, now: number) {
-  const start = event.startDateTime ? new Date(event.startDateTime).getTime() : new Date(`${event.date}T${normalizeTime(event.time)}`).getTime();
-  const end = event.endDateTime ? new Date(event.endDateTime).getTime() : endOfEventTime(event);
+  const start = event.startDateTime ? parseStableDateTime(event.startDateTime).getTime() : parseStableDateTime(`${event.date}T${normalizeTime(event.time)}`).getTime();
+  const end = event.endDateTime ? parseStableDateTime(event.endDateTime).getTime() : endOfEventTime(event);
   if (Number.isNaN(start)) return 'future';
   if (start <= now && end >= now) return 'current';
   if (end < now) return 'past';
@@ -263,13 +276,13 @@ function eventStatusImageClass(event: Event, now: number) {
 
 function normalizeTime(time: string) {
   if (!time || time.toLowerCase() === 'all day') return '00:00';
-  const parsed = new Date(`2000-01-01 ${time}`);
+  const parsed = parseStableDateTime(`2000-01-01 ${time}`);
   if (Number.isNaN(parsed.getTime())) return '00:00';
   return parsed.toTimeString().slice(0, 5);
 }
 
 function endOfEventTime(event: Event) {
-  const base = new Date(`${event.date}T${normalizeTime(event.time)}`);
+  const base = parseStableDateTime(`${event.date}T${normalizeTime(event.time)}`);
   if (Number.isNaN(base.getTime())) return 0;
   const end = new Date(base);
   end.setHours(end.getHours() + 2);

@@ -15,6 +15,9 @@ from app.schemas.news import (
     NewsArticleUpdate,
     ArticleWithRelations,
     ArticleWithHtml,
+    ArticleGroupListResponse,
+    BulkArticleStatusUpdateRequest,
+    BulkArticleStatusUpdateResponse,
     NewsCategoryCreate,
     NewsCategoryUpdate,
     NewsCategoryResponse,
@@ -102,26 +105,29 @@ def list_admin_news(
     return articles
 
 
-@router.get("/admin/groups")
+@router.get("/admin/groups", response_model=ArticleGroupListResponse)
 def list_admin_article_groups(
     category: Optional[str] = None,
     tag: Optional[str] = None,
     search: Optional[str] = None,
+    status: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
     user: User = Depends(_require_admin_or_write),
     db: Session = Depends(get_db),
 ):
     """Admin-only grouped list: one row per article with all locale versions."""
-    return news_files.list_article_groups(
+    items, total = news_files.list_article_groups(
         db,
         published_only=False,
         category_slug=category,
         tag_slug=tag,
         search=search,
+        status=status,
         limit=limit,
         offset=offset,
     )
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @router.get("", response_model=list[ArticleWithRelations])
@@ -293,6 +299,40 @@ def toggle_article_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update status: {str(e)}",
+        )
+
+
+@router.post("/admin/groups/bulk-status", response_model=BulkArticleStatusUpdateResponse)
+def bulk_toggle_article_status(
+    status_data: BulkArticleStatusUpdateRequest,
+    user: User = Depends(_require_admin_or_write),
+    db: Session = Depends(get_db),
+):
+    try:
+        items = news_files.bulk_toggle_publish(db, status_data.slugs, status_data.is_published)
+        return {"updated": len(items), "items": items}
+    except Exception as e:
+        logger.error("Error bulk updating article status: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update articles: {str(e)}",
+        )
+
+
+@router.post("/admin/groups/bulk-delete")
+def bulk_delete_article_groups(
+    status_data: BulkArticleStatusUpdateRequest,
+    user: User = Depends(_require_admin_or_write),
+    db: Session = Depends(get_db),
+):
+    try:
+        deleted = news_files.bulk_delete_article_groups(db, status_data.slugs)
+        return {"deleted": deleted}
+    except Exception as e:
+        logger.error("Error bulk deleting articles: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete articles: {str(e)}",
         )
 
 

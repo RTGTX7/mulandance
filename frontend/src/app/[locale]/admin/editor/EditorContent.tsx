@@ -484,8 +484,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
   const loadArticleGroup = async (sharedSlug: string) => {
     try {
-      const groups = await newsApi.adminGroups({ search: sharedSlug, limit: 20 });
-      const found = groups.find((group) => group.shared_slug === sharedSlug);
+      const response = await newsApi.adminGroups({ search: sharedSlug, limit: 20 });
+      const found = response.items.find((group) => group.shared_slug === sharedSlug);
       setArticleGroup(found || null);
     } catch {
       setArticleGroup(null);

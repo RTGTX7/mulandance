@@ -9,6 +9,7 @@ import { useTranslations } from '@/components/ui/i18n-client';
 import { newsApi, performanceApi, type NewsArticle, type PerformanceItem } from '@/lib/api';
 import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
 import { ArrowRight, CalendarDays, Clock, FileText, MapPin, Newspaper } from 'lucide-react';
+import { parseStableDateTime, stableDateKey } from '@/lib/utils';
 
 type TimelineType = 'performance' | 'competition' | 'camp' | 'event' | 'other';
 
@@ -36,8 +37,8 @@ function typeClass(type: TimelineType) {
 }
 
 function timelineStatus(item: PerformanceItem, now: number) {
-  const start = new Date(item.start_date).getTime();
-  const end = new Date(item.end_date).getTime();
+  const start = parseStableDateTime(item.start_date).getTime();
+  const end = parseStableDateTime(item.end_date).getTime();
   if (end < now) return 'past';
   if (start <= now && end >= now) return 'current';
   return 'future';
@@ -76,17 +77,17 @@ export default function PerformancesPage() {
 
   const now = Date.now();
   const sorted = useMemo(() => {
-    return [...performances].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+    return [...performances].sort((a, b) => parseStableDateTime(a.start_date).getTime() - parseStableDateTime(b.start_date).getTime());
   }, [performances]);
 
-  const futureOrCurrent = sorted.filter((item) => new Date(item.end_date).getTime() >= now);
+  const futureOrCurrent = sorted.filter((item) => parseStableDateTime(item.end_date).getTime() >= now);
   const past = [...sorted]
-    .filter((item) => new Date(item.end_date).getTime() < now)
-    .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    .filter((item) => parseStableDateTime(item.end_date).getTime() < now)
+    .sort((a, b) => parseStableDateTime(b.start_date).getTime() - parseStableDateTime(a.start_date).getTime());
   const timeline = [...futureOrCurrent, ...past];
 
   function dateText(item: PerformanceItem) {
-    return new Date(item.start_date).toLocaleDateString(dateLocale, {
+    return parseStableDateTime(item.start_date).toLocaleDateString(dateLocale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -94,13 +95,13 @@ export default function PerformancesPage() {
   }
 
   function timeText(item: PerformanceItem) {
-    const start = new Date(item.start_date);
-    const end = new Date(item.end_date);
+    const start = parseStableDateTime(item.start_date);
+    const end = parseStableDateTime(item.end_date);
     return `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
   function dateParts(item: PerformanceItem) {
-    const date = new Date(item.start_date);
+    const date = parseStableDateTime(stableDateKey(item.start_date));
     const isChinese = locale === 'zh' || locale === 'zh-Hant';
     return {
       month: date.toLocaleDateString(dateLocale, { month: 'short' }),
@@ -152,7 +153,7 @@ export default function PerformancesPage() {
                       {timeline.map((item, index) => {
                         const type = getTimelineType(item);
                         const parts = dateParts(item);
-                        const isArchive = new Date(item.end_date).getTime() < now;
+                        const isArchive = parseStableDateTime(item.end_date).getTime() < now;
                         const status = timelineStatus(item, now);
                         return (
                           <Link

@@ -106,6 +106,34 @@ def _migrate_article_groups_if_needed():
             pass
 
 
+def _ensure_article_group_source_url_column():
+    """Add article_groups.source_url for imported-article deduplication when missing."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        exists = conn.execute(text(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='article_groups'"
+        )).fetchone()
+        if not exists:
+            return
+
+        columns = [row[1] for row in conn.execute(text("PRAGMA table_info(article_groups)")).fetchall()]
+        if "source_url" not in columns:
+            logger.warning("Adding missing article_groups.source_url column...")
+            conn.execute(text("ALTER TABLE article_groups ADD COLUMN source_url TEXT"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_article_groups_source_url ON article_groups(source_url)"))
+            conn.commit()
+            logger.info("article_groups.source_url column added.")
+    except Exception as e:
+        logger.error(f"Failed ensuring article_groups.source_url column: {e}")
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 def _run_article_migration():
     """Migrate articles from news_articles to article_groups + article_translations.
     
@@ -796,6 +824,7 @@ async def startup_event():
     _seed_news_taxonomy_if_needed()
     _seed_course_schedule_if_needed()
     _migrate_article_groups_if_needed()
+    _ensure_article_group_source_url_column()
     
     logger.info("Startup complete.")
 

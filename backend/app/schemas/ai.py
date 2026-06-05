@@ -155,6 +155,13 @@ class AiArticleImportResponse(BaseModel):
     warnings: list[str] = []
 
 
+class AiArticleImportJobEntry(BaseModel):
+    url: str
+    status: str
+    message: str = ""
+    saved_slug: str = ""
+
+
 class AiArticleImportJobCreateResponse(BaseModel):
     job_id: str
     status: str = "pending"
@@ -172,3 +179,4 @@ class AiArticleImportJobStatusResponse(BaseModel):
     errors: list[str] = Field(default_factory=list)
     saved: int = 0
     saved_slugs: list[str] = Field(default_factory=list)
+    entries: list[AiArticleImportJobEntry] = Field(default_factory=list)

@@ -161,8 +161,8 @@ export function HeroCarousel() {
         <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/18 via-black/5 to-transparent md:h-48" />
 
         <div className="relative z-10 flex h-full items-center justify-center px-4 pb-24 pt-10 text-center text-white md:px-6 md:pb-20 md:pt-6">
-          <div className="hero-copy-glass w-full max-w-3xl rounded-2xl bg-white/[0.018] px-5 py-6 shadow-[0_24px_82px_rgba(20,8,45,0.13)] backdrop-blur-xl md:rounded-3xl md:px-10 md:py-8">
-            <span className="hero-kicker mb-4 inline-flex items-center gap-2 rounded-2xl bg-white/14 px-4 py-2 text-xs font-semibold tracking-normal backdrop-blur-xl md:mb-6 md:rounded-lg md:px-3 md:py-1.5 md:text-xs">
+          <div className="hero-copy-glass w-full max-w-3xl rounded-2xl bg-white/[0.01] px-5 py-6 shadow-[0_22px_72px_rgba(20,8,45,0.1)] backdrop-blur-lg md:rounded-3xl md:px-10 md:py-8">
+            <span className="hero-kicker mb-4 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2 text-xs font-semibold tracking-normal backdrop-blur-lg md:mb-6 md:rounded-lg md:px-3 md:py-1.5 md:text-xs">
               {slide.badge || t('common.appName')}
             </span>
             <h1 className="hero-draw-title heading-xl mx-auto mb-4 max-w-[12ch] text-balance text-white md:mb-4 md:max-w-none">

@@ -82,15 +82,15 @@ export default function DashboardPage() {
       return;
     }
     newsApi.adminGroups({ limit: 100 })
-      .then((groups) => {
+      .then((response) => {
         Promise.all([
           newsApi.categories().catch(() => []),
           newsApi.tags().catch(() => []),
         ]).then(([cats, tags]) => {
-          const articleList = dedupeArticleGroups(groups as NewsArticleGroup[]);
+          const articleList = dedupeArticleGroups(response.items);
           setArticleGroups(articleList);
           setStats({
-            total: articleList.length,
+            total: response.total,
             published: articleList.filter((group) => group.translations.some((item) => item.is_published)).length,
             drafts: articleList.filter((group) => group.translations.some((item) => !item.is_published)).length,
             categories: Array.isArray(cats) ? cats.length : 0,

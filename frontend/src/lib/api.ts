@@ -247,6 +247,13 @@ export interface NewsArticleGroup {
   updated_at?: string;
 }
 
+export interface NewsArticleGroupListResponse {
+  items: NewsArticleGroup[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface ArticleCreateBody {
   title: string;
   slug: string;
@@ -363,6 +370,13 @@ export interface AiArticleImportResponse {
   warnings?: string[];
 }
 
+export interface AiArticleImportJobEntry {
+  url: string;
+  status: 'saved' | 'generated' | 'duplicate' | 'invalid' | 'failed';
+  message?: string;
+  saved_slug?: string;
+}
+
 export interface AiArticleImportJobCreateResponse {
   job_id: string;
   status: 'pending' | 'running' | 'succeeded' | 'failed';
@@ -380,6 +394,7 @@ export interface AiArticleImportJobStatusResponse {
   errors?: string[];
   saved?: number;
   saved_slugs?: string[];
+  entries?: AiArticleImportJobEntry[];
 }
 
 export interface PerformanceItem {
@@ -458,6 +473,7 @@ export const newsApi = {
     category?: string;
     tag?: string;
     search?: string;
+    status?: 'all' | 'published' | 'draft' | 'missing';
     limit?: number;
     offset?: number;
   }) => {
@@ -465,10 +481,11 @@ export const newsApi = {
     if (params?.category) query.set('category', params.category);
     if (params?.tag) query.set('tag', params.tag);
     if (params?.search) query.set('search', params.search);
+    if (params?.status && params.status !== 'all') query.set('status', params.status);
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.offset) query.set('offset', String(params.offset));
     const qs = query.toString();
-    return api.get<NewsArticleGroup[]>(`/v1/news/admin/groups${qs ? '?' + qs : ''}`);
+    return api.get<NewsArticleGroupListResponse>(`/v1/news/admin/groups${qs ? '?' + qs : ''}`);
   },
 
   get: (slug: string, locale?: string) =>
@@ -514,6 +531,18 @@ export const newsApi = {
   // Toggle publish status (hide/unpublish or publish)
   togglePublish: (slug: string, published: boolean) =>
     api.put<NewsArticle>(`/v1/news/${slug}/status`, { is_published: published }),
+
+  bulkTogglePublish: (slugs: string[], published: boolean) =>
+    api.post<{ updated: number; items: NewsArticleGroup[] }>('/v1/news/admin/groups/bulk-status', {
+      slugs,
+      is_published: published,
+    }),
+
+  bulkDelete: (slugs: string[]) =>
+    api.post<{ deleted: number }>('/v1/news/admin/groups/bulk-delete', {
+      slugs,
+      is_published: false,
+    }),
 };
 
 function wait(ms: number) {

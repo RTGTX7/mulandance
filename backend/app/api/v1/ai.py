@@ -9,12 +9,13 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal, get_db
 from app.core.security import decode_token
-from app.models import User
+from app.models import User, ArticleGroup
 from app.core.config import settings as app_settings
 from app.api.v1.settings import _get_or_create_system_settings
 from app.schemas.ai import (
     AiArticleImportAppendRequest,
     AiArticleImportItem,
+    AiArticleImportJobEntry,
     AiArticleImportJobCreateResponse,
     AiArticleImportJobStatusResponse,
     AiArticleImportRequest,
@@ -269,7 +270,8 @@ def _unique_imported_slug(item: AiArticleImportItem, index: int) -> str:
     return re.sub(r"-+", "-", f"{base}-{suffix}-{index + 1}").strip("-")
 
 
-def _save_imported_article_draft(item: AiArticleImportItem, index: int) -> str:
+def _save_imported_article(item: AiArticleImportItem, index: int, publish: bool = False) -> str:
+    source_url = news_files.normalize_source_url(item.source.url)
     slug = _unique_imported_slug(item, index)
     cover = _imported_media_urls(item)[0] if _imported_media_urls(item) else None
     published_at = None
@@ -281,6 +283,10 @@ def _save_imported_article_draft(item: AiArticleImportItem, index: int) -> str:
 
     db = SessionLocal()
     try:
+        existing_group = news_files.find_article_group_by_source_url(db, source_url) if source_url and item.source.url != "manual-input" else None
+        if existing_group:
+            return existing_group.shared_slug
+
         for draft in item.drafts:
             title = draft.fields.get("title") or _first_draft_title(item, index)
             article = NewsArticleCreate(
@@ -292,10 +298,15 @@ def _save_imported_article_draft(item: AiArticleImportItem, index: int) -> str:
                 category_slugs=item.suggested_category_slugs,
                 tag_slugs=item.suggested_tag_slugs,
                 locale=draft.locale,
-                is_published=False,
+                is_published=publish,
                 published_at=published_at,
             )
-            news_files.create_article(db, article)
+            created = news_files.create_article(db, article)
+            if source_url and item.source.url != "manual-input" and created.get("group_id"):
+                group = db.query(ArticleGroup).filter(ArticleGroup.id == created["group_id"]).first()
+                if group and not group.source_url:
+                    group.source_url = source_url
+                    db.commit()
         return slug
     finally:
         db.close()
@@ -326,6 +337,7 @@ def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRunt
     result = AiArticleImportResponse(items=[], warnings=[])
     errors: list[str] = []
     saved_slugs: list[str] = []
+    entries: list[dict] = []
     initial_queue = list(payload.urls) if payload.urls else (["manual-input"] if payload.manual_text else [])
     _set_import_job(
         job_id,
@@ -340,6 +352,7 @@ def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRunt
         errors=[],
         saved=0,
         saved_slugs=[],
+        entries=[],
     )
 
     if not initial_queue:
@@ -358,10 +371,77 @@ def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRunt
         _set_import_job(job_id, current_url=url, total=len(queue))
         try:
             source = ImportedSource(url="manual-input", text=payload.manual_text or "") if url == "manual-input" else import_url(url)
+            normalized_source_url = news_files.normalize_source_url(source.url)
+            existing_group = None
+            if normalized_source_url and source.url != "manual-input":
+                lookup_db = SessionLocal()
+                try:
+                    existing_group = news_files.find_article_group_by_source_url(lookup_db, normalized_source_url)
+                finally:
+                    lookup_db.close()
+            if existing_group:
+                entries.append({
+                    "url": url,
+                    "status": "duplicate",
+                    "message": f"Already imported as {existing_group.shared_slug}",
+                    "saved_slug": existing_group.shared_slug,
+                })
+                _set_import_job(
+                    job_id,
+                    result=result,
+                    completed=len(result.items),
+                    failed=len(errors),
+                    error="",
+                    errors=errors,
+                    saved=len(saved_slugs),
+                    saved_slugs=saved_slugs,
+                    entries=entries,
+                )
+                index += 1
+                continue
+
+            if source.url != "manual-input" and not (
+                (source.title or "").strip()
+                or (source.description or "").strip()
+                or (source.text or "").strip()
+                or source.media
+                or source.images
+                or source.is_video
+            ):
+                invalid_message = "; ".join(source.warnings or []) or "No readable content found."
+                errors.append(f"{url}: {invalid_message}")
+                entries.append({
+                    "url": url,
+                    "status": "invalid",
+                    "message": invalid_message,
+                    "saved_slug": "",
+                })
+                _set_import_job(
+                    job_id,
+                    result=result,
+                    completed=len(result.items),
+                    failed=len(errors),
+                    error=invalid_message,
+                    errors=errors,
+                    saved=len(saved_slugs),
+                    saved_slugs=saved_slugs,
+                    entries=entries,
+                )
+                index += 1
+                continue
+
             item = _generate_imported_article_item(source, payload, config)
             result.items.append(item)
+            saved_slug = ""
             if payload.auto_save_to_drafts:
-                saved_slugs.append(_save_imported_article_draft(item, index))
+                saved_slug = _save_imported_article(item, index, publish=True)
+                saved_slugs.append(saved_slug)
+            entries.append({
+                "url": url,
+                "status": "saved" if saved_slug else "generated",
+                "message": "Imported successfully" if saved_slug else "Draft generated",
+                "saved_slug": saved_slug,
+            })
             _set_import_job(
                 job_id,
                 result=result,
@@ -371,9 +451,16 @@ def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRunt
                 errors=errors,
                 saved=len(saved_slugs),
                 saved_slugs=saved_slugs,
+                entries=entries,
             )
         except Exception as exc:
             errors.append(f"{url}: {exc}")
+            entries.append({
+                "url": url,
+                "status": "failed",
+                "message": str(exc),
+                "saved_slug": "",
+            })
             _set_import_job(
                 job_id,
                 result=result,
@@ -383,6 +470,7 @@ def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRunt
                 errors=errors,
                 saved=len(saved_slugs),
                 saved_slugs=saved_slugs,
+                entries=entries,
             )
         index += 1
 
@@ -399,6 +487,7 @@ def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRunt
         errors=errors,
         saved=len(saved_slugs),
         saved_slugs=saved_slugs,
+        entries=entries,
     )
 
 

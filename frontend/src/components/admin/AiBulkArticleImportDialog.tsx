@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import {
   aiApi,
+  type AiArticleImportJobEntry,
   type AiArticleImportJobStatusResponse,
   type NewsCategory,
   type NewsTag,
@@ -64,6 +65,10 @@ const bulkImportText = {
     running: '\u8fd0\u884c',
     completed: '\u5b8c\u6210',
     failed: '\u5931\u8d25',
+    duplicate: '\u91cd\u590d',
+    invalid: '\u65e0\u6548',
+    imported: '\u5df2\u5bfc\u5165',
+    generated: '\u5df2\u751f\u6210',
     noTasks: '\u6682\u65e0\u4efb\u52a1',
     saved: '\u5df2\u4fdd\u5b58',
     current: '\u5f53\u524d',
@@ -95,6 +100,10 @@ const bulkImportText = {
     running: 'Running',
     completed: 'Done',
     failed: 'Failed',
+    duplicate: 'Duplicate',
+    invalid: 'Invalid',
+    imported: 'Imported',
+    generated: 'Generated',
     noTasks: 'No tasks',
     saved: 'Saved',
     current: 'Current',
@@ -126,6 +135,10 @@ const bulkImportText = {
     running: 'En cours',
     completed: 'Terminees',
     failed: 'Echecs',
+    duplicate: 'Doublon',
+    invalid: 'Invalide',
+    imported: 'Importe',
+    generated: 'Genere',
     noTasks: 'Aucune tache',
     saved: 'Enregistres',
     current: 'Actuel',
@@ -171,6 +184,23 @@ function jobProgress(status?: AiArticleImportJobStatusResponse) {
   if (total <= 0) return 0;
   const finished = (status.completed || 0) + (status.failed || 0);
   return Math.min(100, Math.round((finished / total) * 100));
+}
+
+function entryBadge(entry: AiArticleImportJobEntry | undefined, text: (typeof bulkImportText)[keyof typeof bulkImportText]) {
+  switch (entry?.status) {
+    case 'saved':
+      return { label: text.imported, className: 'border-emerald-200 bg-emerald-50 text-emerald-700' };
+    case 'generated':
+      return { label: text.generated, className: 'border-blue-200 bg-blue-50 text-blue-700' };
+    case 'duplicate':
+      return { label: text.duplicate, className: 'border-amber-200 bg-amber-50 text-amber-700' };
+    case 'invalid':
+      return { label: text.invalid, className: 'border-orange-200 bg-orange-50 text-orange-700' };
+    case 'failed':
+      return { label: text.failed, className: 'border-red-200 bg-red-50 text-red-700' };
+    default:
+      return { label: text.running, className: 'border-slate-200 bg-slate-100 text-slate-700' };
+  }
 }
 
 export function AiBulkArticleImportDialog({ locale, categories, tags, onImported }: AiBulkArticleImportDialogProps) {
@@ -474,6 +504,27 @@ export function AiBulkArticleImportDialog({ locale, categories, tags, onImported
                         </p>
                         {status?.current_url && <p className="mt-1 truncate text-xs text-slate-400">{status.current_url}</p>}
                         {status?.error && <p className="mt-1 line-clamp-2 text-xs text-amber-700">{status.error}</p>}
+                        {status?.entries && status.entries.length > 0 && (
+                          <div className="mt-2 space-y-1.5 rounded-md border border-white bg-white/80 p-2">
+                            {status.entries.slice(-6).reverse().map((entry, index) => {
+                              const badge = entryBadge(entry, text);
+                              return (
+                                <div key={`${entry.url}-${index}`} className="rounded-md border border-slate-100 bg-white px-2 py-1.5">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className={`inline-flex rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${badge.className}`}>
+                                      {badge.label}
+                                    </span>
+                                    {entry.saved_slug ? (
+                                      <span className="truncate text-[10px] text-slate-400">{entry.saved_slug}</span>
+                                    ) : null}
+                                  </div>
+                                  <p className="mt-1 truncate text-[11px] text-slate-700">{entry.url}</p>
+                                  {entry.message ? <p className="mt-0.5 line-clamp-2 text-[10px] text-slate-500">{entry.message}</p> : null}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       {!isRunning(status) && (
                         <Button type="button" variant="ghost" size="sm" className="h-7 w-7 shrink-0 p-0" onClick={() => removeJob(job.job_id)}>
