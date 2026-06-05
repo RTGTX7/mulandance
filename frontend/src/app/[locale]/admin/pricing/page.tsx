@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -17,11 +17,11 @@ type ContentLocale = 'zh' | 'en' | 'fr';
 
 type ProgramPricingItem = {
   program: string;
-  monthlyCurrency: string;
-  monthlyPrice: string;
-  termCurrency: string;
-  termPrice: string;
-  hours: string;
+  column1Currency: string;
+  column1Value: string;
+  column2Currency: string;
+  column2Value: string;
+  column3Value: string;
 };
 
 type ClassroomPricingItem = {
@@ -41,6 +41,12 @@ type ClassroomPricingItem = {
 type InfoCard = { title: string; body: string };
 type PaymentColumn = { title: string; items: string[] };
 type ProgramPricingContent = {
+  table: {
+    programLabel: string;
+    column1Label: string;
+    column2Label: string;
+    column3Label: string;
+  };
   items: ProgramPricingItem[];
   infoCards: InfoCard[];
   payment: { title: string; columns: PaymentColumn[] };
@@ -80,13 +86,11 @@ function pageLocale(locale: string) {
 const currencyOptions = ['', '$', 'C$', 'CAD', 'USD', '¥', '€'];
 
 const defaultProgramItems: ProgramPricingItem[] = [
-  { program: 'Young Dancers (Ages 3-5)', monthlyCurrency: '$', monthlyPrice: '120', termCurrency: '$', termPrice: '340', hours: '45 min, 1x/week' },
-  { program: 'Ballet (All Levels)', monthlyCurrency: '$', monthlyPrice: '150', termCurrency: '$', termPrice: '420', hours: '60 min, 1x/week' },
-  { program: 'Contemporary', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
-  { program: 'Chinese Dance', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
-  { program: 'Jazz', monthlyCurrency: '$', monthlyPrice: '140', termCurrency: '$', termPrice: '390', hours: '60 min, 1x/week' },
-  { program: 'Hip-Hop', monthlyCurrency: '$', monthlyPrice: '130', termCurrency: '$', termPrice: '360', hours: '60 min, 1x/week' },
-  { program: 'Multi-Program Discount', monthlyCurrency: '', monthlyPrice: '10% off 2nd program', termCurrency: '', termPrice: '10% off 2nd program', hours: '' },
+  { program: 'Package A / 80 Hours', column1Currency: '$', column1Value: '15', column2Currency: '$', column2Value: '1356', column3Value: 'Valid for 548 days after the first class. 50% deposit, balance due within 1 month of program start.' },
+  { program: 'Package B / 40 Hours', column1Currency: '$', column1Value: '17', column2Currency: '$', column2Value: '768.4', column3Value: 'Valid for 365 days after the first class. 50% deposit, balance due within 2 weeks of program start.' },
+  { program: 'Package C / 16 Hours', column1Currency: '$', column1Value: '20', column2Currency: '$', column2Value: '361.6', column3Value: 'Valid for 182 days after the first class. Full payment required at purchase.' },
+  { program: 'Package D / 120 Hours', column1Currency: '$', column1Value: '14', column2Currency: '$', column2Value: '1898.4', column3Value: 'Valid for 365 days after the first class. 50% deposit, balance due within 1 month of program start.' },
+  { program: 'Single Class', column1Currency: '$', column1Value: '30', column2Currency: '', column2Value: 'Based on duration', column3Value: 'For a 1.5 hour class, charge 45. Longer classes scale by class length.' },
 ];
 
 const defaultClassroomItems: ClassroomPricingItem[] = [
@@ -96,47 +100,65 @@ const defaultClassroomItems: ClassroomPricingItem[] = [
 
 const defaultProgramContent: Record<ContentLocale, ProgramPricingContent> = {
   zh: {
+    table: {
+      programLabel: '课程 / 方案',
+      column1Label: '课时单价',
+      column2Label: '总价',
+      column3Label: '有效期 / 付款说明',
+    },
     items: defaultProgramItems,
     infoCards: [
-      { title: '可申请助学金', body: '我们希望舞蹈学习更容易负担。可通过学生入口申请奖学金项目。' },
-      { title: '兄弟姐妹优惠', body: '第二个孩子可享 10% 优惠，第三个及之后孩子可享 15% 优惠。' },
-      { title: '免费体验课', body: '新学生可免费参加一次课程。请联系我们预约体验。' },
+      { title: '可申请助学支持', body: '我们希望舞蹈学习更容易负担。家长可根据需要联系工作室了解助学支持。' },
+      { title: '课时包更灵活', body: '同一套表格可以用于课时包、学期包、单次课或会员制，后台列头都可以自定义。' },
+      { title: '购课前请确认课长', body: '不同班级单次上课时长可能不同；如果课程为两小时，可按两课时计算。' },
     ],
     payment: {
-      title: '付款方式',
+      title: '付款与使用说明',
       columns: [
         { title: '接受的付款方式', items: ['信用卡 / 借记卡', '银行转账（EFT）', '在线付款入口', '现金或支票（到校）'] },
-        { title: '付款时间', items: ['按月：每月 1 日前支付', '按学期：开课前 2 周支付', '按年：全年预付可享 10% 优惠'] },
+        { title: '使用规则示例', items: ['可以按课时包、次卡、学期包或单次课来定义', '可在每一行写清有效期、分期规则和补费说明', '两小时课程可按 2 课时计算，其他时长也可按比例换算'] },
       ],
     },
   },
   en: {
+    table: {
+      programLabel: 'Program / Plan',
+      column1Label: 'Unit Price',
+      column2Label: 'Total Price',
+      column3Label: 'Validity / Notes',
+    },
     items: defaultProgramItems,
     infoCards: [
-      { title: 'Financial Aid Available', body: 'We believe dance should be accessible. Apply for our scholarship program through the student portal.' },
-      { title: 'Sibling Discount Available', body: '10% off for the second child, 15% off for the third and subsequent children enrolled.' },
-      { title: 'Free Introductory Class', body: 'New students can attend one class free of charge. Contact us to schedule your trial.' },
+      { title: 'Financial Aid Available', body: 'We want dance training to stay accessible. Families can contact the studio to ask about support options.' },
+      { title: 'Flexible Package Design', body: 'The same table can describe hour packages, term bundles, memberships, or single-class pricing, and every column header is editable in admin.' },
+      { title: 'Confirm Class Length', body: 'Class duration may vary by group. A two-hour class can be counted as two class hours when needed.' },
     ],
     payment: {
-      title: 'Payment Options',
+      title: 'Payment & Usage Notes',
       columns: [
         { title: 'Accepted Methods', items: ['Credit/Debit Card', 'Bank Transfer (EFT)', 'Online Payment Portal', 'Cash or Cheque (at studio)'] },
-        { title: 'Payment Schedule', items: ['Monthly: Due on the 1st of each month', 'Per Term: Due 2 weeks before term starts', 'Annual: 10% discount for annual prepayment'] },
+        { title: 'Flexible Setup Examples', items: ['Use the columns for hour packages, session bundles, memberships, or single-class pricing.', 'Write validity windows, installment rules, and class-hour conversion notes in the last column.', 'Rename all table headers in admin so the same layout works for other schools or studios.'] },
       ],
     },
   },
   fr: {
+    table: {
+      programLabel: 'Programme / Forfait',
+      column1Label: 'Prix unitaire',
+      column2Label: 'Prix total',
+      column3Label: 'Validite / Notes',
+    },
     items: defaultProgramItems,
     infoCards: [
-      { title: 'Aide financiere disponible', body: 'Nous voulons rendre la danse accessible. Les familles peuvent demander une aide via le portail etudiant.' },
-      { title: 'Rabais pour fratrie', body: '10 % de rabais pour le deuxieme enfant, 15 % pour le troisieme enfant et les suivants.' },
-      { title: 'Cours d essai gratuit', body: 'Les nouveaux eleves peuvent essayer un cours gratuitement. Contactez-nous pour reserver.' },
+      { title: 'Aide financiere disponible', body: 'Nous voulons garder la danse accessible. Les familles peuvent contacter le studio pour connaitre les aides possibles.' },
+      { title: 'Forfaits flexibles', body: 'Le meme tableau peut presenter des forfaits d heures, des sessions, des abonnements ou des cours a l unite, avec des colonnes entierement modifiables.' },
+      { title: 'Verifier la duree du cours', body: 'La duree varie selon le groupe. Un cours de deux heures peut etre compte comme deux heures de cours si necessaire.' },
     ],
     payment: {
-      title: 'Options de paiement',
+      title: 'Paiement et conditions',
       columns: [
         { title: 'Modes acceptes', items: ['Carte de credit/debit', 'Virement bancaire (EFT)', 'Portail de paiement en ligne', 'Comptant ou cheque au studio'] },
-        { title: 'Calendrier de paiement', items: ['Mensuel : payable le 1er de chaque mois', 'Par session : payable 2 semaines avant le debut', 'Annuel : 10 % de rabais pour paiement annuel'] },
+        { title: 'Exemples de configuration', items: ['Utilisez les colonnes pour des forfaits d heures, des cartes de cours, des abonnements ou des cours a l unite.', 'La derniere colonne peut contenir la validite, les modalites de paiement et les regles de conversion des heures.', 'Les en-tetes du tableau sont modifiables dans l administration pour reutiliser cette page dans d autres structures.'] },
       ],
     },
   },
@@ -183,11 +205,11 @@ function parseProgramItems(items: unknown): ProgramPricingItem[] {
     const term = splitLegacyPrice(item.term);
     return {
       program: String(item.program || ''),
-      monthlyCurrency: String(item.monthlyCurrency ?? monthly.currency),
-      monthlyPrice: String(item.monthlyPrice ?? monthly.price),
-      termCurrency: String(item.termCurrency ?? term.currency),
-      termPrice: String(item.termPrice ?? term.price),
-      hours: String(item.hours || ''),
+      column1Currency: String((item as any).column1Currency ?? (item as any).monthlyCurrency ?? monthly.currency),
+      column1Value: String((item as any).column1Value ?? (item as any).monthlyPrice ?? monthly.price),
+      column2Currency: String((item as any).column2Currency ?? (item as any).termCurrency ?? term.currency),
+      column2Value: String((item as any).column2Value ?? (item as any).termPrice ?? term.price),
+      column3Value: String((item as any).column3Value ?? (item as any).hours ?? ''),
     };
   });
 }
@@ -221,6 +243,12 @@ function parseProgramContent(value: string | undefined, locale: ContentLocale): 
     const parsed = JSON.parse(value);
     if (Array.isArray(parsed)) return { ...defaultProgramContent[locale], items: parseProgramItems(parsed) };
     return {
+      table: {
+        programLabel: String(parsed.table?.programLabel || defaultProgramContent[locale].table.programLabel),
+        column1Label: String(parsed.table?.column1Label || parsed.monthlyLabel || defaultProgramContent[locale].table.column1Label),
+        column2Label: String(parsed.table?.column2Label || parsed.termLabel || defaultProgramContent[locale].table.column2Label),
+        column3Label: String(parsed.table?.column3Label || parsed.durationLabel || defaultProgramContent[locale].table.column3Label),
+      },
       items: parseProgramItems(parsed.items),
       infoCards: Array.isArray(parsed.infoCards) ? parsed.infoCards.map((item: InfoCard) => ({ title: String(item.title || ''), body: String(item.body || '') })) : defaultProgramContent[locale].infoCards,
       payment: {
@@ -260,7 +288,7 @@ function stringify(value: unknown) {
 }
 
 function programItemsText(content: ProgramPricingContent) {
-  return content.items.map((item) => `${item.program} | ${item.hours}`).join('\n');
+  return content.items.map((item) => `${item.program} | ${item.column3Value}`).join('\n');
 }
 
 function infoCardsText(content: ProgramPricingContent) {
@@ -285,7 +313,7 @@ function applyProgramItemsText(content: ProgramPricingContent, text?: string): P
       return {
         ...item,
         program: parts[0] || item.program,
-        hours: parts[1] || item.hours,
+        column3Value: parts[1] || item.column3Value,
       };
     }),
   };
@@ -636,32 +664,50 @@ export default function AdminPricingPage() {
                     <CardTitle>Program Pricing</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">Controls the table on /programs/pricing.</p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, items: [...content.items, { program: '', monthlyCurrency: '$', monthlyPrice: '', termCurrency: '$', termPrice: '', hours: '' }] }))}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => updateProgramContent((content) => ({ ...content, items: [...content.items, { program: '', column1Currency: '$', column1Value: '', column2Currency: '$', column2Value: '', column3Value: '' }] }))}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Program
                   </Button>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-4 grid gap-3 md:grid-cols-4">
+                    <label className="block space-y-1">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground">Program label</span>
+                      <Input value={currentProgram.table.programLabel} onChange={(event) => updateProgramContent((content) => ({ ...content, table: { ...content.table, programLabel: event.target.value } }))} />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground">Column 1 label</span>
+                      <Input value={currentProgram.table.column1Label} onChange={(event) => updateProgramContent((content) => ({ ...content, table: { ...content.table, column1Label: event.target.value } }))} />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground">Column 2 label</span>
+                      <Input value={currentProgram.table.column2Label} onChange={(event) => updateProgramContent((content) => ({ ...content, table: { ...content.table, column2Label: event.target.value } }))} />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs font-semibold uppercase text-muted-foreground">Column 3 label</span>
+                      <Input value={currentProgram.table.column3Label} onChange={(event) => updateProgramContent((content) => ({ ...content, table: { ...content.table, column3Label: event.target.value } }))} />
+                    </label>
+                  </div>
                   <div className="grid gap-3 lg:hidden">
                     {currentProgram.items.map((item, index) => (
                       <div key={`${contentLocale}-mobile-${index}`} className="space-y-3 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
                         <label className="block space-y-1">
-                          <span className="text-xs font-semibold uppercase text-muted-foreground">Program</span>
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">{currentProgram.table.programLabel}</span>
                           <Input value={item.program} onChange={(event) => updateProgramRow(index, 'program', event.target.value)} />
                         </label>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <label className="block space-y-1">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">Monthly</span>
-                            <CurrencyPriceInput currency={item.monthlyCurrency} price={item.monthlyPrice} onCurrencyChange={(value) => updateProgramRow(index, 'monthlyCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'monthlyPrice', value)} />
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">{currentProgram.table.column1Label}</span>
+                            <CurrencyPriceInput currency={item.column1Currency} price={item.column1Value} onCurrencyChange={(value) => updateProgramRow(index, 'column1Currency', value)} onPriceChange={(value) => updateProgramRow(index, 'column1Value', value)} />
                           </label>
                           <label className="block space-y-1">
-                            <span className="text-xs font-semibold uppercase text-muted-foreground">Term</span>
-                            <CurrencyPriceInput currency={item.termCurrency} price={item.termPrice} onCurrencyChange={(value) => updateProgramRow(index, 'termCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'termPrice', value)} />
+                            <span className="text-xs font-semibold uppercase text-muted-foreground">{currentProgram.table.column2Label}</span>
+                            <CurrencyPriceInput currency={item.column2Currency} price={item.column2Value} onCurrencyChange={(value) => updateProgramRow(index, 'column2Currency', value)} onPriceChange={(value) => updateProgramRow(index, 'column2Value', value)} />
                           </label>
                         </div>
                         <label className="block space-y-1">
-                          <span className="text-xs font-semibold uppercase text-muted-foreground">Duration</span>
-                          <Input value={item.hours} onChange={(event) => updateProgramRow(index, 'hours', event.target.value)} />
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">{currentProgram.table.column3Label}</span>
+                          <Input value={item.column3Value} onChange={(event) => updateProgramRow(index, 'column3Value', event.target.value)} />
                         </label>
                         <Button type="button" variant="ghost" size="sm" className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto" onClick={() => updateProgramContent((content) => ({ ...content, items: content.items.filter((_, itemIndex) => itemIndex !== index) }))}>
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -673,18 +719,18 @@ export default function AdminPricingPage() {
                   <div className="hidden overflow-x-auto lg:block">
                     <div className="min-w-[920px] rounded-md border">
                       <div className="grid grid-cols-[2fr_1fr_1fr_1.15fr_44px] gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
-                        <div>Program</div>
-                        <div>Monthly</div>
-                        <div>Term</div>
-                        <div>Duration</div>
+                        <div>{currentProgram.table.programLabel}</div>
+                        <div>{currentProgram.table.column1Label}</div>
+                        <div>{currentProgram.table.column2Label}</div>
+                        <div>{currentProgram.table.column3Label}</div>
                         <div />
                       </div>
                       {currentProgram.items.map((item, index) => (
                         <div key={`${contentLocale}-${index}`} className="grid grid-cols-[2fr_1fr_1fr_1.15fr_44px] gap-2 border-b px-3 py-2 last:border-b-0">
                           <Input value={item.program} onChange={(event) => updateProgramRow(index, 'program', event.target.value)} />
-                          <CurrencyPriceInput currency={item.monthlyCurrency} price={item.monthlyPrice} onCurrencyChange={(value) => updateProgramRow(index, 'monthlyCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'monthlyPrice', value)} />
-                          <CurrencyPriceInput currency={item.termCurrency} price={item.termPrice} onCurrencyChange={(value) => updateProgramRow(index, 'termCurrency', value)} onPriceChange={(value) => updateProgramRow(index, 'termPrice', value)} />
-                          <Input value={item.hours} onChange={(event) => updateProgramRow(index, 'hours', event.target.value)} />
+                          <CurrencyPriceInput currency={item.column1Currency} price={item.column1Value} onCurrencyChange={(value) => updateProgramRow(index, 'column1Currency', value)} onPriceChange={(value) => updateProgramRow(index, 'column1Value', value)} />
+                          <CurrencyPriceInput currency={item.column2Currency} price={item.column2Value} onCurrencyChange={(value) => updateProgramRow(index, 'column2Currency', value)} onPriceChange={(value) => updateProgramRow(index, 'column2Value', value)} />
+                          <Input value={item.column3Value} onChange={(event) => updateProgramRow(index, 'column3Value', event.target.value)} />
                           <Button type="button" variant="ghost" size="icon" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => updateProgramContent((content) => ({ ...content, items: content.items.filter((_, itemIndex) => itemIndex !== index) }))} aria-label="Remove program pricing row">
                             <Trash2 className="h-4 w-4" />
                           </Button>

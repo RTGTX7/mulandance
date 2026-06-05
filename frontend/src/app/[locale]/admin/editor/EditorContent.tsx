@@ -9,6 +9,7 @@ import {
   performanceApi,
   uploadApi,
   type AiArticleImportItem,
+  type AiArticleImportJobEntry,
   type AiDraft,
   type NewsArticleGroup,
   type PerformanceBody,
@@ -130,6 +131,11 @@ export interface ArticleData {
   published_at?: string;
 }
 
+type FailedAiImportEntry = {
+  url: string;
+  message: string;
+};
+
 const SUPPORTED_LOCALES = [
   { code: "zh", label: "中文", name: "简体中文" },
   { code: "en", label: "EN", name: "English" },
@@ -172,6 +178,10 @@ const editorAiText = {
     translationFailed: "AI \u7ffb\u8bd1\u5931\u8d25",
     importFailed: "AI \u5bfc\u5165\u5931\u8d25",
     saveFailed: "\u4fdd\u5b58\u5931\u8d25",
+    failedImports: "\u5931\u8d25\u94fe\u63a5",
+    retry: "\u91cd\u8bd5",
+    retryFailed: "\u91cd\u8bd5\u5931\u8d25",
+    failedImportSummary: (count: number) => `\u6709 ${count} \u4e2a\u94fe\u63a5\u8bfb\u53d6\u5931\u8d25\uff0c\u5df2\u79fb\u5165\u5931\u8d25\u5217\u8868\uff0c\u53ef\u5355\u72ec\u91cd\u8bd5\u3002`,
     appliedDrafts: (locales: string) =>
       `\u5df2\u5e94\u7528 ${locales} \u8349\u7a3f\u3002\u70b9\u51fb\u4fdd\u5b58\u4f1a\u5148\u4fdd\u5b58\u5f53\u524d\u8bed\u8a00\uff0c\u5e76\u540c\u6b65\u521b\u5efa/\u66f4\u65b0\u5176\u5b83\u8bed\u8a00\u7248\u672c\u3002`,
     appliedOne: (localeCode: string) =>
@@ -214,6 +224,10 @@ const editorAiText = {
     translationFailed: "AI translation failed",
     importFailed: "AI import failed",
     saveFailed: "save failed",
+    failedImports: "Failed links",
+    retry: "Retry",
+    retryFailed: "Retry failed",
+    failedImportSummary: (count: number) => `${count} links failed to read and were moved to the failed list for retry.`,
     appliedDrafts: (locales: string) =>
       `Applied ${locales} drafts. Saving will save the current language first and sync the other language versions.`,
     appliedOne: (localeCode: string) =>
@@ -256,6 +270,10 @@ const editorAiText = {
     translationFailed: "Echec de la traduction IA",
     importFailed: "Echec de l import IA",
     saveFailed: "echec de l enregistrement",
+    failedImports: "Liens en echec",
+    retry: "Reessayer",
+    retryFailed: "Echec de la nouvelle tentative",
+    failedImportSummary: (count: number) => `${count} liens n ont pas pu etre lus et ont ete places dans la liste d echec pour nouvelle tentative.`,
     appliedDrafts: (locales: string) =>
       `Brouillons ${locales} appliques. L enregistrement sauvegardera d abord la langue actuelle et synchronisera les autres versions.`,
     appliedOne: (localeCode: string) =>
@@ -355,6 +373,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const [aiMessage, setAiMessage] = useState("");
   const [aiDrafts, setAiDrafts] = useState<AiDraft[]>([]);
   const [aiImportItems, setAiImportItems] = useState<AiArticleImportItem[]>([]);
+  const [aiFailedImports, setAiFailedImports] = useState<FailedAiImportEntry[]>([]);
   const [pendingAiDrafts, setPendingAiDrafts] = useState<Record<string, AiDraft>>({});
   const [aiUrls, setAiUrls] = useState("");
   const [aiManualText, setAiManualText] = useState("");
@@ -1103,7 +1122,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     setAiLoading(true);
     setAiMessage("");
     try {
-      const result = await aiApi.importArticleUrls({
+      const job = await aiApi.startArticleUrlImportJob({
         urls,
         source_locale: "zh",
         target_locales: ["zh", "en", "fr"],
@@ -1114,14 +1133,87 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         available_category_slugs: categories.map((category) => category.slug),
         available_tag_slugs: tags.map((tag) => tag.slug),
       });
-      const normalizedItems = (result.items || []).map(importItemWithImagesInEveryDraft);
+
+      let status = await aiApi.getArticleUrlImportJob(job.job_id);
+      while (status.status === "pending" || status.status === "running") {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        status = await aiApi.getArticleUrlImportJob(job.job_id);
+      }
+
+      const entries = status.entries || [];
+      const failedEntries = entries.filter((entry) => entry.status === "invalid" || entry.status === "failed");
+      setAiFailedImports(
+        failedEntries.map((entry) => ({
+          url: entry.url,
+          message: entry.message || aiText.importFailed,
+        }))
+      );
+
+      const result = status.result;
+      const normalizedItems = (result?.items || []).map(importItemWithImagesInEveryDraft);
       setAiImportItems(normalizedItems);
       setAiDrafts(normalizedItems[0]?.drafts || []);
-      setAiMessage(result.warnings?.length ? result.warnings.join("; ") : aiText.importGenerated);
+
+      if (failedEntries.length > 0) {
+        setAiMessage(aiText.failedImportSummary(failedEntries.length));
+      } else {
+        setAiMessage(result?.warnings?.length ? result.warnings.join("; ") : aiText.importGenerated);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : aiText.importFailed;
       setAiMessage(message);
       alert(message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const retryFailedImport = async (entry: FailedAiImportEntry) => {
+    setAiLoading(true);
+    setAiMessage("");
+    try {
+      const job = await aiApi.startArticleUrlImportJob({
+        urls: [entry.url],
+        source_locale: "zh",
+        target_locales: ["zh", "en", "fr"],
+        manual_text: aiManualText || undefined,
+        extra_instruction: aiInstruction || undefined,
+        category_slugs: form.category_slugs,
+        tag_slugs: form.tag_slugs,
+        available_category_slugs: categories.map((category) => category.slug),
+        available_tag_slugs: tags.map((tag) => tag.slug),
+      });
+
+      let status = await aiApi.getArticleUrlImportJob(job.job_id);
+      while (status.status === "pending" || status.status === "running") {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        status = await aiApi.getArticleUrlImportJob(job.job_id);
+      }
+
+      const failedAgain = (status.entries || []).some((item) => item.url === entry.url && (item.status === "invalid" || item.status === "failed"));
+      if (failedAgain || !status.result?.items?.length) {
+        const retryMessage =
+          status.entries?.find((item) => item.url === entry.url)?.message ||
+          status.error ||
+          aiText.retryFailed;
+        setAiFailedImports((current) =>
+          current.map((item) => (item.url === entry.url ? { ...item, message: retryMessage } : item))
+        );
+        setAiMessage(retryMessage);
+        return;
+      }
+
+      const normalizedItems = (status.result.items || []).map(importItemWithImagesInEveryDraft);
+      setAiImportItems((current) => [...normalizedItems, ...current]);
+      setAiDrafts(normalizedItems[0]?.drafts || []);
+      setAiFailedImports((current) => current.filter((item) => item.url !== entry.url));
+      setAiMessage(aiText.importGenerated);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : aiText.retryFailed;
+      setAiFailedImports((current) =>
+        current.map((item) => (item.url === entry.url ? { ...item, message } : item))
+      );
+      setAiMessage(message);
     } finally {
       setAiLoading(false);
     }
@@ -1510,6 +1602,33 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                       )}
                       <div className="mt-2 text-xs text-slate-600">
                         {aiText.downloadedImages}: {item.source.media?.length || 0}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {aiFailedImports.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-slate-800">{aiText.failedImports}</div>
+                <div className="grid gap-2">
+                  {aiFailedImports.map((entry) => (
+                    <div key={entry.url} className="rounded-md border border-amber-200 bg-amber-50/70 p-2.5 text-sm sm:p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-slate-800">{entry.url}</div>
+                          <div className="mt-1 text-xs leading-relaxed text-amber-800">{entry.message}</div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => retryFailedImport(entry)}
+                          disabled={aiLoading}
+                          className="h-8 shrink-0 text-xs"
+                        >
+                          {aiText.retry}
+                        </Button>
                       </div>
                     </div>
                   ))}
