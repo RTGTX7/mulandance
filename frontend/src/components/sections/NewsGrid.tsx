@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from '@/components/ui/i18n-client';
 import Link from 'next/link';
 import { Calendar } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, truncate } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { newsApi } from '@/lib/api';
@@ -41,15 +40,15 @@ export function NewsGrid() {
   }, [locale]);
 
   return (
-    <section className="section-padding bg-white/30">
-      <div className="container">
-        <div className="mb-5 flex flex-col gap-2 md:mb-10 md:flex-row md:items-end md:justify-between md:gap-4">
+    <section className="homepage-glass-section section-padding">
+      <div className="container relative z-10">
+        <div className="homepage-glass-heading mb-5 flex flex-col gap-2 rounded-2xl px-4 py-4 md:mb-10 md:flex-row md:items-end md:justify-between md:gap-4 md:px-5">
           <div>
             <AnimatedLineHeading text={t('home.news.title')} align="left" className="mb-2" />
             <p className="text-lead">{t('home.news.subtitle')}</p>
           </div>
           <Link href={`/${locale}/news`}>
-            <span className="text-sm font-medium text-secondary hover:underline">
+            <span className="inline-flex rounded-full border border-white/60 bg-white/50 px-3 py-1.5 text-sm font-medium text-secondary shadow-sm backdrop-blur-xl transition-colors hover:bg-white/70">
               {t('home.news.viewAll')} &rarr;
             </span>
           </Link>
@@ -60,7 +59,7 @@ export function NewsGrid() {
             ? Array(3)
                 .fill(0)
                 .map((_, i) => (
-                  <div key={i} className="grid grid-cols-[84px_1fr] gap-3 rounded-lg border border-white/70 bg-white/75 p-2.5 shadow-sm shadow-purple-950/5">
+                  <div key={i} className="homepage-glass-card grid grid-cols-[84px_1fr] gap-3 rounded-xl p-2.5">
                     <Skeleton className="h-[78px] rounded-lg" />
                     <div className="min-w-0 pt-0.5">
                       <Skeleton className="mb-2 h-3 w-24" />
@@ -75,7 +74,7 @@ export function NewsGrid() {
                   <RevealOnScroll key={article.id} delay={(index % 2) * 70}>
                     <Link
                       href={`/${locale}/news/${article.slug}`}
-                      className="group grid grid-cols-[84px_1fr] gap-3 rounded-lg border border-white/70 bg-white/75 p-2.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl transition-all hover:bg-white/90"
+                      className="homepage-glass-card group grid grid-cols-[84px_1fr] gap-3 rounded-xl p-2.5 transition-all hover:-translate-y-0.5 hover:bg-white/70"
                     >
                       {article.cover_image ? (
                         <div className="h-[78px] rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${article.cover_image})` }} />
@@ -114,33 +113,33 @@ export function NewsGrid() {
             ? Array(3)
                 .fill(0)
                 .map((_, i) => (
-                  <Card key={i} className="h-full">
-                    <Skeleton className="aspect-[16/10] rounded-t-lg" />
-                    <CardHeader className="pb-2">
+                  <div key={i} className="homepage-glass-card h-full rounded-xl">
+                    <Skeleton className="aspect-[16/10] rounded-t-xl" />
+                    <div className="p-4 pb-2">
                       <Skeleton className="h-4 w-24 mb-2" />
                       <Skeleton className="h-6 w-full" />
-                    </CardHeader>
-                    <CardContent>
+                    </div>
+                    <div className="p-4 pt-0">
                       <Skeleton className="h-4 w-full mb-2" />
                       <Skeleton className="h-4 w-3/4" />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))
             : articles.map((article, index) => {
                 const category = article.categories?.[0];
                 return (
                   <RevealOnScroll key={article.id} delay={(index % 3) * 90}>
                     <Link href={`/${locale}/news/${article.slug}`} className="block h-full">
-                      <Card className="card-hover h-full group cursor-pointer flex flex-col">
+                      <div className="homepage-glass-card h-full group flex cursor-pointer flex-col rounded-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white/72 hover:shadow-xl hover:shadow-purple-950/10">
                         {article.cover_image ? (
-                          <div className="aspect-[16/9] rounded-t-lg bg-cover bg-center md:aspect-[16/10]" style={{ backgroundImage: `url(${article.cover_image})` }} />
+                          <div className="aspect-[16/9] rounded-t-xl bg-cover bg-center md:aspect-[16/10]" style={{ backgroundImage: `url(${article.cover_image})` }} />
                         ) : (
-                          <div className="aspect-[16/9] rounded-t-lg bg-gradient-to-br from-primary/10 to-purple-400/5 md:aspect-[16/10]" />
+                          <div className="aspect-[16/9] rounded-t-xl bg-gradient-to-br from-primary/10 to-purple-400/5 md:aspect-[16/10]" />
                         )}
-                        <CardHeader className="pb-1.5">
+                        <div className="p-4 pb-1.5">
                           <div className="mb-1.5 flex flex-wrap items-center gap-2">
                             {category && (
-                              <span className="text-xs font-semibold text-secondary uppercase tracking-wide">
+                              <span className="rounded-full border border-secondary/20 bg-secondary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-normal text-secondary">
                                 {category.name}
                               </span>
                             )}
@@ -151,16 +150,16 @@ export function NewsGrid() {
                                 : ''}
                             </span>
                           </div>
-                          <CardTitle className="line-clamp-2 text-base transition-colors group-hover:text-secondary md:text-lg">
+                          <h3 className="line-clamp-2 text-base font-bold leading-snug transition-colors group-hover:text-secondary md:text-lg">
                             {article.title}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                          </h3>
+                        </div>
+                        <div className="p-4 pt-0">
                           <p className="text-sm text-muted-foreground line-clamp-2 md:line-clamp-3">
                             {truncate(article.summary || '', 120)}
                           </p>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     </Link>
                   </RevealOnScroll>
                 );

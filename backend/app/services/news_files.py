@@ -40,6 +40,7 @@ from app.schemas.news import (
 _mistune_renderer = mistune.create_markdown(renderer=mistune.HTMLRenderer())
 _carousel_block_re = re.compile(r"(?ms)^:::\s*carousel\s*\n(.*?)\n:::\s*$")
 _carousel_image_re = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+_video_url_re = re.compile(r"https?://[^\s)\"']+\.(?:mp4|webm|ogg|mov|m4v)(?:\?[^\s)\"']*)?", re.IGNORECASE)
 
 
 def _safe_carousel_url(url: str) -> Optional[str]:
@@ -235,6 +236,11 @@ def render_markdown(body: str) -> str:
     return rendered
 
 
+def extract_video_url(body: str) -> str:
+    match = _video_url_re.search(body or "")
+    return match.group(0) if match else ""
+
+
 def _safe_dt(dt_val):
     """Return a datetime object (or None) for Pydantic validation.
     
@@ -322,6 +328,7 @@ def _get_translation_with_relations(
         "author_id": str(translation.author_id) if translation.author_id else None,
         "published_at": _safe_dt(translation.published_at),
         "cover_image": translation.cover_image or "",
+        "video_url": extract_video_url(body),
         "is_published": translation.is_published,
         "created_at": _safe_dt(translation.created_at),
         "updated_at": _safe_dt(translation.updated_at),
@@ -333,6 +340,34 @@ def _get_translation_with_relations(
         result["rendered_body"] = render_markdown(body)
 
     return result
+
+
+def _category_response_items(categories: List[NewsCategory]) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": str(c.id),
+            "slug": c.slug,
+            "name": c.name,
+            "name_zh": c.name_zh,
+            "color": c.color,
+            "is_active": getattr(c, "is_active", True),
+            "created_at": _safe_dt(getattr(c, "created_at", None)),
+        }
+        for c in categories
+    ]
+
+
+def _tag_response_items(tags: List[NewsTag]) -> List[Dict[str, Any]]:
+    return [
+        {
+            "id": str(t.id),
+            "slug": t.slug,
+            "name": t.name,
+            "name_zh": t.name_zh,
+            "created_at": _safe_dt(getattr(t, "created_at", None)),
+        }
+        for t in tags
+    ]
 
 
 def _get_group_with_relations(
@@ -372,20 +407,16 @@ def _get_group_with_relations(
     translations_data = []
     for t in translations:
         td = _get_translation_with_relations(db, t, include_html, False, False)
+        td["categories"] = _category_response_items(categories)
+        td["tags"] = _tag_response_items(tags)
         translations_data.append(td)
 
     return {
         "id": str(group.id),
         "shared_slug": group.shared_slug,
         "translations": translations_data,
-        "categories": [
-            {"id": str(c.id), "slug": c.slug, "name": c.name, "name_zh": c.name_zh, "color": c.color}
-            for c in categories
-        ],
-        "tags": [
-            {"id": str(t.id), "slug": t.slug, "name": t.name, "name_zh": t.name_zh}
-            for t in tags
-        ],
+        "categories": _category_response_items(categories),
+        "tags": _tag_response_items(tags),
         "created_at": _safe_dt(group.created_at),
         "updated_at": _safe_dt(group.updated_at),
     }
@@ -402,6 +433,20 @@ def list_article_groups(
 ) -> List[Dict[str, Any]]:
     """List article groups (shows one row per group in admin)."""
     query = db.query(ArticleGroup)
+
+    if category_slug:
+        query = (
+            query.join(ArticleGroupCategory, ArticleGroup.id == ArticleGroupCategory.group_id)
+            .join(NewsCategory, NewsCategory.id == ArticleGroupCategory.category_id)
+            .filter(NewsCategory.slug == category_slug)
+        )
+
+    if tag_slug:
+        query = (
+            query.join(ArticleGroupTag, ArticleGroup.id == ArticleGroupTag.group_id)
+            .join(NewsTag, NewsTag.id == ArticleGroupTag.tag_id)
+            .filter(NewsTag.slug == tag_slug)
+        )
 
     if search:
         search_pattern = f"%{search}%"
@@ -501,6 +546,46 @@ def get_article_translation_by_group(db: Session, group_id: str, locale: str) ->
     if not translation:
         return None
     return _get_translation_with_relations(db, translation, True, True, True)
+
+
+def list_articles_by_ids(
+    db: Session,
+    article_ids: List[str],
+    locale: Optional[str] = None,
+    published_only: bool = True,
+) -> List[Dict[str, Any]]:
+    """Return articles in the requested id order.
+
+    Ids may refer to ArticleTranslation rows, ArticleGroup rows, or legacy
+    NewsArticle rows. For grouped articles, select the best translation for the
+    requested locale.
+    """
+    if not article_ids:
+        return []
+
+    results_by_id: Dict[str, Dict[str, Any]] = {}
+    for article_id in article_ids:
+        translation = db.query(ArticleTranslation).filter(ArticleTranslation.id == article_id).first()
+        if translation:
+            translations = db.query(ArticleTranslation).filter(ArticleTranslation.group_id == translation.group_id).all()
+            selected = _select_translation(translations, locale=locale, published_only=published_only)
+            if selected:
+                results_by_id[article_id] = _get_translation_with_relations(db, selected)
+            continue
+
+        group = db.query(ArticleGroup).filter(ArticleGroup.id == article_id).first()
+        if group:
+            translations = db.query(ArticleTranslation).filter(ArticleTranslation.group_id == group.id).all()
+            selected = _select_translation(translations, locale=locale, published_only=published_only)
+            if selected:
+                results_by_id[article_id] = _get_translation_with_relations(db, selected)
+            continue
+
+        legacy = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
+        if legacy and (not published_only or legacy.is_published):
+            results_by_id[article_id] = _get_article_with_relations(db, legacy)
+
+    return [results_by_id[item] for item in article_ids if item in results_by_id]
 
 
 def create_article_translation(
@@ -1213,6 +1298,7 @@ def _get_article_with_relations(
         "author_id": str(article.author_id) if article.author_id else None,
         "published_at": _safe_dt_for_cats(article.published_at),
         "cover_image": article.cover_image or "",
+        "video_url": extract_video_url(article.body or ""),
         "is_published": article.is_published,
         "locale": article.locale,
         "created_at": _safe_dt_for_cats(article.created_at),

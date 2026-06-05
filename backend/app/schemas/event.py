@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 # UUID replaced with str for SQLite
 
@@ -47,6 +47,7 @@ class PerformanceBase(BaseModel):
     cover_image: Optional[str] = None
     is_current: bool = True
     translations: dict = {}
+    related_article_ids: List[str] = []
 
 
 class PerformanceCreate(PerformanceBase):
@@ -63,6 +64,7 @@ class PerformanceUpdate(BaseModel):
     cover_image: Optional[str] = None
     is_current: Optional[bool] = None
     translations: Optional[dict] = None
+    related_article_ids: Optional[List[str]] = None
 
 
 class PerformanceResponse(PerformanceBase):

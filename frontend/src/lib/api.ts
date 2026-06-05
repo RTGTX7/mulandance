@@ -344,6 +344,8 @@ export interface ImportedSource {
   source_published_at?: string;
   images?: string[];
   media?: ImportedMedia[];
+  video_url?: string;
+  is_video?: boolean;
   warnings?: string[];
 }
 
@@ -371,6 +373,13 @@ export interface AiArticleImportJobStatusResponse {
   status: 'pending' | 'running' | 'succeeded' | 'failed';
   result?: AiArticleImportResponse | null;
   error?: string;
+  total?: number;
+  completed?: number;
+  failed?: number;
+  current_url?: string;
+  errors?: string[];
+  saved?: number;
+  saved_slugs?: string[];
 }
 
 export interface PerformanceItem {
@@ -383,6 +392,7 @@ export interface PerformanceItem {
   venue?: string;
   cover_image?: string;
   is_current: boolean;
+  related_article_ids?: string[];
   created_at?: string;
   translations?: LocalizedFieldMap;
 }
@@ -396,6 +406,7 @@ export interface PerformanceBody {
   venue?: string;
   cover_image?: string;
   is_current: boolean;
+  related_article_ids?: string[];
   translations?: LocalizedFieldMap;
 }
 
@@ -465,6 +476,13 @@ export const newsApi = {
 
   publicGet: (slug: string, locale?: string) =>
     api.get<NewsArticle>(`/v1/news/${slug}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+
+  publicByIds: (ids: string[], locale?: string) => {
+    const query = new URLSearchParams();
+    query.set('ids', ids.join(','));
+    if (locale) query.set('locale', locale);
+    return api.get<NewsArticle[]>(`/v1/news/by-ids?${query.toString()}`);
+  },
 
   createArticle: (body: ArticleCreateBody) => api.post<NewsArticle>('/v1/news', body),
 
@@ -546,6 +564,25 @@ export const aiApi = {
     }
   },
 
+  startArticleUrlImportJob: (body: {
+    urls: string[];
+    source_locale: string;
+    target_locales: string[];
+    manual_text?: string;
+    extra_instruction?: string;
+    category_slugs?: string[];
+    tag_slugs?: string[];
+    available_category_slugs?: string[];
+    available_tag_slugs?: string[];
+    auto_save_to_drafts?: boolean;
+  }) => api.post<AiArticleImportJobCreateResponse>('/v1/ai/import-article-urls/jobs', body),
+
+  getArticleUrlImportJob: (jobId: string) =>
+    api.get<AiArticleImportJobStatusResponse>(`/v1/ai/import-article-urls/jobs/${jobId}`),
+
+  appendArticleUrlImportJob: (jobId: string, urls: string[]) =>
+    api.post<AiArticleImportJobStatusResponse>(`/v1/ai/import-article-urls/jobs/${jobId}/append`, { urls }),
+
   importArticleUrls: async (body: {
     urls: string[];
     source_locale: string;
@@ -556,11 +593,12 @@ export const aiApi = {
     tag_slugs?: string[];
     available_category_slugs?: string[];
     available_tag_slugs?: string[];
+    auto_save_to_drafts?: boolean;
   }) => {
-    const job = await api.post<AiArticleImportJobCreateResponse>('/v1/ai/import-article-urls/jobs', body);
+    const job = await aiApi.startArticleUrlImportJob(body);
     while (true) {
       await wait(2500);
-      const status = await api.get<AiArticleImportJobStatusResponse>(`/v1/ai/import-article-urls/jobs/${job.job_id}`);
+      const status = await aiApi.getArticleUrlImportJob(job.job_id);
       if (status.status === 'succeeded' && status.result) return status.result;
       if (status.status === 'failed') throw new Error(status.error || 'AI import failed');
     }
@@ -1000,7 +1038,7 @@ export interface ProgramBody {
 }
 
 export const programApi = {
-  list: (locale?: string) => api.get<ProgramItem[]>(`/v1/programs/${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+  list: (locale?: string) => api.get<ProgramItem[]>(`/v1/programs${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
   adminList: () => api.get<ProgramItem[]>('/v1/programs/admin/list'),
   create: (body: ProgramBody) => api.post<ProgramItem>('/v1/programs/', body),
   update: (id: string, body: Partial<ProgramBody> & { is_active?: boolean }) =>

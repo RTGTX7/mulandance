@@ -135,6 +135,7 @@ class ArticleWithRelations(BaseModel):
     author_id: Optional[str] = None
     published_at: Optional[datetime] = None
     cover_image: Optional[str] = None
+    video_url: Optional[str] = None
     is_published: bool
     locale: str
     created_at: Optional[datetime] = None

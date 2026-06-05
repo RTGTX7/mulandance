@@ -136,6 +136,141 @@ const SUPPORTED_LOCALES = [
   { code: "fr", label: "FR", name: "French" },
 ];
 
+const editorAiText = {
+  zh: {
+    languageVersions: "\u8bed\u8a00\u7248\u672c",
+    nextStep: (versions: string) => `\u4e0b\u4e00\u6b65\uff1a\u7528 AI \u7ffb\u8bd1\u6216\u624b\u52a8\u521b\u5efa ${versions} \u7248\u672c`,
+    allVersionsCreated: "\u4e2d\u6587\u3001\u82f1\u6587\u3001\u6cd5\u6587\u7248\u672c\u5df2\u521b\u5efa",
+    published: "\u5df2\u53d1\u5e03",
+    draft: "\u8349\u7a3f",
+    missing: "\u7f3a\u5c11",
+    assistantTitle: "AI \u8349\u7a3f\u52a9\u624b",
+    assistantDescription: "\u5148\u521b\u5efa\u5f53\u524d\u8bed\u8a00\u6587\u7ae0\uff1b\u7136\u540e\u7528 AI \u7ffb\u8bd1\u6216\u624b\u52a8\u5207\u6362\u8bed\u8a00\u8865\u9f50\u53e6\u5916\u4e24\u4e2a\u7248\u672c\u3002AI \u53ea\u751f\u6210\u8349\u7a3f\uff0c\u4e0d\u4f1a\u81ea\u52a8\u53d1\u5e03\u3002",
+    syncDrafts: "\u540c\u6b65\u4e09\u8bed\u8349\u7a3f",
+    saving: "\u4fdd\u5b58\u4e2d...",
+    batchSaveAll: "\u6279\u91cf\u4fdd\u5b58\u5168\u90e8",
+    generating: "\u751f\u6210\u4e2d...",
+    translateCurrent: "\u7ffb\u8bd1\u5f53\u524d\u6587\u7ae0",
+    urlsPlaceholder: "\u7c98\u8d34\u94fe\u63a5\uff0c\u4e00\u884c\u4e00\u4e2a\u3002\u4f8b\uff1a\u5c0f\u7ea2\u4e66\u5e16\u5b50\u94fe\u63a5",
+    manualPlaceholder: "\u5982\u679c\u94fe\u63a5\u65e0\u6cd5\u8bfb\u53d6\uff0c\u53ef\u628a\u5e16\u5b50\u6587\u5b57\u7c98\u8d34\u5230\u8fd9\u91cc",
+    instructionPlaceholder: "\u989d\u5916\u8981\u6c42",
+    generateAndClassify: "\u751f\u6210\u5e76\u5206\u7c7b",
+    draftsPreview: "AI \u751f\u6210\u8349\u7a3f\u9884\u89c8",
+    previewHelp: "\u786e\u8ba4\u4e09\u79cd\u8bed\u8a00\u5185\u5bb9\u540e\uff0c\u70b9\u51fb\u53f3\u4e0a\u89d2\u201c\u540c\u6b65\u4e09\u8bed\u8349\u7a3f\u201d\uff0c\u518d\u7528\u666e\u901a\u4fdd\u5b58\u6309\u94ae\u4fdd\u5b58\u3002",
+    missingTitle: "\u672a\u751f\u6210\u6807\u9898",
+    importSources: "\u5bfc\u5165\u6765\u6e90",
+    performance: "\u6f14\u51fa",
+    article: "\u6587\u7ae0",
+    category: "\u5206\u7c7b",
+    tag: "\u6807\u7b7e",
+    downloadedImages: "\u5df2\u4e0b\u8f7d\u56fe\u7247",
+    sourceDate: "\u6765\u6e90\u65e5\u671f",
+    fillBeforeTranslate: "\u8bf7\u5148\u586b\u5199\u6807\u9898\u6216\u6b63\u6587\uff0c\u518d\u751f\u6210\u7ffb\u8bd1\u3002",
+    translationGenerated: "\u7ffb\u8bd1\u8349\u7a3f\u5df2\u751f\u6210\u3002",
+    enterLinkOrText: "\u8bf7\u81f3\u5c11\u8f93\u5165\u4e00\u4e2a\u94fe\u63a5\uff0c\u6216\u7c98\u8d34\u539f\u59cb\u6587\u5b57\u3002",
+    importGenerated: "\u94fe\u63a5\u8349\u7a3f\u5df2\u751f\u6210\u3002",
+    translationFailed: "AI \u7ffb\u8bd1\u5931\u8d25",
+    importFailed: "AI \u5bfc\u5165\u5931\u8d25",
+    saveFailed: "\u4fdd\u5b58\u5931\u8d25",
+    appliedDrafts: (locales: string) =>
+      `\u5df2\u5e94\u7528 ${locales} \u8349\u7a3f\u3002\u70b9\u51fb\u4fdd\u5b58\u4f1a\u5148\u4fdd\u5b58\u5f53\u524d\u8bed\u8a00\uff0c\u5e76\u540c\u6b65\u521b\u5efa/\u66f4\u65b0\u5176\u5b83\u8bed\u8a00\u7248\u672c\u3002`,
+    appliedOne: (localeCode: string) =>
+      `\u5df2\u5e94\u7528 ${localeCode} \u8349\u7a3f\uff0c\u68c0\u67e5\u540e\u70b9\u51fb\u4fdd\u5b58\u8be5\u8bed\u8a00\u7248\u672c\u3002`,
+    batchSaved: (news: number, performances: number, failures: string[]) =>
+      `\u6279\u91cf\u4fdd\u5b58\u5b8c\u6210\uff1a\u6587\u7ae0 ${news} \u6761\uff0c\u6f14\u51fa ${performances} \u6761\u3002${failures.length ? `\u5931\u8d25 ${failures.length} \u6761\uff1a${failures.join("\uff1b")}` : ""}`,
+  },
+  en: {
+    languageVersions: "Language Versions",
+    nextStep: (versions: string) => `Next: use AI translation or manually create ${versions} versions`,
+    allVersionsCreated: "Chinese, English, and French versions are created",
+    published: "Published",
+    draft: "Draft",
+    missing: "Missing",
+    assistantTitle: "AI Draft Assistant",
+    assistantDescription: "Create the current language article first, then use AI translation or manually switch languages to complete the other versions. AI only creates drafts and will not publish them.",
+    syncDrafts: "Sync language drafts",
+    saving: "Saving...",
+    batchSaveAll: "Batch save all",
+    generating: "Generating...",
+    translateCurrent: "Translate current article",
+    urlsPlaceholder: "Paste links, one per line. Example: Xiaohongshu post link",
+    manualPlaceholder: "If a link cannot be read, paste the post text here",
+    instructionPlaceholder: "Extra instruction",
+    generateAndClassify: "Generate and classify",
+    draftsPreview: "AI draft preview",
+    previewHelp: "Review the three language drafts, click Sync language drafts, then use the normal save button.",
+    missingTitle: "No title generated",
+    importSources: "Import sources",
+    performance: "Performance",
+    article: "Article",
+    category: "Category",
+    tag: "Tag",
+    downloadedImages: "Downloaded images",
+    sourceDate: "Source date",
+    fillBeforeTranslate: "Add a title or body before generating translation.",
+    translationGenerated: "Translation drafts generated.",
+    enterLinkOrText: "Enter at least one link or paste original text.",
+    importGenerated: "Link drafts generated.",
+    translationFailed: "AI translation failed",
+    importFailed: "AI import failed",
+    saveFailed: "save failed",
+    appliedDrafts: (locales: string) =>
+      `Applied ${locales} drafts. Saving will save the current language first and sync the other language versions.`,
+    appliedOne: (localeCode: string) =>
+      `Applied the ${localeCode} draft. Review it, then save this language version.`,
+    batchSaved: (news: number, performances: number, failures: string[]) =>
+      `Batch save complete: ${news} articles, ${performances} performances.${failures.length ? ` Failed ${failures.length}: ${failures.join("; ")}` : ""}`,
+  },
+  fr: {
+    languageVersions: "Versions linguistiques",
+    nextStep: (versions: string) => `Prochaine etape : utiliser IA ou creer manuellement les versions ${versions}`,
+    allVersionsCreated: "Les versions chinoise, anglaise et francaise sont creees",
+    published: "Publie",
+    draft: "Brouillon",
+    missing: "Manquant",
+    assistantTitle: "Assistant IA de brouillon",
+    assistantDescription: "Creez d abord l article dans la langue actuelle, puis utilisez IA ou changez de langue manuellement pour completer les autres versions. IA cree seulement des brouillons.",
+    syncDrafts: "Synchroniser les brouillons",
+    saving: "Enregistrement...",
+    batchSaveAll: "Tout enregistrer",
+    generating: "Generation...",
+    translateCurrent: "Traduire l article",
+    urlsPlaceholder: "Collez les liens, un par ligne. Exemple : lien Xiaohongshu",
+    manualPlaceholder: "Si un lien ne peut pas etre lu, collez le texte ici",
+    instructionPlaceholder: "Consigne supplementaire",
+    generateAndClassify: "Generer et classer",
+    draftsPreview: "Apercu des brouillons IA",
+    previewHelp: "Verifiez les trois brouillons, cliquez sur Synchroniser les brouillons, puis utilisez le bouton d enregistrement normal.",
+    missingTitle: "Aucun titre genere",
+    importSources: "Sources importees",
+    performance: "Spectacle",
+    article: "Article",
+    category: "Categorie",
+    tag: "Etiquette",
+    downloadedImages: "Images telechargees",
+    sourceDate: "Date source",
+    fillBeforeTranslate: "Ajoutez un titre ou un corps avant de generer la traduction.",
+    translationGenerated: "Brouillons de traduction generes.",
+    enterLinkOrText: "Entrez au moins un lien ou collez le texte source.",
+    importGenerated: "Brouillons de liens generes.",
+    translationFailed: "Echec de la traduction IA",
+    importFailed: "Echec de l import IA",
+    saveFailed: "echec de l enregistrement",
+    appliedDrafts: (locales: string) =>
+      `Brouillons ${locales} appliques. L enregistrement sauvegardera d abord la langue actuelle et synchronisera les autres versions.`,
+    appliedOne: (localeCode: string) =>
+      `Brouillon ${localeCode} applique. Verifiez-le, puis enregistrez cette version linguistique.`,
+    batchSaved: (news: number, performances: number, failures: string[]) =>
+      `Enregistrement termine : ${news} articles, ${performances} spectacles.${failures.length ? ` Echecs ${failures.length} : ${failures.join("; ")}` : ""}`,
+  },
+} as const;
+
+function editorUiLocale(locale: string) {
+  if (locale === "fr") return "fr";
+  if (locale === "zh" || locale === "zh-Hant") return "zh";
+  return "en";
+}
+
 const DEFAULT_CATEGORIES: Category[] = [
   { id: "1", slug: "announcements", name: "Announcements", name_zh: "公告", color: "#6366f1" },
   { id: "2", slug: "performances", name: "Performances", name_zh: "演出", color: "#ec4899" },
@@ -197,6 +332,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const locale = pathname.split("/")[1] || "en";
+  const aiText = editorAiText[editorUiLocale(locale)];
   const requestedLocale = searchParams.get("locale") || "";
   const baseSlug = searchParams.get("baseSlug") || "";
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -723,7 +859,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
     const urls = importedMediaUrls(item);
     if (urls.length === 0) return body;
 
-    const missingUrls = urls.filter((url) => !body.includes(url));
+    const [, ...bodyImageCandidates] = urls;
+    const missingUrls = bodyImageCandidates.filter((url) => !body.includes(url));
     if (missingUrls.length === 0) return body;
 
     const altText = title || item?.source.title || "Imported image";
@@ -795,7 +932,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       tag_slugs: importItem?.suggested_tag_slugs?.length ? importItem.suggested_tag_slugs : prev.tag_slugs,
       slug: prev.slug || slugifyTitle(title),
     }));
-      setAiMessage(`已应用 ${usableDrafts.map((draft) => draft.locale.toUpperCase()).join(", ")} 草稿。点击保存会先保存当前语言，并同步创建/更新其它语言版本。`);
+      setAiMessage(aiText.appliedDrafts(usableDrafts.map((draft) => draft.locale.toUpperCase()).join(", ")));
   };
 
   const applyAiDraft = (draft: AiDraft, importItem?: AiArticleImportItem) => {
@@ -814,7 +951,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       tag_slugs: importItem?.suggested_tag_slugs?.length ? importItem.suggested_tag_slugs : prev.tag_slugs,
       slug: prev.slug || slugifyTitle(title),
     }));
-    setAiMessage(`已应用 ${draft.locale.toUpperCase()} 草稿，检查后点击保存该语言版本。`);
+    setAiMessage(aiText.appliedOne(draft.locale.toUpperCase()));
   };
 
   const firstDraftTitle = (item: AiArticleImportItem, index: number) =>
@@ -907,13 +1044,11 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           newsCount += 1;
         }
       } catch (err) {
-        failures.push(err instanceof Error ? err.message : `${firstDraftTitle(item, index)}: save failed`);
+        failures.push(err instanceof Error ? err.message : `${firstDraftTitle(item, index)}: ${aiText.saveFailed}`);
       }
     }
 
-    setAiMessage(
-    `批量保存完成：文章 ${newsCount} 条，演出 ${performanceCount} 条。${failures.length ? `失败 ${failures.length} 条：${failures.join("；")}` : ""}`
-    );
+    setAiMessage(aiText.batchSaved(newsCount, performanceCount, failures));
     setAiBatchSaving(false);
   };
 
@@ -924,7 +1059,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       body: bodyText,
     };
     if (!fields.title.trim() && !fields.body.trim()) {
-      alert("请先填写标题或正文，再生成翻译。");
+      alert(aiText.fillBeforeTranslate);
       return;
     }
     const targets = SUPPORTED_LOCALES
@@ -946,9 +1081,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         warnings: [],
       };
       setAiDrafts([sourceDraft, ...(result.drafts || [])]);
-      setAiMessage(result.warnings?.length ? result.warnings.join("；") : "翻译草稿已生成。");
+      setAiMessage(result.warnings?.length ? result.warnings.join("; ") : aiText.translationGenerated);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "AI translation failed";
+      const message = err instanceof Error ? err.message : aiText.translationFailed;
       setAiMessage(message);
       alert(message);
     } finally {
@@ -962,7 +1097,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       .map((item) => item.trim())
       .filter(Boolean);
     if (urls.length === 0 && !aiManualText.trim()) {
-      alert("请至少输入一个链接，或粘贴原始文字。");
+      alert(aiText.enterLinkOrText);
       return;
     }
     setAiLoading(true);
@@ -982,9 +1117,9 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
       const normalizedItems = (result.items || []).map(importItemWithImagesInEveryDraft);
       setAiImportItems(normalizedItems);
       setAiDrafts(normalizedItems[0]?.drafts || []);
-      setAiMessage(result.warnings?.length ? result.warnings.join("；") : "链接草稿已生成。");
+      setAiMessage(result.warnings?.length ? result.warnings.join("; ") : aiText.importGenerated);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "AI import failed";
+      const message = err instanceof Error ? err.message : aiText.importFailed;
       setAiMessage(message);
       alert(message);
     } finally {
@@ -1186,11 +1321,11 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
           <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
             <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-800">语言版本</p>
+                <p className="text-sm font-medium text-slate-800">{aiText.languageVersions}</p>
                 <p className="text-xs text-slate-500">
                   {missingVersions.length > 0
-                    ? `下一步：用 AI 翻译或手动创建 ${missingVersions.map((item) => item.label).join(", ")} 版本`
-                    : "中文、英文、法文版本已创建"}
+                    ? aiText.nextStep(missingVersions.map((item) => item.label).join(", "))
+                    : aiText.allVersionsCreated}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
@@ -1212,7 +1347,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     >
                       {item.label}
                       <span className="hidden text-[10px] opacity-80 sm:inline">
-                        {existing ? (existing.is_published ? "已发布" : "草稿") : "Missing"}
+                        {existing ? (existing.is_published ? aiText.published : aiText.draft) : aiText.missing}
                       </span>
                     </button>
                   );
@@ -1228,10 +1363,10 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               <div>
                 <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
                   <Sparkles className="h-4 w-4 text-purple-700" />
-                  AI 草稿助手
+                  {aiText.assistantTitle}
                 </CardTitle>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                  先创建当前语言文章；然后用 AI 翻译或手动切换语言补齐另外两个版本。AI 只生成草稿，不会自动发布。
+                  {aiText.assistantDescription}
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
@@ -1243,7 +1378,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     className="h-9 shrink-0 text-xs sm:h-10 sm:text-sm"
                   >
                     <Wand2 className="mr-2 h-4 w-4" />
-                    同步三语草稿
+                    {aiText.syncDrafts}
                   </Button>
                 )}
                 {aiImportItems.length > 0 && (
@@ -1255,7 +1390,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     className="h-9 shrink-0 text-xs sm:h-10 sm:text-sm"
                   >
                     <Save className="mr-2 h-4 w-4" />
-                    {aiBatchSaving ? "保存中..." : "批量保存全部"}
+                    {aiBatchSaving ? aiText.saving : aiText.batchSaveAll}
                   </Button>
                 )}
                 <Button
@@ -1266,7 +1401,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                   className="h-9 shrink-0 text-xs sm:h-10 sm:text-sm"
                 >
                   <Wand2 className="mr-2 h-4 w-4" />
-                  {aiLoading ? "生成中..." : "翻译当前文章"}
+                  {aiLoading ? aiText.generating : aiText.translateCurrent}
                 </Button>
               </div>
             </div>
@@ -1276,25 +1411,25 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               <Textarea
                 value={aiUrls}
                 onChange={(event) => setAiUrls(event.target.value)}
-                placeholder="粘贴链接，一行一个。例：小红书帖子链接"
+                placeholder={aiText.urlsPlaceholder}
                 className="min-h-[72px] text-sm sm:min-h-[96px]"
               />
               <Textarea
                 value={aiManualText}
                 onChange={(event) => setAiManualText(event.target.value)}
-                placeholder="如果链接无法读取，可把帖子文字粘贴到这里"
+                placeholder={aiText.manualPlaceholder}
                 className="min-h-[72px] text-sm sm:min-h-[96px]"
               />
               <div className="grid grid-cols-[1fr_auto] gap-2 lg:flex lg:flex-col">
                 <input
                   value={aiInstruction}
                   onChange={(event) => setAiInstruction(event.target.value)}
-                  placeholder="额外要求"
+                  placeholder={aiText.instructionPlaceholder}
                   className="h-9 min-w-0 rounded-md border border-input bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:px-3"
                 />
                 <Button type="button" onClick={handleAiImportUrls} disabled={aiLoading} className="h-9 px-3 text-xs sm:h-10 sm:text-sm">
                   <Sparkles className="mr-2 h-4 w-4" />
-                  生成并分类
+                  {aiText.generateAndClassify}
                 </Button>
               </div>
             </div>
@@ -1309,8 +1444,8 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               <div className="space-y-2">
                 <div className="flex flex-col gap-1">
                   <div>
-                    <div className="text-sm font-medium text-slate-800">AI 生成草稿预览</div>
-                    <p className="text-xs text-slate-500">确认三种语言内容后，点击右上角“同步三语草稿”，再用普通保存按钮保存。</p>
+                    <div className="text-sm font-medium text-slate-800">{aiText.draftsPreview}</div>
+                    <p className="text-xs text-slate-500">{aiText.previewHelp}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
@@ -1318,7 +1453,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                     return (
                       <div key={`${draft.locale}-${draft.fields.title || "draft"}`} className="rounded-md border border-slate-200 bg-white p-2 sm:p-3">
                         <span className="text-xs font-semibold sm:text-sm">{draft.locale.toUpperCase()}</span>
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-700 sm:mt-2 sm:text-sm">{draft.fields.title || "未生成标题"}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-700 sm:mt-2 sm:text-sm">{draft.fields.title || aiText.missingTitle}</p>
                         {draft.fields.summary && (
                           <p className="mt-1 hidden line-clamp-2 text-xs text-slate-500 sm:block">{draft.fields.summary}</p>
                         )}
@@ -1331,7 +1466,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
             {aiImportItems.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-slate-800">导入来源</div>
+                <div className="text-sm font-medium text-slate-800">{aiText.importSources}</div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {aiImportItems.slice(0, 4).map((item) => (
                     <div key={item.source.url} className="rounded-md border border-slate-200 bg-slate-50 p-2.5 text-sm sm:p-3">
@@ -1341,7 +1476,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                             ? "bg-pink-100 text-pink-700"
                             : "bg-blue-100 text-blue-700"
                         }`}>
-                          {(item.content_type || "news") === "performance" ? "演出" : "文章"}
+                          {(item.content_type || "news") === "performance" ? aiText.performance : aiText.article}
                         </span>
                         <div className="truncate font-medium">{item.source.title || item.source.url}</div>
                       </div>
@@ -1349,16 +1484,16 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                       {((item.suggested_category_slugs?.length || 0) > 0 || (item.suggested_tag_slugs?.length || 0) > 0) && (
                         <div className="mt-2 flex flex-wrap gap-1 text-[11px] text-slate-600">
                           {(item.suggested_category_slugs || []).map((slug) => (
-                            <span key={`cat-${slug}`} className="rounded-full bg-white px-2 py-0.5">分类: {slug}</span>
+                            <span key={`cat-${slug}`} className="rounded-full bg-white px-2 py-0.5">{aiText.category}: {slug}</span>
                           ))}
                           {(item.suggested_tag_slugs || []).map((slug) => (
-                            <span key={`tag-${slug}`} className="rounded-full bg-white px-2 py-0.5">标签: {slug}</span>
+                            <span key={`tag-${slug}`} className="rounded-full bg-white px-2 py-0.5">{aiText.tag}: {slug}</span>
                           ))}
                         </div>
                       )}
                       {item.source.source_published_at && (
                         <div className="mt-1 text-xs font-medium text-slate-600">
-                          Source date: {formatSourceDate(item.source.source_published_at)}
+                          {aiText.sourceDate}: {formatSourceDate(item.source.source_published_at)}
                         </div>
                       )}
                       {(item.source.media?.length || 0) > 0 && (
@@ -1374,7 +1509,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
                         </div>
                       )}
                       <div className="mt-2 text-xs text-slate-600">
-                        已下载图片：{item.source.media?.length || 0}
+                        {aiText.downloadedImages}: {item.source.media?.length || 0}
                       </div>
                     </div>
                   ))}

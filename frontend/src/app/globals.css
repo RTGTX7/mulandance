@@ -559,6 +559,657 @@
     danceTextFill 420ms ease-out 900ms forwards;
 }
 
+.hero-cinematic {
+  isolation: isolate;
+}
+
+.hero-media-drift {
+  transform: scale(1.035);
+  animation: heroMediaDrift 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.hero-stage-beams {
+  background:
+    linear-gradient(104deg, transparent 12%, hsl(0 0% 100% / 0.11) 34%, transparent 52%),
+    linear-gradient(76deg, transparent 48%, hsl(42 92% 58% / 0.11) 62%, transparent 78%);
+  mix-blend-mode: screen;
+  animation: heroBeamSweep 9s ease-in-out infinite alternate;
+}
+
+.hero-film-grain {
+  background-image:
+    radial-gradient(circle at 18% 28%, hsl(0 0% 100% / 0.28) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 74% 36%, hsl(0 0% 100% / 0.2) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 42% 72%, hsl(0 0% 100% / 0.16) 0 1px, transparent 1.5px);
+  background-size: 88px 88px, 132px 132px, 164px 164px;
+  animation: heroGrain 900ms steps(2, end) infinite;
+}
+
+.hero-kicker {
+  animation: heroTextRise 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.16), 0 12px 32px hsl(270 45% 20% / 0.12);
+}
+
+.hero-copy-glass {
+  position: relative;
+}
+
+.hero-copy-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(145deg, hsl(0 0% 100% / 0.08), transparent 40%, hsl(0 0% 100% / 0.03)),
+    radial-gradient(circle at 50% 0%, hsl(0 0% 100% / 0.08), transparent 58%);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.13),
+    inset 0 -1px 0 hsl(0 0% 100% / 0.04);
+}
+
+.hero-copy-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, hsl(0 0% 100% / 0.06), transparent 64%);
+  filter: blur(20px);
+}
+
+.hero-copy-glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-draw-title {
+  position: relative;
+  animation: heroTextRise 820ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+  text-shadow: 0 18px 60px hsl(270 60% 18% / 0.24);
+}
+
+.hero-draw-title::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -0.12em;
+  width: min(72%, 480px);
+  height: 1px;
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent, hsl(42 92% 58% / 0.8), transparent);
+  animation: heroTitleLine 920ms cubic-bezier(0.22, 1, 0.36, 1) 420ms forwards;
+}
+
+.hero-copy {
+  animation: heroTextRise 820ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+}
+
+.hero-button {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hero-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.58), transparent);
+  animation: heroButtonShine 4.8s ease-in-out infinite;
+}
+
+.hero-button-primary {
+  border: 1px solid hsl(0 0% 100% / 0.58);
+  background: hsl(0 0% 100% / 0.88);
+  color: hsl(var(--primary));
+}
+
+.hero-button-primary:hover {
+  background: hsl(0 0% 100% / 0.98);
+}
+
+.hero-button-secondary {
+  border: 1px solid hsl(0 0% 100% / 0.46);
+  background: hsl(0 0% 100% / 0.22);
+  color: hsl(0 0% 100% / 0.96);
+  text-shadow: 0 1px 8px hsl(270 50% 10% / 0.36);
+}
+
+.hero-button-secondary:hover {
+  background: hsl(0 0% 100% / 0.30);
+  color: hsl(0 0% 100%);
+}
+
+.stats-glass-band {
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.12), inset 0 -22px 70px hsl(270 50% 18% / 0.16);
+}
+
+.stats-scanline {
+  animation: statsScanline 7s ease-in-out infinite;
+}
+
+.stats-glass-card {
+  position: relative;
+}
+
+.stats-glass-card::before {
+  content: none;
+}
+
+.stats-candy-icon {
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.32),
+    inset 0 -1px 8px hsl(270 70% 82% / 0.14),
+    0 0 22px hsl(42 92% 58% / 0.22),
+    0 12px 32px hsl(270 50% 18% / 0.16);
+}
+
+.stats-number {
+  text-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.30),
+    0 10px 34px hsl(270 55% 12% / 0.22),
+    0 0 24px hsl(0 0% 100% / 0.18);
+}
+
+.stats-glass-text {
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.98), hsl(0 0% 100% / 0.72));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.stats-label-glass {
+  text-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.22),
+    0 8px 22px hsl(270 55% 12% / 0.16);
+}
+
+.homepage-glass-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.homepage-glass-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 8%, hsl(271 55% 38% / 0.08), transparent 28%),
+    radial-gradient(circle at 82% 18%, hsl(42 92% 58% / 0.08), transparent 26%),
+    linear-gradient(180deg, hsl(0 0% 100% / 0.54), hsl(270 30% 98% / 0.34));
+}
+
+.homepage-glass-heading {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 58rem);
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 12px;
+  border: 1px solid hsl(0 0% 100% / 0.68);
+  background: hsl(0 0% 100% / 0.48);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.42), 0 18px 54px hsl(270 45% 18% / 0.07);
+  backdrop-filter: blur(22px);
+}
+
+.homepage-glass-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid hsl(0 0% 100% / 0.66);
+  background: hsl(0 0% 100% / 0.58);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.34), 0 18px 56px hsl(270 45% 18% / 0.08);
+  backdrop-filter: blur(22px);
+}
+
+.homepage-glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(145deg, hsl(0 0% 100% / 0.28), transparent 34%, hsl(0 0% 100% / 0.08));
+}
+
+.homepage-glass-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.homepage-event-timeline {
+  position: relative;
+  align-items: start;
+}
+
+.homepage-event-timeline::before {
+  content: "";
+  position: absolute;
+  left: calc(100% / 6 + 0.75rem);
+  right: calc(100% / 6 + 0.75rem);
+  top: 1rem;
+  height: 1px;
+  background: linear-gradient(90deg, hsl(32 82% 58% / 0.10), hsl(271 55% 38% / 0.12), hsl(145 48% 48% / 0.10));
+  box-shadow: 0 0 12px hsl(42 92% 58% / 0.06);
+}
+
+.homepage-event-timeline-item {
+  position: relative;
+}
+
+.homepage-event-timeline-pin {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  height: 2.8rem;
+  margin-bottom: 0.45rem;
+}
+
+.homepage-event-timeline-pin::before {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, hsl(42 92% 58% / 0.18), hsl(271 55% 38% / 0.08), transparent);
+}
+
+.season-timeline-section {
+  position: relative;
+  overflow: visible;
+}
+
+.season-timeline-section::before {
+  content: none;
+}
+
+.season-timeline-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid hsl(0 0% 100% / 0.70);
+  background: hsl(0 0% 100% / 0.52);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.56),
+    0 18px 54px hsl(270 45% 18% / 0.08);
+  backdrop-filter: blur(24px) saturate(1.06);
+}
+
+.season-timeline-shell::before {
+  content: none;
+}
+
+.season-timeline-intro,
+.season-timeline-list {
+  position: relative;
+  z-index: 1;
+}
+
+.season-timeline-scroll {
+  position: relative;
+  max-height: none;
+  overflow-y: visible;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scroll-snap-type: none;
+  padding-right: 0.15rem;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.season-timeline-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+
+.season-timeline-scroll::-webkit-scrollbar-track {
+  background: hsl(0 0% 100% / 0.22);
+  border-radius: 999px;
+}
+
+.season-timeline-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid hsl(0 0% 100% / 0.42);
+  border-radius: 999px;
+  background: linear-gradient(180deg, hsl(var(--secondary) / 0.76), hsl(var(--primary) / 0.56));
+}
+
+.season-timeline-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--secondary) / 0.92), hsl(var(--primary) / 0.70));
+}
+
+.season-timeline-item {
+  animation: seasonCardChoreo 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--event-index) * 90ms);
+}
+
+.season-timeline-rail {
+  position: absolute;
+  left: 16px;
+  top: 2.2rem;
+  bottom: 2.2rem;
+  width: 1px;
+  overflow: hidden;
+  background: linear-gradient(180deg, hsl(32 78% 70% / 0.16), hsl(145 42% 66% / 0.12), hsl(0 0% 62% / 0.10));
+}
+
+.season-timeline-rail::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  background: linear-gradient(180deg, transparent, hsl(32 80% 58% / 0.48), hsl(145 44% 52% / 0.32), hsl(0 0% 58% / 0.24), transparent);
+  animation: seasonRailDraw 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.season-timeline-node {
+  position: sticky;
+  top: 8rem;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 1px solid hsl(0 0% 100% / 0.72);
+  background: hsl(0 0% 100% / 0.70);
+  box-shadow:
+    0 0 0 7px hsl(var(--secondary) / 0.09),
+    0 0 28px hsl(var(--secondary) / 0.28),
+    inset 0 1px 0 hsl(0 0% 100% / 0.7);
+  backdrop-filter: blur(14px);
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms ease;
+}
+
+.season-timeline-node-past {
+  box-shadow:
+    0 0 0 7px hsl(0 0% 64% / 0.10),
+    0 0 24px hsl(0 0% 58% / 0.20),
+    inset 0 1px 0 hsl(0 0% 100% / 0.7);
+}
+
+.season-timeline-node-current {
+  box-shadow:
+    0 0 0 7px hsl(145 48% 48% / 0.12),
+    0 0 28px hsl(145 50% 45% / 0.28),
+    inset 0 1px 0 hsl(0 0% 100% / 0.7);
+}
+
+.season-timeline-node-future {
+  box-shadow:
+    0 0 0 7px hsl(32 86% 56% / 0.12),
+    0 0 28px hsl(32 82% 54% / 0.26),
+    inset 0 1px 0 hsl(0 0% 100% / 0.7);
+}
+
+.season-timeline-node-core {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--timeline-accent, hsl(var(--secondary)));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--timeline-accent, hsl(var(--secondary))) 72%, white 28%);
+  animation: seasonNodeBreath 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--event-index) * -420ms);
+}
+
+.season-event-card {
+  border: 1px solid hsl(0 0% 100% / 0.72);
+  background: hsl(0 0% 100% / 0.64);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.58),
+    0 18px 58px hsl(270 45% 18% / 0.09);
+  backdrop-filter: blur(22px) saturate(1.05);
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 360ms ease,
+    box-shadow 360ms ease,
+    background 360ms ease;
+}
+
+.season-event-card::before {
+  content: none;
+}
+
+.season-timeline-item:hover .season-event-card {
+  transform: translateY(-4px);
+  border-color: hsl(var(--secondary) / 0.34);
+  background: hsl(0 0% 100% / 0.70);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.66),
+    0 28px 72px hsl(270 45% 18% / 0.14);
+}
+
+.season-timeline-item:hover .season-timeline-node {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 9px hsl(var(--secondary) / 0.13),
+    0 0 34px hsl(var(--secondary) / 0.42),
+    inset 0 1px 0 hsl(0 0% 100% / 0.7);
+}
+
+.season-event-date {
+  border-bottom: 1px solid hsl(var(--primary) / 0.08);
+  background: hsl(0 0% 100% / 0.36);
+}
+
+.season-event-media {
+  border-left: 1px solid hsl(0 0% 100% / 0.54);
+}
+
+.season-scroll-cue {
+  display: none;
+}
+
+.season-scroll-cue span {
+  width: 2.25rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: hsl(var(--secondary) / 0.62);
+  box-shadow: 0 0 22px hsl(var(--secondary) / 0.30);
+  animation: seasonScrollCue 1.8s ease-in-out infinite;
+}
+
+.homepage-mini-timeline-node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid hsl(0 0% 100% / 0.78);
+  background: hsl(0 0% 100% / 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.homepage-mini-timeline-node-past {
+  box-shadow:
+    0 0 0 6px hsl(0 0% 70% / 0.10),
+    0 0 18px hsl(0 0% 58% / 0.18);
+}
+
+.homepage-mini-timeline-node-current {
+  box-shadow:
+    0 0 0 6px hsl(145 48% 48% / 0.12),
+    0 0 20px hsl(145 50% 45% / 0.24);
+}
+
+.homepage-mini-timeline-node-future {
+  box-shadow:
+    0 0 0 6px hsl(32 86% 56% / 0.12),
+    0 0 20px hsl(32 82% 54% / 0.22);
+}
+
+.homepage-mini-timeline-core {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.homepage-mini-timeline-node-past .homepage-mini-timeline-core {
+  color: hsl(0 0% 55%);
+}
+
+.homepage-mini-timeline-node-current .homepage-mini-timeline-core {
+  color: hsl(145 50% 42%);
+}
+
+.homepage-mini-timeline-node-future .homepage-mini-timeline-core {
+  color: hsl(32 82% 54%);
+}
+
+@media (min-width: 768px) {
+  .season-timeline-rail {
+    left: 23px;
+  }
+
+  .season-event-date {
+    border-right: 1px solid hsl(var(--primary) / 0.08);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .season-timeline-rail {
+    left: 11px;
+    top: 1.25rem;
+    bottom: 1.15rem;
+  }
+
+  .season-timeline-shell {
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.52),
+      0 10px 26px hsl(270 45% 18% / 0.05);
+    backdrop-filter: blur(16px) saturate(1.03);
+  }
+
+  .season-timeline-scroll {
+    padding-right: 0;
+  }
+
+  .season-timeline-node {
+    top: 5.4rem;
+    width: 0.82rem;
+    height: 0.82rem;
+    box-shadow:
+      0 0 0 4px hsl(var(--secondary) / 0.08),
+      0 0 14px hsl(var(--secondary) / 0.16),
+      inset 0 1px 0 hsl(0 0% 100% / 0.66);
+  }
+
+  .season-timeline-node-core {
+    width: 0.28rem;
+    height: 0.28rem;
+  }
+
+  .season-event-card {
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.56),
+      0 10px 22px hsl(270 45% 18% / 0.06);
+  }
+
+  .season-event-date {
+    background: hsl(0 0% 100% / 0.32);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-timeline-rail::after {
+    animation: none;
+  }
+
+  .season-timeline-scroll {
+    scroll-behavior: auto;
+  }
+
+  .season-event-card,
+  .season-timeline-node,
+  .season-timeline-node-core,
+  .season-timeline-item,
+  .season-scroll-cue span {
+    animation: none;
+    transition: none;
+  }
+}
+
+.program-media-card {
+  isolation: isolate;
+  border-color: hsl(0 0% 100% / 0.70);
+  background: hsl(0 0% 100% / 0.20);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.42),
+    inset 0 -1px 0 hsl(270 20% 20% / 0.08),
+    0 18px 54px hsl(270 45% 18% / 0.10);
+  backdrop-filter: blur(22px) saturate(1.18);
+}
+
+.program-card-media,
+.program-card-shade {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0 !important;
+}
+
+.program-media-card::before {
+  z-index: 1;
+  background:
+    linear-gradient(145deg, hsl(0 0% 100% / 0.22), transparent 36%, hsl(0 0% 100% / 0.08)),
+    linear-gradient(180deg, hsl(0 0% 100% / 0.08), hsl(270 20% 8% / 0.06));
+}
+
+.program-copy-glass {
+  position: relative !important;
+  z-index: 3 !important;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.program-glass-title {
+  color: hsl(0 0% 100% / 0.92);
+  text-shadow: 0 2px 18px hsl(270 50% 8% / 0.40), 0 1px 0 hsl(0 0% 100% / 0.14);
+}
+
+.program-glass-summary {
+  color: hsl(0 0% 100% / 0.76);
+  text-shadow: 0 2px 14px hsl(270 50% 8% / 0.36);
+}
+
+.program-glass-link {
+  color: hsl(42 92% 68% / 0.96);
+  text-shadow: 0 2px 14px hsl(270 50% 8% / 0.30);
+}
+
+.program-media-card:not(:has(.program-card-media)) .program-glass-title {
+  color: hsl(var(--foreground) / 0.86);
+  text-shadow: 0 1px 0 hsl(0 0% 100% / 0.18);
+}
+
+.program-media-card:not(:has(.program-card-media)) .program-glass-summary {
+  color: hsl(var(--muted-foreground) / 0.86);
+  text-shadow: none;
+}
+
+  .program-media-card:not(:has(.program-card-media)) .program-glass-link {
+    color: hsl(var(--primary));
+    text-shadow: none;
+  }
+
+@media (max-width: 767px) {
+  .homepage-glass-heading,
+  .homepage-glass-card {
+    border-radius: 10px;
+  }
+}
+
 @keyframes danceTextDraw {
   to {
     stroke-dashoffset: 0;
@@ -568,6 +1219,142 @@
 @keyframes danceTextFill {
   to {
     fill: hsl(var(--foreground));
+  }
+}
+
+@keyframes heroMediaDrift {
+  from {
+    transform: scale(1.035) translate3d(-0.7%, -0.4%, 0);
+  }
+  to {
+    transform: scale(1.075) translate3d(0.7%, 0.5%, 0);
+  }
+}
+
+@keyframes heroBeamSweep {
+  from {
+    transform: translateX(-3%);
+    opacity: 0.62;
+  }
+  to {
+    transform: translateX(3%);
+    opacity: 0.92;
+  }
+}
+
+@keyframes heroGrain {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(1.5%, -1%, 0);
+  }
+}
+
+@keyframes heroTextRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes heroTitleLine {
+  to {
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+
+@keyframes heroButtonShine {
+  0%,
+  55% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  78%,
+  100% {
+    transform: translateX(120%) skewX(-18deg);
+  }
+}
+
+@keyframes statsScanline {
+  0%,
+  22% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  44% {
+    opacity: 1;
+  }
+  80%,
+  100% {
+    transform: translateX(420%);
+    opacity: 0;
+  }
+}
+
+@keyframes seasonRailDraw {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes seasonCardChoreo {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.985);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes seasonNodeBreath {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
+@keyframes seasonScrollCue {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-media-drift,
+  .hero-stage-beams,
+  .hero-film-grain,
+  .hero-kicker,
+  .hero-draw-title,
+  .hero-copy,
+  .hero-button::after,
+  .stats-scanline {
+    animation: none;
   }
 }
 

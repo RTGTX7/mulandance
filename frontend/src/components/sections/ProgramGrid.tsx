@@ -3,22 +3,64 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import Link from 'next/link';
-import { BookOpen, Footprints, Globe, Music, Sparkles, Sun, Zap } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowRight } from 'lucide-react';
 import { ProgramItem, programApi } from '@/lib/api';
+import { toPublicMediaUrl } from '@/lib/media';
 import { AnimatedLineHeading, RevealOnScroll } from '@/components/motion/ScrollEffects';
 
-const iconMap = [
-  { test: 'ballet', icon: Footprints, color: 'from-purple-500 to-violet-500' },
-  { test: 'contemporary', icon: Sparkles, color: 'from-blue-500 to-cyan-500' },
-  { test: 'jazz', icon: Music, color: 'from-amber-500 to-orange-500' },
-  { test: 'hip-hop', icon: Zap, color: 'from-green-500 to-emerald-500' },
-  { test: 'summer', icon: Sun, color: 'from-pink-500 to-rose-500' },
-  { test: 'folk', icon: Globe, color: 'from-teal-500 to-emerald-500' },
-];
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
 
-function visualFor(slug: string) {
-  return iconMap.find((item) => slug.includes(item.test)) || { icon: BookOpen, color: 'from-red-500 to-pink-500' };
+function ProgramCard({ program, href, compact = false }: { program: ProgramItem; href: string; compact?: boolean }) {
+  const t = useTranslations();
+  const mediaUrl = toPublicMediaUrl(program.cover_image || '');
+
+  return (
+    <Link
+      href={href}
+      className={`program-media-card homepage-glass-card group flex flex-col justify-end overflow-hidden ${
+        compact ? 'min-h-[136px] p-3' : 'min-h-[216px] p-5 md:min-h-[242px] md:p-6'
+      }`}
+    >
+      {mediaUrl && (
+        isVideoUrl(mediaUrl) ? (
+          <video
+            src={mediaUrl}
+            className="program-card-media h-full w-full object-cover opacity-95 transition-transform duration-700 group-hover:scale-105"
+            muted
+            loop
+            playsInline
+            autoPlay
+          />
+        ) : (
+          <div
+            className="program-card-media bg-cover bg-center opacity-95 transition-transform duration-700 group-hover:scale-105"
+            style={{ backgroundImage: `url(${mediaUrl})` }}
+          />
+        )
+      )}
+      <div
+        className={
+          mediaUrl
+            ? 'program-card-shade bg-[rgba(10,8,18,0.30)]'
+            : 'program-card-shade bg-transparent'
+        }
+      />
+      <div className={`program-copy-glass ${compact ? 'min-h-[100px]' : 'min-h-[156px] md:min-h-[160px]'} flex flex-col justify-start`}>
+        <h3 className={`${compact ? 'min-h-[34px] text-sm' : 'min-h-[50px] text-lg md:min-h-[56px] md:text-xl'} program-glass-title line-clamp-2 font-semibold leading-snug transition-colors`}>
+          {program.name}
+        </h3>
+        <p className={`${compact ? 'mt-1 line-clamp-2 text-xs' : 'mt-2 line-clamp-3 text-sm md:text-base'} program-glass-summary leading-relaxed`}>
+          {program.description}
+        </p>
+        <span className={`${compact ? 'mt-auto pt-2 text-xs' : 'mt-auto pt-4 text-sm'} program-glass-link inline-flex items-center gap-2 font-semibold transition-colors`}>
+          {t('common.buttons.learnMore')}
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export function ProgramGrid() {
@@ -36,9 +78,9 @@ export function ProgramGrid() {
   );
 
   return (
-    <section className="section-padding bg-white/30" aria-label={t('common.sections.ourPrograms')}>
+    <section className="section-padding homepage-glass-section" aria-label={t('common.sections.ourPrograms')}>
       <div className="container mx-auto">
-        <div className="mb-6 text-center md:mb-12">
+        <div className="homepage-glass-heading mb-6 px-4 py-4 text-center md:mb-10 md:px-8 md:py-5">
           <AnimatedLineHeading text={t('home.programs.title')} className="mx-auto mb-2 md:mb-4" />
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-lg">
             {t('home.programs.subtitle')}
@@ -47,26 +89,11 @@ export function ProgramGrid() {
 
         <div className="grid grid-cols-2 gap-2 md:hidden">
           {visiblePrograms.map((program, index) => {
-            const visual = visualFor(program.slug);
-            const Icon = visual.icon;
             const href = `/${locale}/programs#${program.slug}`;
 
             return (
               <RevealOnScroll key={program.id} delay={(index % 2) * 70}>
-                <Link
-                  href={href}
-                  className="group flex min-h-[112px] flex-col rounded-lg border border-white/70 bg-white/75 p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl transition-all hover:bg-white/90"
-                >
-                  <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${visual.color} text-white shadow-sm`}>
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
-                    {program.name}
-                  </h3>
-                  <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">
-                    {program.description}
-                  </p>
-                </Link>
+                <ProgramCard program={program} href={href} compact />
               </RevealOnScroll>
             );
           })}
@@ -74,33 +101,11 @@ export function ProgramGrid() {
 
         <div className="mx-auto hidden max-w-7xl grid-cols-1 gap-3 md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
           {visiblePrograms.map((program, index) => {
-            const visual = visualFor(program.slug);
-            const Icon = visual.icon;
             const href = `/${locale}/programs#${program.slug}`;
 
             return (
               <RevealOnScroll key={program.id} delay={(index % 3) * 90}>
-                <Link href={href} className="group block h-full">
-                  <Card className="h-full border-white/70 bg-white/75 shadow-sm transition-shadow duration-300 hover:shadow-md">
-                    <CardContent className="flex min-h-[164px] flex-col items-start p-4 md:min-h-[210px] md:p-6">
-                      <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${visual.color} text-white shadow-lg md:mb-5 md:h-12 md:w-12`}>
-                        <Icon className="h-5 w-5 md:h-6 md:w-6" />
-                      </div>
-                      <h3 className="mb-1.5 text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-primary md:text-xl">
-                        {program.name}
-                      </h3>
-                      <p className="mb-3 line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground md:line-clamp-4 md:text-base">
-                        {program.description}
-                      </p>
-                      <span className="inline-flex items-center text-sm font-semibold text-primary group-hover:text-secondary transition-colors">
-                        {t('common.buttons.learnMore')}
-                        <svg className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <ProgramCard program={program} href={href} />
               </RevealOnScroll>
             );
           })}

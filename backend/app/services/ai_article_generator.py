@@ -54,6 +54,8 @@ def generate_imported_content(
         "description": source.description,
         "text": source.text,
         "source_published_at": source.source_published_at,
+        "is_video": source.is_video,
+        "video_url": source.video_url,
         "manual_text": manual_text or "",
         "downloaded_image_urls": image_urls,
         "extra_instruction": extra_instruction or "",
@@ -89,7 +91,9 @@ def generate_imported_content(
         "Otherwise use 'news'. Create concise drafts from provided source material. "
         "Return strict JSON only. Do not invent dates, prices, locations, awards, names, "
         "or contact details. If an image URL is provided, include it in news markdown only "
-        "when it is relevant. Keep each locale natural and local. Suggested categories and "
+        "when it is relevant. If is_video is true, do not imply the video was downloaded; "
+        "include a clear markdown link to video_url or the source URL for watching the video. "
+        "Keep each locale natural and local. Suggested categories and "
         "tags must only use the provided available slugs."
     )
     parsed = chat_json(

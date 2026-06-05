@@ -21,6 +21,7 @@ interface AiLocaleSyncLabels {
 interface AiLocaleSyncPanelProps {
   module: string;
   sourceLocale: LocaleCode;
+  uiLocale?: string;
   fields: Record<string, string>;
   onApply: (drafts: AiDraft[]) => void;
   title?: string;
@@ -29,31 +30,73 @@ interface AiLocaleSyncPanelProps {
   labels?: AiLocaleSyncLabels;
 }
 
-const defaultLabels: Required<AiLocaleSyncLabels> = {
-  empty: '请先填写一些内容，再使用 AI 整理和翻译。',
-  generated: 'AI 已生成中英法草稿。',
-  generateFailed: 'AI 生成失败',
-  applyFirst: '请先生成 AI 草稿。',
-  applied: '已同步到中英法字段，请检查后保存。',
-  applyButton: '语言同步',
-  generateButton: '整理并翻译',
-  generating: '生成中...',
-};
+const defaults = {
+  zh: {
+    title: '\u0041\u0049 \u4e2d\u82f1\u6cd5\u540c\u6b65',
+    description: '\u6574\u7406\u5f53\u524d\u8bed\u8a00\u5185\u5bb9\uff0c\u5e76\u751f\u6210\u4e2d\u6587\u3001\u82f1\u6587\u3001\u6cd5\u8bed\u7248\u672c\u3002\u68c0\u67e5\u540e\u518d\u4fdd\u5b58\u3002',
+    labels: {
+      empty: '\u8bf7\u5148\u586b\u5199\u4e00\u4e9b\u5185\u5bb9\uff0c\u518d\u4f7f\u7528 AI \u6574\u7406\u548c\u7ffb\u8bd1\u3002',
+      generated: 'AI \u5df2\u751f\u6210\u4e2d\u82f1\u6cd5\u8349\u7a3f\u3002',
+      generateFailed: 'AI \u751f\u6210\u5931\u8d25',
+      applyFirst: '\u8bf7\u5148\u751f\u6210 AI \u8349\u7a3f\u3002',
+      applied: '\u5df2\u540c\u6b65\u5230\u4e2d\u82f1\u6cd5\u5b57\u6bb5\uff0c\u8bf7\u68c0\u67e5\u540e\u4fdd\u5b58\u3002',
+      applyButton: '\u8bed\u8a00\u540c\u6b65',
+      generateButton: '\u6574\u7406\u5e76\u7ffb\u8bd1',
+      generating: '\u751f\u6210\u4e2d...',
+    },
+  },
+  en: {
+    title: 'AI Chinese / English / French sync',
+    description: 'Polish the current language and generate Chinese, English, and French versions. Review before saving.',
+    labels: {
+      empty: 'Add some content before using AI polish and translation.',
+      generated: 'AI generated Chinese, English, and French drafts.',
+      generateFailed: 'AI generation failed',
+      applyFirst: 'Generate AI drafts first.',
+      applied: 'Synced to Chinese, English, and French fields. Review before saving.',
+      applyButton: 'Apply languages',
+      generateButton: 'Polish and translate',
+      generating: 'Generating...',
+    },
+  },
+  fr: {
+    title: 'Synchronisation IA chinois / anglais / francais',
+    description: 'IA revise la langue actuelle et genere les versions chinoise, anglaise et francaise. Verifiez avant d enregistrer.',
+    labels: {
+      empty: 'Ajoutez du contenu avant d utiliser la revision et la traduction IA.',
+      generated: 'IA a genere les brouillons chinois, anglais et francais.',
+      generateFailed: 'Echec de la generation IA',
+      applyFirst: 'Generez d abord les brouillons IA.',
+      applied: 'Synchronise vers les champs chinois, anglais et francais. Verifiez avant d enregistrer.',
+      applyButton: 'Appliquer les langues',
+      generateButton: 'Reviser et traduire',
+      generating: 'Generation...',
+    },
+  },
+} as const;
+
+function adminLocale(locale?: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
 
 export function AiLocaleSyncPanel({
   module,
   sourceLocale,
+  uiLocale,
   fields,
   onApply,
-  title = 'AI 中英法同步',
-  description = '整理当前语言内容，并生成中文、英文、法语版本。检查后再保存。',
+  title,
+  description,
   compact = false,
   labels,
 }: AiLocaleSyncPanelProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [drafts, setDrafts] = useState<AiDraft[]>([]);
-  const text = { ...defaultLabels, ...(labels || {}) };
+  const localeDefaults = defaults[adminLocale(uiLocale)];
+  const text = { ...localeDefaults.labels, ...(labels || {}) };
 
   async function generateDrafts() {
     const cleanFields = Object.fromEntries(
@@ -98,9 +141,9 @@ export function AiLocaleSyncPanel({
         <div>
           <div className="flex items-center gap-2 text-sm font-semibold text-purple-950">
             <Sparkles className="h-4 w-4 text-purple-700" />
-            {title}
+            {title || localeDefaults.title}
           </div>
-          {!compact && <p className="mt-1 text-xs text-purple-900/70">{description}</p>}
+          {!compact && <p className="mt-1 text-xs text-purple-900/70">{description || localeDefaults.description}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           {drafts.length > 0 && (

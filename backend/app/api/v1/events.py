@@ -1,5 +1,8 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
 from datetime import datetime
 
@@ -14,6 +17,40 @@ PERFORMANCE_TRANSLATABLE_FIELDS = ("title", "description", "venue")
 
 def _ensure_performance_columns(db: Session) -> None:
     ensure_text_column(db, "performances")
+    columns = {column["name"] for column in db.execute(text("PRAGMA table_info(performances)")).mappings().all()}
+    if "related_article_ids" not in columns:
+        db.execute(text("ALTER TABLE performances ADD COLUMN related_article_ids TEXT"))
+        db.commit()
+
+
+def _parse_related_article_ids(value: str | None) -> list[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except Exception:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    seen = set()
+    result = []
+    for item in parsed:
+        article_id = str(item or "").strip()
+        if article_id and article_id not in seen:
+            seen.add(article_id)
+            result.append(article_id)
+    return result
+
+
+def _dump_related_article_ids(value: list[str] | None) -> str:
+    seen = set()
+    result = []
+    for item in value or []:
+        article_id = str(item or "").strip()
+        if article_id and article_id not in seen:
+            seen.add(article_id)
+            result.append(article_id)
+    return json.dumps(result)
 
 
 def _find_performance(db: Session, identifier: str) -> Performance | None:
@@ -36,6 +73,7 @@ def _performance_response(
         "end_date": performance.end_date,
         "cover_image": performance.cover_image,
         "is_current": bool(performance.is_current),
+        "related_article_ids": _parse_related_article_ids(getattr(performance, "related_article_ids", None)),
         "created_at": performance.created_at,
         "translations": translation_bundle(performance) if include_translations else {},
     }
@@ -101,8 +139,10 @@ def create_performance(
 
     payload = performance_data.model_dump()
     translations = payload.pop("translations", None)
+    related_article_ids = payload.pop("related_article_ids", None)
     performance = Performance(**payload)
     set_translation_bundle(performance, translations)
+    performance.related_article_ids = _dump_related_article_ids(related_article_ids)
     db.add(performance)
     db.commit()
     db.refresh(performance)
@@ -140,6 +180,7 @@ def update_performance(
 
     updates = performance_data.model_dump(exclude_unset=True)
     translations = updates.pop("translations", None)
+    related_article_ids = updates.pop("related_article_ids", None)
     new_slug = updates.get("slug")
     if new_slug and new_slug != performance.slug:
         existing = db.query(Performance).filter(
@@ -153,6 +194,8 @@ def update_performance(
         setattr(performance, field, value)
     if translations is not None:
         set_translation_bundle(performance, translations)
+    if related_article_ids is not None:
+        performance.related_article_ids = _dump_related_article_ids(related_article_ids)
 
     db.commit()
     db.refresh(performance)

@@ -2,12 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { performanceApi, type PerformanceItem } from '@/lib/api';
+import Link from 'next/link';
+import { newsApi, performanceApi, type NewsArticle, type PerformanceItem } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { ArrowLeft, CalendarDays, Clock, MapPin } from 'lucide-react';
-import { dateLocaleFor } from '@/lib/i18n';
+import { ArrowLeft, CalendarDays, Clock, FileText, MapPin, Newspaper } from 'lucide-react';
+import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
+
+const detailText = {
+  zh: {
+    relatedTitle: '\u76f8\u5173\u62a5\u9053\u4e0e\u56de\u987e',
+    relatedDescription: '\u8fd9\u91cc\u6536\u5f55\u4e0e\u672c\u573a\u6f14\u51fa\u76f8\u5173\u7684\u901a\u77e5\u3001\u62a5\u9053\u3001\u56de\u987e\u548c\u5a92\u4f53\u5185\u5bb9\u3002',
+    readMore: '\u9605\u8bfb\u6587\u7ae0',
+  },
+  en: {
+    relatedTitle: 'Related Reports and Recaps',
+    relatedDescription: 'Notices, reports, recaps, and media connected to this performance.',
+    readMore: 'Read article',
+  },
+  fr: {
+    relatedTitle: 'Reportages et retours lies',
+    relatedDescription: 'Annonces, reportages, retours et medias lies a ce spectacle.',
+    readMore: 'Lire l article',
+  },
+} as const;
+
+function pageLocale(locale: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
 
 export default function PerformanceDetailPage() {
   const t = useTranslations();
@@ -15,8 +40,10 @@ export default function PerformanceDetailPage() {
   const pathname = usePathname();
   const params = useParams();
   const locale = pathname.split('/')[1] || 'en';
+  const text = detailText[pageLocale(locale)];
   const slug = params?.slug as string;
   const [performance, setPerformance] = useState<PerformanceItem | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -24,7 +51,16 @@ export default function PerformanceDetailPage() {
     if (!slug) return;
 
     performanceApi.getBySlug(slug, locale)
-      .then(setPerformance)
+      .then((item) => {
+        setPerformance(item);
+        if (item.related_article_ids?.length) {
+          return newsApi.publicByIds(item.related_article_ids, articleLocaleFor(locale))
+            .then(setRelatedArticles)
+            .catch(() => setRelatedArticles([]));
+        }
+        setRelatedArticles([]);
+        return undefined;
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [locale, slug]);
@@ -123,6 +159,41 @@ export default function PerformanceDetailPage() {
               <p className="text-muted-foreground italic mb-12">
                 {t('performanceDetail.moreSoon')}
               </p>
+            )}
+
+            {relatedArticles.length > 0 && (
+              <section className="mb-12 border-t pt-8">
+                <div className="mb-5">
+                  <div className="flex items-center gap-2">
+                    <Newspaper className="h-5 w-5 text-purple-700" />
+                    <h2 className="text-xl font-semibold text-slate-950">{text.relatedTitle}</h2>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{text.relatedDescription}</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {relatedArticles.map((article) => (
+                    <Link
+                      key={article.id}
+                      href={`/${locale}/news/${article.slug}`}
+                      className="group overflow-hidden rounded-lg border bg-card transition hover:border-purple-300 hover:shadow-sm"
+                    >
+                      {article.cover_image && (
+                        <img src={article.cover_image} alt={article.title} className="h-36 w-full object-cover" />
+                      )}
+                      <div className="p-4">
+                        <div className="mb-2 inline-flex items-center gap-1 text-xs font-medium text-purple-700">
+                          <FileText className="h-3.5 w-3.5" />
+                          {text.readMore}
+                        </div>
+                        <h3 className="line-clamp-2 font-semibold text-slate-950 group-hover:text-purple-800">{article.title}</h3>
+                        {article.summary && (
+                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{article.summary}</p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
             )}
 
             <Card className="bg-muted/30 border-dashed">

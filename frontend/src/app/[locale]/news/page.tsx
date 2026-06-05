@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, ArrowRight, Filter } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { articleLocaleFor, dateLocaleFor, localizeText } from '@/lib/i18n';
+import { articleLocaleFor, dateLocaleFor, isChineseLocale, localizeText } from '@/lib/i18n';
 
 interface Article {
   id: string;
@@ -59,11 +59,40 @@ function localizeCategory(category: Category, locale: string): Category {
   };
 }
 
+function categoryLabel(category: Category, locale: string) {
+  if (isChineseLocale(locale) && category.name_zh) {
+    return localizeText(category.name_zh, locale) || category.name_zh;
+  }
+  return category.name || category.name_zh || category.slug;
+}
+
+const newsPageText = {
+  zh: {
+    allCategories: '\u5168\u90e8\u5206\u7c7b',
+    noArticles: '\u6682\u65e0\u6587\u7ae0',
+  },
+  en: {
+    allCategories: 'All Categories',
+    noArticles: 'No articles found',
+  },
+  fr: {
+    allCategories: 'Toutes les categories',
+    noArticles: 'Aucun article trouve',
+  },
+} as const;
+
+function pageLocale(locale: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
+
 export default function NewsPage() {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1];
+  const text = newsPageText[pageLocale(locale)];
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +149,7 @@ export default function NewsPage() {
             onClick={() => handleCategoryChange('all')}
             className="flex-shrink-0"
           >
-            {t('news.allCategories')}
+            {text.allCategories}
           </Button>
           {categories.map((cat) => (
             <Button
@@ -135,7 +164,7 @@ export default function NewsPage() {
               }
               className="flex-shrink-0"
             >
-              {cat.name_zh ? `${cat.name} (${cat.name_zh})` : cat.name}
+              {categoryLabel(cat, locale)}
             </Button>
           ))}
         </div>
@@ -163,7 +192,7 @@ export default function NewsPage() {
         ) : filteredArticles.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-lg text-muted-foreground">
-              {t('news.noArticles')}
+              {text.noArticles}
             </p>
           </div>
         ) : (
@@ -198,7 +227,7 @@ export default function NewsPage() {
                               : undefined
                           }
                         >
-                          {primaryCategory.name_zh ? `${primaryCategory.name} (${primaryCategory.name_zh})` : primaryCategory.name}
+                          {categoryLabel(primaryCategory, locale)}
                         </Badge>
                       )}
                       {article.published_at && (

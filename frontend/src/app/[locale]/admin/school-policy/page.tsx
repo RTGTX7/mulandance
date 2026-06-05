@@ -195,6 +195,7 @@ export default function AdminSchoolPolicyPage() {
                 <AiLocaleSyncPanel
                   module="school_policy"
                   sourceLocale={contentLocale}
+                  uiLocale={locale}
                   fields={{
                     title: currentPolicy.title,
                     body_markdown: currentPolicy.body_markdown,

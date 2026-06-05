@@ -553,6 +553,7 @@ export default function AdminSchedulesPage() {
                 <AiLocaleSyncPanel
                   module="schedules"
                   sourceLocale={aiSyncSource.locale}
+                  uiLocale={locale}
                   fields={aiSyncSource.fields}
                   onApply={applyAiDrafts}
                   title={aiText.syncTitle}
@@ -573,6 +574,7 @@ export default function AdminSchedulesPage() {
                   <AiPasteFillDialog
                     module="schedules"
                     sourceLocale={contentLocale}
+                    uiLocale={locale}
                     targetFields={['title', 'description', 'location', 'day_of_week', 'start_time', 'end_time']}
                     onApply={applyAiDrafts}
                     triggerLabel={aiText.pasteTrigger}

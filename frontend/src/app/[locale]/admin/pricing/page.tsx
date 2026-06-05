@@ -50,6 +50,33 @@ type ClassroomPricingContent = {
   notes: { title: string; items: string[] };
 };
 
+const pricingAiText = {
+  zh: {
+    title: 'AI Pricing \u4e2d\u82f1\u6cd5\u540c\u6b65',
+    description: '\u7ffb\u8bd1\u8bfe\u7a0b\u540d\u79f0\u3001\u65f6\u957f\u3001\u8bf4\u660e\u5361\u3001\u4ed8\u6b3e\u8bf4\u660e\u3001\u79df\u8d41\u65f6\u95f4\u5355\u4f4d\u548c\u79df\u8d41\u8bf4\u660e\uff1b\u4fdd\u7559\u4ef7\u683c\u6570\u5b57\u3001\u8d27\u5e01\u3001\u56fe\u7247 URL \u4e0d\u53d8\u3002',
+    languageTitle: '内容语言',
+    languageHelp: '先编辑中文，再用 AI 生成 English / Français；价格数字、货币和图片不会由 AI 修改。',
+  },
+  en: {
+    title: 'AI pricing language sync',
+    description: 'Translate program names, durations, info cards, payment notes, rental time units, and rental notes. Keep prices, currencies, and image URLs unchanged.',
+    languageTitle: 'Content Language',
+    languageHelp: 'Edit Chinese first, then use AI to generate English / Français. Prices, currencies, and images will not be changed by AI.',
+  },
+  fr: {
+    title: 'Synchronisation IA des tarifs',
+    description: 'Traduisez les noms de cours, durees, cartes info, notes de paiement, unites de location et notes de location. Gardez les prix, devises et URL d images inchanges.',
+    languageTitle: 'Langue du contenu',
+    languageHelp: 'Modifiez d abord le chinois, puis utilisez IA pour generer English / Francais. Les prix, devises et images ne seront pas modifies par IA.',
+  },
+} as const;
+
+function pageLocale(locale: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
+
 const currencyOptions = ['', '$', 'C$', 'CAD', 'USD', '¥', '€'];
 
 const defaultProgramItems: ProgramPricingItem[] = [
@@ -116,7 +143,17 @@ const defaultProgramContent: Record<ContentLocale, ProgramPricingContent> = {
 };
 
 const defaultClassroomContent: Record<ContentLocale, ClassroomPricingContent> = {
-  zh: { items: defaultClassroomItems, notes: { title: '申请前说明', items: ['提交租借申请表不代表已经保证有教室。', '只有完成付款后，教室才会被正式预留。', '额外清洁、设备或工作人员需求可能影响最终价格。'] } },
+  zh: {
+    items: defaultClassroomItems,
+    notes: {
+      title: '\u7533\u8bf7\u524d\u8bf4\u660e',
+      items: [
+        '\u63d0\u4ea4\u79df\u501f\u7533\u8bf7\u8868\u4e0d\u4ee3\u8868\u5df2\u7ecf\u4fdd\u8bc1\u6709\u6559\u5ba4\u3002',
+        '\u53ea\u6709\u5b8c\u6210\u4ed8\u6b3e\u540e\uff0c\u6559\u5ba4\u624d\u4f1a\u88ab\u6b63\u5f0f\u9884\u7559\u3002',
+        '\u989d\u5916\u6e05\u6d01\u3001\u8bbe\u5907\u6216\u5de5\u4f5c\u4eba\u5458\u9700\u6c42\u53ef\u80fd\u5f71\u54cd\u6700\u7ec8\u4ef7\u683c\u3002',
+      ],
+    },
+  },
   en: { items: defaultClassroomItems, notes: { title: 'Before You Book', items: ['Submitting a rental request form does not guarantee a room.', 'Only completing the payment reserves a room.', 'Additional cleaning, equipment, or staffing needs may affect the final price.'] } },
   fr: { items: defaultClassroomItems, notes: { title: 'Avant de reserver', items: ["L'envoi d'une demande ne garantit pas une salle.", 'La salle est reservee seulement apres paiement.', 'Le nettoyage, le materiel ou le personnel supplementaire peuvent modifier le prix final.'] } },
 };
@@ -335,6 +372,7 @@ export default function AdminPricingPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const aiText = pricingAiText[pageLocale(locale)];
   const languageOptions = adminContentLanguageOptions(locale);
   const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -543,9 +581,9 @@ export default function AdminPricingPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Content Language / 中英法内容</CardTitle>
+              <CardTitle className="text-base">{aiText.languageTitle}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                先编辑中文，再用 AI 生成 English / Français；价格数字、货币和图片不会由 AI 修改。
+                {aiText.languageHelp}
               </p>
             </CardHeader>
             <CardContent className="space-y-4 pt-0">
@@ -560,8 +598,9 @@ export default function AdminPricingPage() {
               <AiLocaleSyncPanel
                 module="pricing"
                 sourceLocale={contentLocale}
-                title="AI Pricing 中英法同步"
-                description="翻译课程名称、时长、说明卡、付款说明、租赁时间单位和租赁说明；保留价格数字、货币、图片 URL 不变。"
+                uiLocale={locale}
+                title={aiText.title}
+                description={aiText.description}
                 fields={{
                   program_items_text: programItemsText(currentProgram),
                   info_cards_text: infoCardsText(currentProgram),

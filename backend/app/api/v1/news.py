@@ -182,6 +182,24 @@ def get_admin_article_by_id(article_id: str, db: Session = Depends(get_db)):
     return result
 
 
+@router.get("/by-ids", response_model=list[ArticleWithRelations])
+def list_public_news_by_ids(
+    ids: str,
+    locale: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    article_ids = []
+    seen = set()
+    for item in ids.split(","):
+        article_id = item.strip()
+        if article_id and article_id not in seen:
+            seen.add(article_id)
+            article_ids.append(article_id)
+    if not article_ids:
+        return []
+    return news_files.list_articles_by_ids(db, article_ids, locale=locale, published_only=True)
+
+
 @router.get("/{slug}", response_model=ArticleWithHtml)
 def get_public_article(
     slug: str,

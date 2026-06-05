@@ -68,7 +68,8 @@ def _program_response(program: Program, locale: str | None = None, include_trans
     return ProgramResponse(**data)
 
 
-@router.get("/", response_model=List[ProgramResponse])
+@router.get("", response_model=List[ProgramResponse])
+@router.get("/", response_model=List[ProgramResponse], include_in_schema=False)
 def list_programs(
     category: Optional[str] = Query(None),
     is_active: bool = True,
@@ -93,7 +94,8 @@ def list_admin_programs(
     return [_program_response(program, include_translations=True) for program in programs]
 
 
-@router.post("/", response_model=ProgramResponse)
+@router.post("", response_model=ProgramResponse)
+@router.post("/", response_model=ProgramResponse, include_in_schema=False)
 def create_program(
     program_data: ProgramCreate,
     user: User = Depends(require_admin_or_editor),

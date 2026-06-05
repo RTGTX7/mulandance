@@ -1,16 +1,19 @@
 import threading
 import uuid
+import re
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.database import SessionLocal, get_db
 from app.core.security import decode_token
 from app.models import User
 from app.core.config import settings as app_settings
 from app.api.v1.settings import _get_or_create_system_settings
 from app.schemas.ai import (
+    AiArticleImportAppendRequest,
     AiArticleImportItem,
     AiArticleImportJobCreateResponse,
     AiArticleImportJobStatusResponse,
@@ -28,6 +31,7 @@ from app.schemas.ai import (
     AiTranslateJobStatusResponse,
     ImportedSource,
 )
+from app.schemas.news import NewsArticleCreate
 from app.services.ai_article_generator import generate_imported_content
 from app.services.ai_translation import (
     AiConfigurationError,
@@ -38,7 +42,8 @@ from app.services.ai_translation import (
     extract_many_fields_from_text,
     translate_fields,
 )
-from app.services.url_importer import import_urls
+from app.services import news_files
+from app.services.url_importer import import_url, import_urls
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
@@ -164,6 +169,138 @@ def _generate_imported_article_response(
     return AiArticleImportResponse(items=items, warnings=warnings)
 
 
+def _generate_imported_article_item(
+    source: ImportedSource,
+    payload: AiArticleImportRequest,
+    config: AiRuntimeConfig,
+) -> AiArticleImportItem:
+    source = _source_with_manual_text(source, payload.manual_text)
+    if not _source_has_readable_content(source):
+        reason = "; ".join(source.warnings or []) or "No readable text, image, or metadata was found."
+        raise ValueError(
+            f"{source.url}: {reason} For Rednote/Xiaohongshu video posts, paste the caption or event details into the manual text box."
+        )
+
+    generated = generate_imported_content(
+        source=source,
+        source_locale=payload.source_locale,
+        target_locales=payload.target_locales,
+        manual_text=payload.manual_text,
+        extra_instruction=payload.extra_instruction,
+        available_category_slugs=payload.available_category_slugs,
+        available_tag_slugs=payload.available_tag_slugs,
+        config=config,
+    )
+    category_slugs = payload.category_slugs or generated.suggested_category_slugs
+    tag_slugs = payload.tag_slugs or generated.suggested_tag_slugs
+    return AiArticleImportItem(
+        source=source,
+        content_type=generated.content_type,
+        suggested_category_slugs=category_slugs,
+        suggested_tag_slugs=tag_slugs,
+        drafts=generated.drafts,
+        warnings=source.warnings,
+    )
+
+
+def _slugify_imported_title(title: str) -> str:
+    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", (title or "").lower()).strip("-")
+    if re.search(r"[a-z0-9]", slug):
+        return slug
+    return f"article-{uuid.uuid4().hex[:8]}"
+
+
+def _imported_media_urls(item: AiArticleImportItem) -> list[str]:
+    return [media.url for media in item.source.media if media.url]
+
+
+def _is_video_url(url: str) -> bool:
+    lowered = (url or "").lower()
+    return any(lowered.endswith(ext) for ext in (".mp4", ".webm", ".ogg", ".mov", ".m4v", ".m3u8"))
+
+
+def _first_draft_title(item: AiArticleImportItem, index: int) -> str:
+    zh = next((draft for draft in item.drafts if draft.locale == "zh"), None)
+    return (
+        (zh.fields.get("title") if zh else "")
+        or (item.drafts[0].fields.get("title") if item.drafts else "")
+        or item.source.title
+        or f"imported-{index + 1}"
+    )
+
+
+def _video_link_label(locale: str) -> str:
+    if locale == "zh":
+        return "观看视频"
+    if locale == "fr":
+        return "Voir la vidéo"
+    return "Watch video"
+
+
+def _body_with_imported_media(body: str, item: AiArticleImportItem, title: str, locale: str) -> str:
+    urls = _imported_media_urls(item)
+    body_media_urls = urls[1:] if len(urls) > 1 else []
+    missing = [url for url in body_media_urls if url not in (body or "")]
+    next_body = body or ""
+    if missing:
+        alt = title or item.source.title or "Imported image"
+        if len(missing) > 1:
+            image_markdown = "\n".join([":::carousel", *[f"![{alt} {idx + 1}]({url})" for idx, url in enumerate(missing)], ":::"])
+        else:
+            image_markdown = f"![{alt}]({missing[0]})"
+        next_body = f"{next_body.strip()}\n\n{image_markdown}" if next_body.strip() else image_markdown
+
+    video_url = item.source.video_url or (item.source.url if item.source.is_video else "")
+    if video_url and video_url not in next_body and not _is_video_url(next_body):
+        video_markdown = f"[{_video_link_label(locale)}]({video_url})"
+        next_body = f"{next_body.strip()}\n\n{video_markdown}" if next_body.strip() else video_markdown
+
+    return next_body
+
+
+def _unique_imported_slug(item: AiArticleImportItem, index: int) -> str:
+    base = _slugify_imported_title(_first_draft_title(item, index))
+    suffix = uuid.uuid4().hex[:8]
+    if item.source.source_published_at:
+        try:
+            suffix = datetime.fromisoformat(item.source.source_published_at.replace("Z", "+00:00")).date().isoformat()
+        except ValueError:
+            pass
+    return re.sub(r"-+", "-", f"{base}-{suffix}-{index + 1}").strip("-")
+
+
+def _save_imported_article_draft(item: AiArticleImportItem, index: int) -> str:
+    slug = _unique_imported_slug(item, index)
+    cover = _imported_media_urls(item)[0] if _imported_media_urls(item) else None
+    published_at = None
+    if item.source.source_published_at:
+        try:
+            published_at = datetime.fromisoformat(item.source.source_published_at.replace("Z", "+00:00"))
+        except ValueError:
+            published_at = None
+
+    db = SessionLocal()
+    try:
+        for draft in item.drafts:
+            title = draft.fields.get("title") or _first_draft_title(item, index)
+            article = NewsArticleCreate(
+                title=title,
+                slug=slug,
+                summary=draft.fields.get("summary") or None,
+                body=_body_with_imported_media(draft.fields.get("body") or "", item, title, draft.locale),
+                cover_image=cover,
+                category_slugs=item.suggested_category_slugs,
+                tag_slugs=item.suggested_tag_slugs,
+                locale=draft.locale,
+                is_published=False,
+                published_at=published_at,
+            )
+            news_files.create_article(db, article)
+        return slug
+    finally:
+        db.close()
+
+
 def _set_import_job(job_id: str, **updates) -> None:
     with _ai_import_jobs_lock:
         job = _ai_import_jobs.get(job_id, {})
@@ -186,14 +323,83 @@ def _set_translate_job(job_id: str, **updates) -> None:
 
 
 def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRuntimeConfig) -> None:
-    _set_import_job(job_id, status="running")
-    try:
-        result = _generate_imported_article_response(payload, config)
-        _set_import_job(job_id, status="succeeded", result=result, error="")
-    except HTTPException as exc:
-        _set_import_job(job_id, status="failed", error=str(exc.detail))
-    except Exception as exc:
-        _set_import_job(job_id, status="failed", error=str(exc))
+    result = AiArticleImportResponse(items=[], warnings=[])
+    errors: list[str] = []
+    saved_slugs: list[str] = []
+    initial_queue = list(payload.urls) if payload.urls else (["manual-input"] if payload.manual_text else [])
+    _set_import_job(
+        job_id,
+        status="running",
+        queue=initial_queue,
+        result=result,
+        error="",
+        total=len(initial_queue),
+        completed=0,
+        failed=0,
+        current_url="",
+        errors=[],
+        saved=0,
+        saved_slugs=[],
+    )
+
+    if not initial_queue:
+        _set_import_job(job_id, status="failed", error="Provide at least one URL or manual text.")
+        return
+
+    index = 0
+    while True:
+        with _ai_import_jobs_lock:
+            job = _ai_import_jobs.get(job_id, {})
+            queue = list(job.get("queue", []))
+        if index >= len(queue):
+            break
+
+        url = queue[index]
+        _set_import_job(job_id, current_url=url, total=len(queue))
+        try:
+            source = ImportedSource(url="manual-input", text=payload.manual_text or "") if url == "manual-input" else import_url(url)
+            item = _generate_imported_article_item(source, payload, config)
+            result.items.append(item)
+            if payload.auto_save_to_drafts:
+                saved_slugs.append(_save_imported_article_draft(item, index))
+            _set_import_job(
+                job_id,
+                result=result,
+                completed=len(result.items),
+                failed=len(errors),
+                error="",
+                errors=errors,
+                saved=len(saved_slugs),
+                saved_slugs=saved_slugs,
+            )
+        except Exception as exc:
+            errors.append(f"{url}: {exc}")
+            _set_import_job(
+                job_id,
+                result=result,
+                completed=len(result.items),
+                failed=len(errors),
+                error=str(exc),
+                errors=errors,
+                saved=len(saved_slugs),
+                saved_slugs=saved_slugs,
+            )
+        index += 1
+
+    final_status = "succeeded" if result.items or saved_slugs else "failed"
+    final_error = "" if result.items else "AI could not generate any article drafts."
+    _set_import_job(
+        job_id,
+        status=final_status,
+        result=result,
+        error=final_error,
+        current_url="",
+        completed=len(result.items),
+        failed=len(errors),
+        errors=errors,
+        saved=len(saved_slugs),
+        saved_slugs=saved_slugs,
+    )
 
 
 def _run_extract_many_job(job_id: str, payload: AiExtractManyRequest, config: AiRuntimeConfig) -> None:
@@ -400,6 +606,44 @@ def create_import_article_urls_job(
     return AiArticleImportJobCreateResponse(job_id=job_id, status="pending")
 
 
+@router.post("/import-article-urls/jobs/{job_id}/append", response_model=AiArticleImportJobStatusResponse)
+def append_import_article_urls_job(
+    job_id: str,
+    payload: AiArticleImportAppendRequest,
+    user: User = Depends(require_admin),
+):
+    if not payload.urls:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provide at least one URL.")
+
+    with _ai_import_jobs_lock:
+        job = _ai_import_jobs.get(job_id)
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI import job not found")
+        if job.get("status") not in {"pending", "running"}:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Only running jobs can accept more URLs.")
+        queue = list(job.get("queue", []))
+        existing = set(queue)
+        added = [url for url in payload.urls if url not in existing]
+        queue.extend(added)
+        job["queue"] = queue
+        job["total"] = len(queue)
+        _ai_import_jobs[job_id] = job
+
+    return AiArticleImportJobStatusResponse(
+        job_id=job_id,
+        status=job.get("status", "pending"),
+        result=job.get("result"),
+        error=job.get("error", ""),
+        total=job.get("total", 0),
+        completed=job.get("completed", 0),
+        failed=job.get("failed", 0),
+        current_url=job.get("current_url", ""),
+        errors=job.get("errors", []),
+        saved=job.get("saved", 0),
+        saved_slugs=job.get("saved_slugs", []),
+    )
+
+
 @router.get("/import-article-urls/jobs/{job_id}", response_model=AiArticleImportJobStatusResponse)
 def get_import_article_urls_job(
     job_id: str,
@@ -414,6 +658,13 @@ def get_import_article_urls_job(
         status=job.get("status", "pending"),
         result=job.get("result"),
         error=job.get("error", ""),
+        total=job.get("total", 0),
+        completed=job.get("completed", 0),
+        failed=job.get("failed", 0),
+        current_url=job.get("current_url", ""),
+        errors=job.get("errors", []),
+        saved=job.get("saved", 0),
+        saved_slugs=job.get("saved_slugs", []),
     )
 
 

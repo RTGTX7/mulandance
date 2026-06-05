@@ -38,7 +38,18 @@ MODULE_FIELD_ALLOWLIST = {
         "rental_notes_title",
         "rental_notes_body",
     },
-    "settings": {"site_name", "tagline", "school_policy", "body"},
+    "settings": {
+        "site_name",
+        "tagline",
+        "school_policy",
+        "body",
+        "announcement_text",
+        "footer_description",
+        "footer_newsletter_title",
+        "footer_newsletter_text",
+        "copyright_text",
+        "contact_address",
+    },
     "school_policy": {"title", "body", "body_markdown"},
 }
 

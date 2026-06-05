@@ -27,6 +27,10 @@ const emptyForm: ProgramBody & { is_active: boolean } = {
   is_active: true,
 };
 
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+}
+
 function VisibilitySwitch({
   checked,
   onCheckedChange,
@@ -177,7 +181,9 @@ export default function AdminProgramsPage() {
     setUploading(true);
     setError('');
     try {
-      const uploaded = await uploadApi.image(file);
+      const uploaded = file.type.startsWith('video/')
+        ? await uploadApi.video(file)
+        : await uploadApi.image(file);
       setForm((current) => ({ ...current, cover_image: uploaded.url }));
     } catch (err) {
       setError(err instanceof Error ? err.message : text.uploadFailed);
@@ -241,6 +247,19 @@ export default function AdminProgramsPage() {
     }
   }
 
+  async function toggleProgramVisibility(program: ProgramItem) {
+    setError('');
+    try {
+      const updated = await programApi.update(program.id, { is_active: !program.is_active });
+      setPrograms((current) => current.map((item) => (item.id === program.id ? updated : item)));
+      if (editingId === program.id) {
+        setForm((current) => ({ ...current, is_active: updated.is_active }));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : labels.common.saveFailed);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-10 border-b bg-card">
@@ -277,6 +296,7 @@ export default function AdminProgramsPage() {
               <AiLocaleSyncPanel
                 module="programs"
                 sourceLocale={contentLocale}
+                uiLocale={locale}
                 fields={{
                   name: localizedField('name'),
                   description: localizedField('description'),
@@ -315,7 +335,17 @@ export default function AdminProgramsPage() {
                 <div className="space-y-2">
                   <div className="h-32 overflow-hidden rounded-md border bg-slate-100">
                     {form.cover_image ? (
-                      <img src={form.cover_image} alt={form.name || text.coverImage} className="h-full w-full object-cover" />
+                      isVideoUrl(form.cover_image) ? (
+                        <video
+                          src={form.cover_image}
+                          className="h-full w-full object-cover"
+                          controls
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        <img src={form.cover_image} alt={form.name || text.coverImage} className="h-full w-full object-cover" />
+                      )
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{text.noCover}</div>
                     )}
@@ -325,7 +355,7 @@ export default function AdminProgramsPage() {
                       <label className="cursor-pointer">
                         {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
                         {text.uploadCover}
-                        <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
+                        <input type="file" accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime,.mov" className="hidden" onChange={uploadCover} />
                       </label>
                     </Button>
                     <Input
@@ -396,7 +426,18 @@ export default function AdminProgramsPage() {
                   <div key={program.id} className="flex items-center gap-4 rounded-md border bg-white p-3">
                     <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md bg-slate-100">
                       {program.cover_image ? (
-                        <img src={program.cover_image} alt={program.name} className="h-full w-full object-cover" />
+                        isVideoUrl(program.cover_image) ? (
+                          <video
+                            src={program.cover_image}
+                            className="h-full w-full object-cover"
+                            muted
+                            playsInline
+                            autoPlay
+                            loop
+                          />
+                        ) : (
+                          <img src={program.cover_image} alt={program.name} className="h-full w-full object-cover" />
+                        )
                       ) : (
                         <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{labels.resources.noImage}</div>
                       )}
@@ -411,7 +452,13 @@ export default function AdminProgramsPage() {
                       <p className="truncate text-sm text-muted-foreground">/{program.slug} · {program.level || program.category}</p>
                       <p className="line-clamp-2 text-sm text-muted-foreground">{program.description || text.emptyDescription}</p>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <VisibilitySwitch
+                        checked={program.is_active}
+                        onCheckedChange={() => toggleProgramVisibility(program)}
+                        visibleLabel={labels.resources.show}
+                        hiddenLabel={labels.resources.hidden}
+                      />
                       <Button type="button" variant="ghost" size="icon" onClick={() => editProgram(program)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>

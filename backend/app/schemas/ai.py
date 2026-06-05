@@ -101,6 +101,8 @@ class ImportedSource(BaseModel):
     source_published_at: str = ""
     images: list[str] = []
     media: list[ImportedMedia] = []
+    video_url: str = ""
+    is_video: bool = False
     warnings: list[str] = []
 
 
@@ -114,6 +116,20 @@ class AiArticleImportRequest(BaseModel):
     tag_slugs: list[str] = Field(default_factory=list)
     available_category_slugs: list[str] = Field(default_factory=list)
     available_tag_slugs: list[str] = Field(default_factory=list)
+    auto_save_to_drafts: bool = False
+
+    @field_validator("urls")
+    @classmethod
+    def clean_urls(cls, value: list[str]) -> list[str]:
+        cleaned = []
+        for item in value:
+            if isinstance(item, str) and item.strip():
+                cleaned.append(item.strip())
+        return cleaned
+
+
+class AiArticleImportAppendRequest(BaseModel):
+    urls: list[str] = Field(default_factory=list)
 
     @field_validator("urls")
     @classmethod
@@ -149,3 +165,10 @@ class AiArticleImportJobStatusResponse(BaseModel):
     status: str
     result: AiArticleImportResponse | None = None
     error: str = ""
+    total: int = 0
+    completed: int = 0
+    failed: int = 0
+    current_url: str = ""
+    errors: list[str] = Field(default_factory=list)
+    saved: int = 0
+    saved_slugs: list[str] = Field(default_factory=list)

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CalendarDays, Tag, Folder } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { articleLocaleFor, dateLocaleFor, localizeText } from '@/lib/i18n';
+import { articleLocaleFor, dateLocaleFor, isChineseLocale, localizeText } from '@/lib/i18n';
 
 interface Article {
   id: string;
@@ -23,9 +23,19 @@ interface Article {
   published_at?: string;
   created_at: string;
   locale: string;
+  video_url?: string;
   category_slugs?: string[];
   categories?: Array<{ slug: string; name: string; name_zh?: string; color?: string }>;
   tags?: Array<{ slug: string; name: string; name_zh?: string }>;
+}
+
+type NamedTaxonomy = { slug: string; name: string; name_zh?: string };
+
+function taxonomyLabel(item: NamedTaxonomy, locale: string) {
+  if (isChineseLocale(locale) && item.name_zh) {
+    return localizeText(item.name_zh, locale) || item.name_zh;
+  }
+  return item.name || item.name_zh || item.slug;
 }
 
 function localizeArticle(article: Article, locale: string): Article {
@@ -44,6 +54,18 @@ function localizeArticle(article: Article, locale: string): Article {
       name_zh: localizeText(tag.name_zh, locale) || tag.name_zh,
     })),
   };
+}
+
+function extractVideoUrl(article: Article | null): string {
+  if (!article) return "";
+  if (article.video_url) return article.video_url;
+
+  const sources = [article.rendered_body || "", article.body || ""];
+  for (const source of sources) {
+    const match = source.match(/https?:\/\/[^\s)"']+\.(mp4|webm|ogg|mov|m4v)(\?[^\s)"']*)?/i);
+    if (match) return match[0];
+  }
+  return "";
 }
 
 export default function ArticleDetailPage() {
@@ -73,12 +95,13 @@ export default function ArticleDetailPage() {
   }, [slug, locale]);
 
   const categoryNames = article?.categories
-    ?.map((c) => c.name_zh ? `${c.name} (${c.name_zh})` : c.name)
+    ?.map((c) => taxonomyLabel(c, locale))
     .join(', ') || '';
 
   const tagNames = article?.tags
-    ?.map((t) => t.name_zh ? `${t.name} (${t.name_zh})` : t.name)
+    ?.map((t) => taxonomyLabel(t, locale))
     .join(', ') || '';
+  const videoUrl = extractVideoUrl(article);
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,6 +156,18 @@ export default function ArticleDetailPage() {
               </div>
             )}
 
+            {videoUrl && (
+              <div className="mb-8 overflow-hidden rounded-xl border border-white/60 bg-black shadow-sm">
+                <video
+                  src={videoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-auto max-h-[520px] bg-black"
+                />
+              </div>
+            )}
+
             {/* Title */}
             <h1 className="heading-lg mb-4">{article.title}</h1>
 
@@ -179,7 +214,7 @@ export default function ArticleDetailPage() {
                         : undefined
                     }
                   >
-                    {cat.name_zh ? `${cat.name} (${cat.name_zh})` : cat.name}
+                    {taxonomyLabel(cat, locale)}
                   </Badge>
                 ))}
               </div>
@@ -190,7 +225,7 @@ export default function ArticleDetailPage() {
               <div className="flex flex-wrap gap-2 mb-8">
                 {article.tags.map((tag) => (
                   <Badge key={tag.slug} variant="outline">
-                    {tag.name_zh ? `${tag.name} (${tag.name_zh})` : tag.name}
+                    {taxonomyLabel(tag, locale)}
                   </Badge>
                 ))}
               </div>

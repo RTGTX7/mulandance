@@ -1,16 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
-import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { newsApi, performanceApi, type NewsArticle, type PerformanceItem } from '@/lib/api';
 import { articleLocaleFor, dateLocaleFor } from '@/lib/i18n';
-import { CalendarDays, Clock, FileText, MapPin, Newspaper } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock, FileText, MapPin, Newspaper } from 'lucide-react';
 
 type TimelineType = 'performance' | 'competition' | 'camp' | 'event' | 'other';
 
@@ -35,6 +33,20 @@ function typeClass(type: TimelineType) {
     event: 'border-blue-200 bg-blue-50 text-blue-700',
     other: 'border-slate-200 bg-slate-50 text-slate-700',
   }[type];
+}
+
+function timelineStatus(item: PerformanceItem, now: number) {
+  const start = new Date(item.start_date).getTime();
+  const end = new Date(item.end_date).getTime();
+  if (end < now) return 'past';
+  if (start <= now && end >= now) return 'current';
+  return 'future';
+}
+
+function timelineAccent(status: ReturnType<typeof timelineStatus>) {
+  if (status === 'past') return 'hsl(0 0% 58%)';
+  if (status === 'current') return 'hsl(145 50% 42%)';
+  return 'hsl(32 82% 54%)';
 }
 
 export default function PerformancesPage() {
@@ -67,20 +79,11 @@ export default function PerformancesPage() {
     return [...performances].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
   }, [performances]);
 
-  const upcoming = sorted.filter((item) => new Date(item.end_date).getTime() >= now);
-  const archive = [...sorted]
+  const futureOrCurrent = sorted.filter((item) => new Date(item.end_date).getTime() >= now);
+  const past = [...sorted]
     .filter((item) => new Date(item.end_date).getTime() < now)
     .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
-  const timeline = [...upcoming, ...archive];
-
-  const archiveByYear = useMemo(() => {
-    return archive.reduce<Record<string, PerformanceItem[]>>((acc, item) => {
-      const year = String(new Date(item.start_date).getFullYear());
-      acc[year] = acc[year] || [];
-      acc[year].push(item);
-      return acc;
-    }, {});
-  }, [archive]);
+  const timeline = [...futureOrCurrent, ...past];
 
   function dateText(item: PerformanceItem) {
     return new Date(item.start_date).toLocaleDateString(dateLocale, {
@@ -96,31 +99,35 @@ export default function PerformancesPage() {
     return `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
 
+  function dateParts(item: PerformanceItem) {
+    const date = new Date(item.start_date);
+    const isChinese = locale === 'zh' || locale === 'zh-Hant';
+    return {
+      month: date.toLocaleDateString(dateLocale, { month: 'short' }),
+      day: isChinese
+        ? String(date.getDate()).padStart(2, '0')
+        : date.toLocaleDateString(dateLocale, { day: '2-digit' }),
+      weekday: date.toLocaleDateString(dateLocale, { weekday: 'short' }),
+      year: date.toLocaleDateString(dateLocale, { year: 'numeric' }),
+    };
+  }
+
   return (
     <div className="pt-16">
-      <PageHero
-        breadcrumbLabel={t('common.nav.performances')}
-        breadcrumbHref="/performances"
-        title={t('performanceTimeline.title')}
-        subtitle={t('performanceTimeline.subtitle')}
-      />
-
       <main className="section-padding bg-slate-100">
         <div className="container">
-        <div className="mb-6 flex flex-wrap gap-2">
-          <a href="#upcoming">
-            <Button variant="outline" size="sm">{t('performanceTimeline.upcoming')}</Button>
-          </a>
-          <a href="#timeline">
-            <Button variant="outline" size="sm">{t('performanceTimeline.timeline')}</Button>
-          </a>
-          <a href="#archive">
-            <Button variant="outline" size="sm">{t('performanceTimeline.archive')}</Button>
-          </a>
-          <a href="#articles">
-            <Button variant="outline" size="sm">{t('performanceTimeline.relatedArticles')}</Button>
-          </a>
-        </div>
+        <section className="mb-3 rounded-[14px] border border-white/70 bg-white/55 px-4 py-4 shadow-sm shadow-purple-950/5 backdrop-blur-xl md:mb-6 md:rounded-[18px] md:px-8 md:py-8">
+          <div className="flex flex-col gap-5">
+            <div className="max-w-3xl">
+              <h1 className="font-accent text-[1.92rem] font-bold leading-none tracking-tight text-slate-950 md:text-6xl">
+                {t('performanceTimeline.title')}
+              </h1>
+              <p className="mt-2.5 max-w-2xl text-[12px] leading-5 text-slate-600 md:mt-4 md:text-base md:leading-7">
+                {t('performanceTimeline.subtitle')}
+              </p>
+            </div>
+          </div>
+        </section>
 
         {loading ? (
           <Card>
@@ -135,112 +142,107 @@ export default function PerformancesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
-            <section id="timeline" className="space-y-8">
-              <div id="upcoming" className="scroll-mt-24">
-                <h2 className="mb-4 text-2xl font-semibold text-slate-950">
-                  {t('performanceTimeline.upcoming')}
-                </h2>
-                {upcoming.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-5 text-sm text-slate-500">
-                      {t('performanceTimeline.noUpcoming')}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-4">
-                    {upcoming.map((item) => {
-                      const type = getTimelineType(item);
-                      return (
-                        <Link key={item.id} href={`/${locale}/performances/${item.slug}`} className="block">
-                          <Card className="overflow-hidden transition hover:border-purple-300 hover:shadow-md">
-                            <CardContent className="grid gap-4 p-4 md:grid-cols-[220px_1fr]">
-                              <div className="aspect-[4/3] overflow-hidden rounded-md bg-slate-100">
-                                {item.cover_image ? (
-                                  <img src={item.cover_image} alt={item.title} className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="flex h-full items-center justify-center text-slate-400">
-                                    <CalendarDays className="h-8 w-8" />
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <Badge variant="outline" className={typeClass(type)}>
-                                  {t(`performanceTimeline.type.${type}`)}
-                                </Badge>
-                                <h3 className="mt-3 text-xl font-semibold text-slate-950">{item.title}</h3>
-                                {item.description && (
-                                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{item.description}</p>
-                                )}
-                                <div className="mt-4 grid gap-2 text-sm text-slate-500 sm:grid-cols-3">
-                                  <span className="flex items-center gap-1.5">
-                                    <CalendarDays className="h-4 w-4" />
-                                    {dateText(item)}
-                                  </span>
-                                  <span className="flex items-center gap-1.5">
-                                    <Clock className="h-4 w-4" />
-                                    {timeText(item)}
-                                  </span>
-                                  {item.venue && (
-                                    <span className="flex items-center gap-1.5">
-                                      <MapPin className="h-4 w-4" />
-                                      {item.venue}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <section id="timeline" className="season-timeline-section scroll-mt-24">
+              <div className="px-0 py-0 md:px-0 md:py-0">
+                <div className="season-timeline-list relative">
+                  <div className="season-timeline-scroll" role="region" tabIndex={0} aria-label={t('performanceTimeline.timeline')}>
+                    <div className="season-timeline-rail" aria-hidden="true" />
+                    <div className="space-y-2.5 pr-0 md:space-y-5 md:pr-2">
+                      {timeline.map((item, index) => {
+                        const type = getTimelineType(item);
+                        const parts = dateParts(item);
+                        const isArchive = new Date(item.end_date).getTime() < now;
+                        const status = timelineStatus(item, now);
+                        return (
+                          <Link
+                            key={item.id}
+                            href={`/${locale}/performances/${item.slug}`}
+                            className="season-timeline-item group relative grid snap-start grid-cols-[24px_1fr] gap-2 md:grid-cols-[46px_1fr] md:gap-4"
+                            style={{ '--event-index': index, '--timeline-accent': timelineAccent(status) } as CSSProperties}
+                          >
+                            <div className="relative flex justify-center pt-5 md:pt-9">
+                              <span className={`season-timeline-node season-timeline-node-${status}`} aria-hidden="true">
+                                <span className="season-timeline-node-core" />
+                              </span>
+                            </div>
 
-              <div id="archive" className="scroll-mt-24">
-                <h2 className="mb-4 text-2xl font-semibold text-slate-950">
-                  {t('performanceTimeline.archive')}
-                </h2>
-                {Object.keys(archiveByYear).length === 0 ? (
-                  <Card>
-                    <CardContent className="p-5 text-sm text-slate-500">
-                      {t('performanceTimeline.noArchive')}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-6">
-                    {Object.entries(archiveByYear).map(([year, items]) => (
-                      <div key={year} className="relative border-l border-slate-200 pl-5">
-                        <div className="absolute -left-2 top-1 h-4 w-4 rounded-full border-4 border-white bg-purple-500" />
-                        <h3 className="mb-3 text-lg font-semibold text-slate-950">{year}</h3>
-                        <div className="space-y-3">
-                          {items.map((item) => {
-                            const type = getTimelineType(item);
-                            return (
-                              <Link key={item.id} href={`/${locale}/performances/${item.slug}`} className="block">
-                                <div className="rounded-md border bg-white p-4 transition hover:border-purple-300">
-                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                      <h4 className="font-semibold text-slate-950">{item.title}</h4>
-                                      <p className="mt-1 text-sm text-slate-500">{dateText(item)}</p>
-                                    </div>
-                                    <Badge variant="outline" className={typeClass(type)}>
-                                      {t(`performanceTimeline.type.${type}`)}
-                                    </Badge>
+                            <article className="season-event-card grid min-h-[148px] overflow-hidden rounded-[14px] md:min-h-[190px] md:rounded-[18px] md:grid-cols-[132px_minmax(0,1fr)_220px] lg:grid-cols-[150px_minmax(0,1fr)_260px]">
+                              <div className="season-event-date relative flex min-h-[82px] flex-row items-center justify-between gap-2.5 px-3.5 py-2.5 md:min-h-full md:flex-col md:items-start md:justify-between md:px-5 md:py-5">
+                                <div>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/85">{parts.month}</p>
+                                  <p className="mt-0.5 font-accent text-[2rem] leading-none text-primary md:text-6xl">{parts.day}</p>
+                                  <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{parts.year}</p>
+                                </div>
+                                <div className="text-right md:text-left">
+                                  <p className="text-[11px] font-semibold text-slate-500">{parts.weekday}</p>
+                                  <Badge variant="outline" className={`mt-1 text-[10px] ${typeClass(type)}`}>
+                                    {t(`performanceTimeline.type.${type}`)}
+                                  </Badge>
+                                </div>
+                              </div>
+
+                                <div className="flex min-w-0 flex-col justify-center px-3.5 py-3 md:px-6 md:py-6">
+                                  <div className="mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-semibold text-slate-500 md:mb-3 md:gap-x-4 md:gap-y-2 md:text-sm">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <CalendarDays className="h-3 w-3 text-secondary md:h-4 md:w-4" />
+                                      {dateText(item)}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <Clock className="h-3 w-3 text-secondary md:h-4 md:w-4" />
+                                      {timeText(item)}
+                                    </span>
+                                    {item.venue && (
+                                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                                        <MapPin className="h-3 w-3 shrink-0 text-secondary md:h-4 md:w-4" />
+                                        <span className="truncate">{item.venue}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h3 className="text-[1.08rem] font-bold leading-[1.1] text-slate-950 transition-colors group-hover:text-primary md:text-2xl">
+                                    {item.title}
+                                  </h3>
+                                  {item.description && (
+                                    <p className="mt-1.5 line-clamp-2 text-[12px] leading-[1.45] text-slate-600 md:mt-3 md:line-clamp-3 md:text-[15px] md:leading-6">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                  <div className="mt-3 flex items-center gap-1.5 text-[12px] font-semibold text-secondary md:mt-5 md:gap-2 md:text-sm">
+                                    <span className="h-px w-5 bg-secondary/35 transition-all group-hover:w-8 md:w-8 md:group-hover:w-12" />
+                                    <span>{isArchive ? t('performanceTimeline.archive') : t('performanceTimeline.upcoming')}</span>
+                                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1 md:h-4 md:w-4" />
                                   </div>
                                 </div>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+
+                                <div className="season-event-media relative hidden min-h-full overflow-hidden md:block">
+                                  {item.cover_image ? (
+                                    <img
+                                      src={item.cover_image}
+                                      alt={item.title}
+                                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_22%,rgba(216,168,79,0.28),transparent_30%),linear-gradient(135deg,rgba(71,28,104,0.34),rgba(255,255,255,0.18))]" />
+                                  )}
+                                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.78)_14%,rgba(255,255,255,0.42)_32%,rgba(255,255,255,0.10)_54%,rgba(35,13,56,0.16)_100%)]" />
+                                  <div className="absolute bottom-4 right-4 rounded-full border border-white/55 bg-white/45 px-3 py-1 text-xs font-bold text-primary shadow-sm backdrop-blur-xl">
+                                    {String(index + 1).padStart(2, '0')}
+                                  </div>
+                                </div>
+                            </article>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
+                  <div className="season-scroll-cue" aria-hidden="true">
+                    <span />
+                  </div>
+                </div>
               </div>
             </section>
 
+            {articles.length > 0 && (
             <aside id="articles" className="scroll-mt-24 space-y-4">
               <Card>
                 <CardContent className="p-5">
@@ -250,12 +252,7 @@ export default function PerformancesPage() {
                       {t('performanceTimeline.relatedArticles')}
                     </h2>
                   </div>
-                  {articles.length === 0 ? (
-                    <p className="text-sm leading-6 text-slate-500">
-                      {t('performanceTimeline.articleEmpty')}
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       {articles.map((article) => (
                         <Link
                           key={article.id}
@@ -273,11 +270,11 @@ export default function PerformancesPage() {
                           </div>
                         </Link>
                       ))}
-                    </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             </aside>
+            )}
           </div>
         )}
         </div>

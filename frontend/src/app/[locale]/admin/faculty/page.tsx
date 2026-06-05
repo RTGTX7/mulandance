@@ -34,6 +34,30 @@ const emptyForm: FacultyMemberBody = {
   order_index: 0,
 };
 
+const facultyAiText = {
+  zh: {
+    pasteTitle: '\u7c98\u8d34\u6559\u5e08\u8d44\u6599',
+    pasteDescription: '\u628a\u6559\u5e08\u7b80\u4ecb\u3001\u5c65\u5386\u3001\u83b7\u5956\u7ecf\u5386\u6216\u793e\u5a92\u6587\u5b57\u7c98\u8d34\u8fdb\u6765\uff0cAI \u4f1a\u62c6\u6210\u59d3\u540d\u3001\u804c\u4f4d\u3001\u7b80\u4ecb\u3001\u4e13\u957f\u548c\u6210\u5c31\u3002',
+    pastePlaceholder: '\u4f8b\uff1a\u674e\u8001\u5e08\uff0c\u6bd5\u4e1a\u4e8e\u5317\u4eac\u821e\u8e48\u5b66\u9662\u4e2d\u56fd\u821e\u4e13\u4e1a\uff0c\u66fe\u4efb\u4e13\u4e1a\u821e\u56e2\u6f14\u5458\u3002\u64c5\u957f\u4e2d\u56fd\u53e4\u5178\u821e\u3001\u6c11\u65cf\u6c11\u95f4\u821e\u3001\u5c11\u513f\u57fa\u672c\u529f\u8bad\u7ec3\uff0c\u5e26\u9886\u5b66\u751f\u591a\u6b21\u83b7\u5f97\u6bd4\u8d5b\u5956\u9879\u3002',
+  },
+  en: {
+    pasteTitle: 'Paste faculty profile',
+    pasteDescription: 'Paste a bio, resume, awards, or social post. AI will split it into name, role, bio, specialties, and achievements.',
+    pastePlaceholder: 'Example: Ms. Li graduated from Beijing Dance Academy in Chinese dance and performed with a professional company. She specializes in classical Chinese dance, folk dance, and children basic training, and has led students to win multiple awards.',
+  },
+  fr: {
+    pasteTitle: 'Coller le profil du professeur',
+    pasteDescription: 'Collez une bio, un CV, des prix ou un texte de reseaux sociaux. IA remplira le nom, le role, la bio, les specialites et les realisations.',
+    pastePlaceholder: 'Exemple : Mme Li est diplomee de Beijing Dance Academy en danse chinoise et a danse dans une compagnie professionnelle. Elle enseigne la danse classique chinoise, la danse folklorique et la technique de base pour enfants.',
+  },
+} as const;
+
+function pageLocale(locale: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
+
 function VisibilitySwitch({
   checked,
   onCheckedChange,
@@ -74,6 +98,7 @@ export default function AdminFacultyPage() {
   const locale = pathname.split('/')[1] || 'en';
   const labels = adminUiText(locale);
   const text = labels.resources.faculty;
+  const aiText = facultyAiText[pageLocale(locale)];
   const languageOptions = adminContentLanguageOptions(locale);
   const [members, setMembers] = useState<FacultyMember[]>([]);
   const [form, setForm] = useState<FacultyMemberBody>(emptyForm);
@@ -286,6 +311,7 @@ export default function AdminFacultyPage() {
               <AiLocaleSyncPanel
                 module="faculty"
                 sourceLocale={contentLocale}
+                uiLocale={locale}
                 fields={{
                   name: localizedField('name'),
                   role: localizedField('role'),
@@ -299,11 +325,12 @@ export default function AdminFacultyPage() {
               <AiPasteFillDialog
                 module="faculty"
                 sourceLocale={contentLocale}
+                uiLocale={locale}
                 targetFields={['name', 'role', 'bio', 'specialties', 'achievements', 'photo_url']}
                 onApply={applyAiDrafts}
-                title="粘贴教师资料"
-                description="把教师简介、履历、获奖经历或社媒文字粘贴进来，AI 会拆成姓名、职位、简介、专长和成就。"
-                placeholder={'例：李老师，毕业于北京舞蹈学院中国舞专业，曾任专业舞团演员。擅长中国古典舞、民族民间舞、少儿基本功训练，带领学生多次获得比赛奖项。'}
+                title={aiText.pasteTitle}
+                description={aiText.pasteDescription}
+                placeholder={aiText.pastePlaceholder}
                 instruction="Extract one faculty profile. Keep specialties and achievements concise; use newline-separated achievements when there are multiple."
               />
 

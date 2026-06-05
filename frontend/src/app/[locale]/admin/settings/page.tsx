@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  type AiDraft,
   type AiProviderSettings,
   type AiProviderSettingsUpdate,
   type SystemSettings,
@@ -20,6 +21,7 @@ import {
 import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { Download, ImagePlus, KeyRound, Loader2, Mail, Save, Settings, Upload } from 'lucide-react';
+import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
 
 const defaultSettings: SystemSettings = {
   site_name: 'Mulan Dance Studio',
@@ -50,6 +52,27 @@ const defaultSettings: SystemSettings = {
 };
 
 type ContentLocale = 'zh' | 'en' | 'fr';
+
+const settingsAiText = {
+  zh: {
+    announcementTitle: 'AI 公告栏中英法同步',
+    announcementDescription: '整理当前公告文字，并生成中文、英文、法语版本。链接保持不变。',
+  },
+  en: {
+    announcementTitle: 'AI announcement language sync',
+    announcementDescription: 'Polish the current announcement text and generate Chinese, English, and French versions. The link is kept unchanged.',
+  },
+  fr: {
+    announcementTitle: 'Synchronisation IA de l annonce',
+    announcementDescription: 'Revise le texte actuel de l annonce et genere les versions chinoise, anglaise et francaise. Le lien reste inchange.',
+  },
+} as const;
+
+function adminLocale(locale: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
 
 const defaultAiSettings: AiProviderSettings = {
   enabled: false,
@@ -108,6 +131,10 @@ export default function AdminSettingsPage() {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
   const labels = adminUiText(locale);
+  const settingsAi = settingsAiText[adminLocale(locale)];
+  const languageOptions = adminContentLanguageOptions(locale);
+  const editingLanguageLabel =
+    adminLocale(locale) === 'zh' ? '编辑语言' : adminLocale(locale) === 'fr' ? 'Langue modifiee' : 'Editing Language';
   const aiText = locale.startsWith('zh')
     ? {
         title: 'AI API 接入',
@@ -297,6 +324,35 @@ export default function AdminSettingsPage() {
         },
       },
     }));
+  }
+
+  function applyAnnouncementAiDrafts(drafts: AiDraft[]) {
+    setForm((current) => {
+      const next: SystemSettings = {
+        ...current,
+        translations: { ...(current.translations || {}) },
+      };
+
+      drafts.forEach((draft) => {
+        const value = String(draft.fields?.announcement_text || '').trim();
+        if (!value) return;
+        if (draft.locale === 'zh' || draft.locale === 'zh-Hant') {
+          next.announcement_text = value;
+          return;
+        }
+        if (draft.locale === 'en' || draft.locale === 'fr') {
+          next.translations = {
+            ...(next.translations || {}),
+            [draft.locale]: {
+              ...(next.translations?.[draft.locale] || {}),
+              announcement_text: value,
+            },
+          };
+        }
+      });
+
+      return next;
+    });
   }
 
   async function uploadLogo(event: ChangeEvent<HTMLInputElement>) {
@@ -703,15 +759,38 @@ export default function AdminSettingsPage() {
                 <CardHeader>
                   <CardTitle>{labels.settings.announcement}</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-5 lg:grid-cols-2">
+                <CardContent className="grid gap-5">
                   <div className="lg:col-span-2">
                     <Toggle checked={form.announcement_enabled} onCheckedChange={(checked) => setField('announcement_enabled', checked)} label={form.announcement_enabled ? labels.settings.announcementOn : labels.settings.announcementOff} />
                   </div>
-                  <label className="block space-y-1 lg:col-span-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="mr-1 text-sm font-medium text-muted-foreground">{editingLanguageLabel}</span>
+                    {languageOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={contentLocale === option.value ? 'default' : 'outline'}
+                        onClick={() => setContentLocale(option.value)}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <label className="block space-y-1">
                     <span className="text-sm font-medium">{labels.settings.announcementText}</span>
                     <Input value={localizedField('announcement_text')} onChange={(e) => setLocalizedField('announcement_text', e.target.value)} />
                   </label>
-                  <label className="block space-y-1 lg:col-span-2">
+                  <AiLocaleSyncPanel
+                    module="settings"
+                    sourceLocale={contentLocale}
+                    uiLocale={locale}
+                    title={settingsAi.announcementTitle}
+                    description={settingsAi.announcementDescription}
+                    fields={{ announcement_text: localizedField('announcement_text') }}
+                    onApply={applyAnnouncementAiDrafts}
+                    compact
+                  />
+                  <label className="block space-y-1">
                     <span className="text-sm font-medium">{labels.settings.announcementHref}</span>
                     <Input value={form.announcement_href} onChange={(e) => setField('announcement_href', e.target.value)} placeholder={labels.common.optional} />
                   </label>

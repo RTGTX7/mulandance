@@ -20,6 +20,7 @@ const LOCALES: LocaleCode[] = ['zh', 'en', 'fr'];
 interface AiPasteFillDialogProps {
   module: string;
   sourceLocale: LocaleCode;
+  uiLocale?: string;
   targetFields: string[];
   onApply: (drafts: AiDraft[]) => void;
   triggerLabel?: string;
@@ -36,12 +37,46 @@ interface AiPasteFillDialogProps {
   };
 }
 
+const defaults = {
+  zh: {
+    trigger: '\u7c98\u8d34\u6587\u5b57 AI \u586b\u8868',
+    empty: '\u8bf7\u5148\u7c98\u8d34\u4e00\u6bb5\u6587\u5b57\u3002',
+    success: 'AI \u5df2\u586b\u5165\u8868\u5355\uff0c\u8bf7\u68c0\u67e5\u540e\u4fdd\u5b58\u3002',
+    failed: 'AI \u586b\u8868\u5931\u8d25',
+    cancel: '\u53d6\u6d88',
+    submit: 'AI \u586b\u5165',
+  },
+  en: {
+    trigger: 'Paste text for AI fill',
+    empty: 'Paste some text first.',
+    success: 'AI filled the form. Review before saving.',
+    failed: 'AI form fill failed',
+    cancel: 'Cancel',
+    submit: 'Fill with AI',
+  },
+  fr: {
+    trigger: 'Coller du texte pour IA',
+    empty: 'Collez d abord un texte.',
+    success: 'IA a rempli le formulaire. Verifiez avant d enregistrer.',
+    failed: 'Echec du remplissage IA',
+    cancel: 'Annuler',
+    submit: 'Remplir avec IA',
+  },
+} as const;
+
+function adminLocale(locale?: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
+
 export function AiPasteFillDialog({
   module,
   sourceLocale,
+  uiLocale,
   targetFields,
   onApply,
-  triggerLabel = '粘贴文字 AI 填表',
+  triggerLabel,
   title,
   description,
   placeholder,
@@ -52,10 +87,11 @@ export function AiPasteFillDialog({
   const [rawText, setRawText] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const text = { ...defaults[adminLocale(uiLocale)], ...(labels || {}) };
 
   async function fillForm() {
     if (!rawText.trim()) {
-      setMessage(labels?.empty || '请先粘贴一段文字。');
+      setMessage(text.empty);
       return;
     }
     setLoading(true);
@@ -70,12 +106,12 @@ export function AiPasteFillDialog({
         instruction,
       });
       onApply(result.drafts || []);
-      const warning = result.warnings?.filter(Boolean).join('；');
-      setMessage(warning || labels?.success || 'AI 已填入表单，请检查后保存。');
+      const warning = result.warnings?.filter(Boolean).join('; ');
+      setMessage(warning || text.success);
       setOpen(false);
       setRawText('');
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : labels?.failed || 'AI 填表失败');
+      setMessage(err instanceof Error ? err.message : text.failed);
     } finally {
       setLoading(false);
     }
@@ -86,7 +122,7 @@ export function AiPasteFillDialog({
       <DialogTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           <ClipboardPaste className="mr-2 h-4 w-4" />
-          {triggerLabel}
+          {triggerLabel || text.trigger}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
@@ -107,11 +143,11 @@ export function AiPasteFillDialog({
         )}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-            {labels?.cancel || '取消'}
+            {text.cancel}
           </Button>
           <Button type="button" onClick={fillForm} disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            {labels?.submit || 'AI 填入'}
+            {text.submit}
           </Button>
         </DialogFooter>
       </DialogContent>

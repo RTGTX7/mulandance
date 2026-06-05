@@ -381,6 +381,7 @@ export default function AdminHomepagePage() {
           <AiLocaleSyncPanel
             module="homepage"
             sourceLocale={contentLocale}
+            uiLocale={locale}
             fields={{
               badge: form.hero_slides[0]?.badge || '',
               title: form.hero_slides[0]?.title || '',

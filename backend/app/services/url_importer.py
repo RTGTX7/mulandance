@@ -24,6 +24,15 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp": ".webp",
     "image/gif": ".gif",
 }
+VIDEO_CONTENT_TYPES = {
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+    "video/quicktime",
+    "application/x-mpegurl",
+    "application/vnd.apple.mpegurl",
+}
+VIDEO_EXTENSIONS = (".mp4", ".webm", ".ogg", ".mov", ".m4v", ".m3u8")
 USER_AGENT = "Mozilla/5.0 (compatible; MulandanceCMS/1.0; +https://mulandance.local)"
 TRUSTED_NON_PUBLIC_DNS_SUFFIXES = (
     "rednote.com",
@@ -232,6 +241,27 @@ def _extract_html_source(url: str, html: bytes, final_url: str) -> ImportedSourc
         if len(images) >= max(settings.AI_MAX_IMAGES_PER_URL * 2, settings.AI_MAX_IMAGES_PER_URL):
             break
 
+    video_candidates = [
+        *_meta_contents(
+            soup,
+            "og:video",
+            "og:video:url",
+            "og:video:secure_url",
+            "twitter:player",
+            "twitter:player:stream",
+        ),
+        *[str(video.get("src", "")) for video in soup.find_all("video")],
+        *[str(source.get("src", "")) for source in soup.find_all("source")],
+    ]
+    video_url = ""
+    for candidate in video_candidates:
+        if not candidate or candidate.startswith("data:"):
+            continue
+        absolute = urllib.parse.urljoin(final_url, candidate)
+        if absolute:
+            video_url = absolute
+            break
+
     return ImportedSource(
         url=url,
         title=_clean_text(title, 300),
@@ -239,6 +269,8 @@ def _extract_html_source(url: str, html: bytes, final_url: str) -> ImportedSourc
         text=page_text,
         source_published_at=_extract_source_published_at(soup, html_lib.unescape(html_text)),
         images=images,
+        video_url=video_url,
+        is_video=bool(video_url),
     )
 
 
@@ -278,6 +310,9 @@ def import_url(url: str) -> ImportedSource:
         html, content_type, final_url = _read_url(url, max_bytes=MAX_HTML_BYTES)
     except (ValueError, urllib.error.URLError, TimeoutError, socket.timeout, OSError) as exc:
         return ImportedSource(url=url, warnings=[f"Fetch failed: {exc}"])
+
+    if content_type in VIDEO_CONTENT_TYPES or urllib.parse.urlparse(final_url).path.lower().endswith(VIDEO_EXTENSIONS):
+        return ImportedSource(url=url, video_url=final_url, is_video=True, warnings=["Video detected; video file was not downloaded."])
 
     if content_type and "html" not in content_type:
         return ImportedSource(url=url, warnings=[f"URL did not return HTML: {content_type}"])

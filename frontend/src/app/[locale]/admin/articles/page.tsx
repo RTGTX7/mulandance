@@ -6,7 +6,8 @@ import { BackButton } from '@/components/ui/back-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { isAuthenticated, newsApi, NewsArticleGroup } from '@/lib/api';
+import { AiBulkArticleImportDialog } from '@/components/admin/AiBulkArticleImportDialog';
+import { isAuthenticated, newsApi, NewsArticleGroup, type NewsCategory, type NewsTag } from '@/lib/api';
 import {
   Calendar,
   Edit,
@@ -30,12 +31,116 @@ const showOptions = [5, 10, 20, 50, 100];
 type SortOrder = 'newest' | 'oldest';
 type StatusFilter = 'all' | 'published' | 'draft' | 'missing';
 
+const articleAdminText = {
+  zh: {
+    title: '文章管理',
+    subtitle: '管理新闻、公告、文章和多语言版本。',
+    loading: '加载文章...',
+    loadFailed: '文章加载失败',
+    updateFailed: '状态更新失败',
+    deleteFailed: '删除失败',
+    deleteConfirm: (title: string) => `删除「${title}」以及所有语言版本吗？`,
+    newArticle: '新建文章',
+    search: '按标题、摘要或 slug 搜索...',
+    allYears: '全部年份',
+    uncategorized: '未分类',
+    allStatus: '全部状态',
+    publishedVersions: '有已发布版本',
+    draftVersions: '有草稿版本',
+    missingVersions: '缺少语言版本',
+    newest: '最新优先',
+    oldest: '最旧优先',
+    show: '显示',
+    count: (visible: number, total: number) => `显示 ${visible} / 共 ${total} 篇文章`,
+    versionStatus: 'EN / 中文 / FR 版本状态',
+    articleCount: (count: number) => `${count} 篇`,
+    emptyTitle: '没有找到文章',
+    emptyBody: '调整筛选条件，或新建第一篇文章。',
+    published: '已发布',
+    draft: '草稿',
+    missing: '缺少',
+    edit: '编辑',
+    preview: '预览',
+    delete: '删除',
+  },
+  en: {
+    title: 'Article Management',
+    subtitle: 'Manage news, announcements, articles, and multilingual versions.',
+    loading: 'Loading articles...',
+    loadFailed: 'Failed to load articles',
+    updateFailed: 'Failed to update status',
+    deleteFailed: 'Delete failed',
+    deleteConfirm: (title: string) => `Delete "${title}" and all language versions?`,
+    newArticle: 'New Article',
+    search: 'Search by title, summary, or slug...',
+    allYears: 'All years',
+    uncategorized: 'Uncategorized',
+    allStatus: 'All status',
+    publishedVersions: 'Has published version',
+    draftVersions: 'Has draft version',
+    missingVersions: 'Missing language version',
+    newest: 'Newest first',
+    oldest: 'Oldest first',
+    show: 'Show',
+    count: (visible: number, total: number) => `Showing ${visible} / ${total} articles`,
+    versionStatus: 'EN / Chinese / FR version status',
+    articleCount: (count: number) => `${count} articles`,
+    emptyTitle: 'No articles found',
+    emptyBody: 'Adjust filters or create the first article.',
+    published: 'Published',
+    draft: 'Draft',
+    missing: 'Missing',
+    edit: 'Edit',
+    preview: 'Preview',
+    delete: 'Delete',
+  },
+  fr: {
+    title: 'Gestion des articles',
+    subtitle: 'Gérez les nouvelles, annonces, articles et versions multilingues.',
+    loading: 'Chargement des articles...',
+    loadFailed: 'Impossible de charger les articles',
+    updateFailed: 'Impossible de modifier le statut',
+    deleteFailed: 'Échec de la suppression',
+    deleteConfirm: (title: string) => `Supprimer « ${title} » et toutes ses versions linguistiques ?`,
+    newArticle: 'Nouvel article',
+    search: 'Rechercher par titre, résumé ou slug...',
+    allYears: 'Toutes les années',
+    uncategorized: 'Non classé',
+    allStatus: 'Tous les statuts',
+    publishedVersions: 'Version publiée',
+    draftVersions: 'Version brouillon',
+    missingVersions: 'Version linguistique manquante',
+    newest: 'Plus récent',
+    oldest: 'Plus ancien',
+    show: 'Afficher',
+    count: (visible: number, total: number) => `${visible} / ${total} articles affichés`,
+    versionStatus: 'Statut des versions EN / chinois / FR',
+    articleCount: (count: number) => `${count} articles`,
+    emptyTitle: 'Aucun article trouvé',
+    emptyBody: 'Ajustez les filtres ou créez le premier article.',
+    published: 'Publié',
+    draft: 'Brouillon',
+    missing: 'Manquant',
+    edit: 'Modifier',
+    preview: 'Aperçu',
+    delete: 'Supprimer',
+  },
+} as const;
+
+function adminLocale(locale: string) {
+  if (locale === 'fr') return 'fr';
+  if (locale === 'zh' || locale === 'zh-Hant') return 'zh';
+  return 'en';
+}
+
 function PublishSwitch({
   checked,
   onCheckedChange,
+  labels,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  labels: { published: string; draft: string };
 }) {
   return (
     <button
@@ -51,7 +156,7 @@ function PublishSwitch({
       <span className={`relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors ${checked ? 'bg-emerald-500' : 'bg-slate-300'}`}>
         <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-[14px]' : 'translate-x-0.5'}`} />
       </span>
-      <span>{checked ? '已发布' : '草稿'}</span>
+      <span>{checked ? labels.published : labels.draft}</span>
     </button>
   );
 }
@@ -88,7 +193,7 @@ function createdDate(group: NewsArticleGroup) {
 
 function createdYear(group: NewsArticleGroup) {
   const date = createdDate(group);
-  return date ? String(new Date(date).getFullYear()) : '未分类';
+  return date ? String(new Date(date).getFullYear()) : 'uncategorized';
 }
 
 function primaryTranslation(group: NewsArticleGroup, uiLocale: string) {
@@ -105,8 +210,11 @@ export default function ArticlesPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
+  const text = articleAdminText[adminLocale(locale)];
 
   const [groups, setGroups] = useState<NewsArticleGroup[]>([]);
+  const [categories, setCategories] = useState<NewsCategory[]>([]);
+  const [tags, setTags] = useState<NewsTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [year, setYear] = useState('all');
@@ -124,15 +232,21 @@ export default function ArticlesPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await newsApi.adminGroups({ limit: 200 });
+      const [data, categoryData, tagData] = await Promise.all([
+        newsApi.adminGroups({ limit: 200 }),
+        newsApi.categories(),
+        newsApi.tags(),
+      ]);
       setGroups(data);
+      setCategories(categoryData);
+      setTags(tagData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '文章加载失败');
+      setError(err instanceof Error ? err.message : text.loadFailed);
       setGroups([]);
     } finally {
       setLoading(false);
     }
-  }, [router, locale]);
+  }, [router, locale, text.loadFailed]);
 
   useEffect(() => {
     loadGroups();
@@ -140,8 +254,8 @@ export default function ArticlesPage() {
 
   const years = useMemo(() => {
     return Array.from(new Set(groups.map((group) => createdYear(group)))).sort((a, b) => {
-      if (a === '未分类') return 1;
-      if (b === '未分类') return -1;
+      if (a === 'uncategorized') return 1;
+      if (b === 'uncategorized') return -1;
       return Number(b) - Number(a);
     });
   }, [groups]);
@@ -188,8 +302,8 @@ export default function ArticlesPage() {
     });
 
     return Array.from(byYear.entries()).sort(([a], [b]) => {
-      if (a === '未分类') return 1;
-      if (b === '未分类') return -1;
+      if (a === 'uncategorized') return 1;
+      if (b === 'uncategorized') return -1;
       return Number(b) - Number(a);
     });
   }, [visibleGroups]);
@@ -200,19 +314,19 @@ export default function ArticlesPage() {
       await newsApi.togglePublish(group.shared_slug, published);
       await loadGroups();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '状态更新失败');
+      setError(err instanceof Error ? err.message : text.updateFailed);
     }
   }
 
   async function deleteArticle(group: NewsArticleGroup) {
     const title = primaryTranslation(group, locale)?.title || group.shared_slug;
-    if (!window.confirm(`删除「${title}」以及所有语言版本吗？`)) return;
+    if (!window.confirm(text.deleteConfirm(title))) return;
     setError('');
     try {
       await newsApi.removeArticle(group.shared_slug);
       setGroups((prev) => prev.filter((item) => item.id !== group.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : '删除失败');
+      setError(err instanceof Error ? err.message : text.deleteFailed);
     }
   }
 
@@ -230,7 +344,7 @@ export default function ArticlesPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">加载文章...</p>
+          <p className="text-sm text-muted-foreground">{text.loading}</p>
         </div>
       </div>
     );
@@ -240,16 +354,17 @@ export default function ArticlesPage() {
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-5 sm:py-4">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">文章管理</h1>
-              <p className="mt-0.5 max-w-[15rem] text-xs leading-5 text-slate-500 sm:max-w-none sm:text-sm">管理新闻、公告、文章和多语言版本。</p>
+              <h1 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{text.title}</h1>
+              <p className="mt-0.5 max-w-[15rem] text-xs leading-5 text-slate-500 sm:max-w-none sm:text-sm">{text.subtitle}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:gap-2">
               <BackButton fallbackRoute={`/${locale}/admin/dashboard`} className="h-9 shrink-0 px-2 text-xs sm:h-10 sm:px-3 sm:text-sm" />
+              <AiBulkArticleImportDialog locale={locale} categories={categories} tags={tags} onImported={loadGroups} />
               <Button className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm" onClick={() => router.push(`/${locale}/admin/editor`)}>
                 <Plus className="mr-1.5 h-4 w-4 sm:mr-2" />
-                新建文章
+                {text.newArticle}
               </Button>
             </div>
           </div>
@@ -270,7 +385,7 @@ export default function ArticlesPage() {
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="按标题、摘要或 slug 搜索..."
+                placeholder={text.search}
                 className="h-9 bg-slate-50 pl-9 text-sm sm:h-10"
               />
             </div>
@@ -279,10 +394,10 @@ export default function ArticlesPage() {
               onChange={(event) => setYear(event.target.value)}
               className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
-              <option value="all">全部年份</option>
+              <option value="all">{text.allYears}</option>
               {years.map((item) => (
                 <option key={item} value={item}>
-                  {item}
+                  {item === 'uncategorized' ? text.uncategorized : item}
                 </option>
               ))}
             </select>
@@ -291,18 +406,18 @@ export default function ArticlesPage() {
               onChange={(event) => setStatus(event.target.value as StatusFilter)}
               className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
-              <option value="all">全部状态</option>
-              <option value="published">有已发布版本</option>
-              <option value="draft">有草稿版本</option>
-              <option value="missing">缺少语言版本</option>
+              <option value="all">{text.allStatus}</option>
+              <option value="published">{text.publishedVersions}</option>
+              <option value="draft">{text.draftVersions}</option>
+              <option value="missing">{text.missingVersions}</option>
             </select>
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as SortOrder)}
               className="h-9 min-w-0 rounded-md border border-input bg-background px-3 text-sm sm:h-10"
             >
-              <option value="newest">最新优先</option>
-              <option value="oldest">最旧优先</option>
+              <option value="newest">{text.newest}</option>
+              <option value="oldest">{text.oldest}</option>
             </select>
             <select
               value={showCount}
@@ -311,7 +426,7 @@ export default function ArticlesPage() {
             >
               {showOptions.map((item) => (
                 <option key={item} value={item}>
-                  Show {item}
+                  {text.show} {item}
                 </option>
               ))}
             </select>
@@ -319,27 +434,27 @@ export default function ArticlesPage() {
         </section>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 sm:text-sm">
-          <span>显示 {visibleGroups.length} / 共 {filtered.length} 篇文章</span>
+          <span>{text.count(visibleGroups.length, filtered.length)}</span>
           <span className="inline-flex items-center gap-1">
             <Languages className="h-4 w-4" />
-            EN / 中文 / FR 版本状态
+            {text.versionStatus}
           </span>
         </div>
 
         {filtered.length === 0 ? (
           <section className="bg-white border border-slate-200 rounded-lg p-12 text-center">
             <FileText className="h-10 w-10 mx-auto text-slate-300" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-800">没有找到文章</h2>
-            <p className="mt-1 text-sm text-slate-500">调整筛选条件，或新建第一篇文章。</p>
+            <h2 className="mt-4 text-lg font-semibold text-slate-800">{text.emptyTitle}</h2>
+            <p className="mt-1 text-sm text-slate-500">{text.emptyBody}</p>
           </section>
         ) : (
           <section className="space-y-4">
             {groupedByYear.map(([yearLabel, yearGroups]) => (
               <div key={yearLabel} className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                  <span>{yearLabel}</span>
+                  <span>{yearLabel === 'uncategorized' ? text.uncategorized : yearLabel}</span>
                   <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-500">
-                    {yearGroups.length} 篇
+                    {text.articleCount(yearGroups.length)}
                   </span>
                 </div>
                 {yearGroups.map((group) => {
@@ -371,7 +486,7 @@ export default function ArticlesPage() {
                         </h2>
                         {missing.length > 0 && (
                           <Badge variant="outline" className="h-5 shrink-0 border-amber-200 bg-amber-50 px-2 text-[11px] leading-none text-amber-700">
-                            Missing {missing.map((item) => item.label).join(', ')}
+                            {text.missing} {missing.map((item) => item.label).join(', ')}
                           </Badge>
                         )}
                       </div>
@@ -411,20 +526,20 @@ export default function ArticlesPage() {
                     </div>
 
                     <div className="flex items-center gap-1 pt-0.5 lg:justify-end lg:pt-0">
-                      <PublishSwitch checked={hasPublished} onCheckedChange={(checked) => updatePublished(group, checked)} />
-                      <Button variant="ghost" size="sm" onClick={() => editVersion(group, primary?.locale || 'en')} title="编辑" className="h-7 w-7 p-0">
+                      <PublishSwitch checked={hasPublished} onCheckedChange={(checked) => updatePublished(group, checked)} labels={{ published: text.published, draft: text.draft }} />
+                      <Button variant="ghost" size="sm" onClick={() => editVersion(group, primary?.locale || 'en')} title={text.edit} className="h-7 w-7 p-0">
                         <Edit className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => window.open(`/${locale}/news/${primary?.slug || group.shared_slug}`, '_blank')}
-                        title="预览"
+                        title={text.preview}
                         className="h-7 w-7 p-0"
                       >
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => deleteArticle(group)} title="删除" className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Button variant="ghost" size="sm" onClick={() => deleteArticle(group)} title={text.delete} className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

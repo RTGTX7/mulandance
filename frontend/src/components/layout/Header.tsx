@@ -33,10 +33,9 @@ const navSections: NavSection[] = [
   {
     key: 'performances',
     labelKey: 'common.nav.performances',
+    href: '/performances',
     links: [
       { labelKey: 'performanceTimeline.title', href: '/performances' },
-      { labelKey: 'performanceTimeline.upcoming', href: '/performances#upcoming' },
-      { labelKey: 'performanceTimeline.archive', href: '/performances#archive' },
     ],
   },
   {
