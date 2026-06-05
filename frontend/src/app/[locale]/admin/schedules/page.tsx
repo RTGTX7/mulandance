@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   type AiDraft,
+  type AiExtractItem,
   CourseScheduleItem,
   CourseScheduleItemBody,
   isAuthenticated,
@@ -16,6 +17,8 @@ import {
 import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
+import { AiPasteFillDialog } from '@/components/admin/AiPasteFillDialog';
+import { AiBulkScheduleDialog } from '@/components/admin/AiBulkScheduleDialog';
 
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
 type ContentLocale = 'zh' | 'en' | 'fr';
@@ -54,6 +57,66 @@ function scheduleStatusLabels(locale: string, active: boolean) {
     label: active ? '已发布' : '已隐藏',
     title: active ? '点击隐藏此排课' : '点击发布此排课',
   };
+}
+
+function parseAiWeekday(value?: string) {
+  const text = (value || '').trim().toLowerCase();
+  if (!text) return null;
+  if (/^[0-6]$/.test(text)) return Number(text);
+  const map: Record<string, number> = {
+    sunday: 0,
+    sun: 0,
+    dimanche: 0,
+    lundi: 1,
+    monday: 1,
+    mon: 1,
+    tuesday: 2,
+    tue: 2,
+    mardi: 2,
+    wednesday: 3,
+    wed: 3,
+    mercredi: 3,
+    thursday: 4,
+    thu: 4,
+    jeudi: 4,
+    friday: 5,
+    fri: 5,
+    vendredi: 5,
+    saturday: 6,
+    sat: 6,
+    samedi: 6,
+    '星期日': 0,
+    '周日': 0,
+    '星期天': 0,
+    '周天': 0,
+    '星期一': 1,
+    '周一': 1,
+    '星期二': 2,
+    '周二': 2,
+    '星期三': 3,
+    '周三': 3,
+    '星期四': 4,
+    '周四': 4,
+    '星期五': 5,
+    '周五': 5,
+    '星期六': 6,
+    '周六': 6,
+  };
+  return map[text] ?? null;
+}
+
+function normalizeAiTime(value?: string) {
+  const raw = (value || '').trim().toLowerCase();
+  if (!raw) return '';
+  const match = raw.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/);
+  if (!match) return '';
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || '0');
+  const marker = match[3]?.replace(/\./g, '');
+  if (marker === 'pm' && hour < 12) hour += 12;
+  if (marker === 'am' && hour === 12) hour = 0;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
 function SchedulePublishSwitch({
@@ -100,17 +163,89 @@ export default function AdminSchedulesPage() {
   const locale = pathname.split('/')[1] || 'zh';
   const labels = adminUiText(locale);
   const text = labels.resources.schedules;
-  const weekdays = useMemo(() => weekdayLabelsForLocale(locale), [locale]);
   const languageOptions = adminContentLanguageOptions(locale);
   const [items, setItems] = useState<CourseScheduleItem[]>([]);
   const [form, setForm] = useState<CourseScheduleItemBody>(initialForm);
   const [contentLocale, setContentLocale] = useState<ContentLocale>('zh');
+  const weekdays = useMemo(() => weekdayLabelsForLocale(contentLocale), [contentLocale]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [switchLoading, setSwitchLoading] = useState<string | null>(null);
+  const aiText = useMemo(() => {
+    if (locale === 'fr') {
+      return {
+        syncTitle: 'Synchronisation IA chinois / anglais / français',
+        syncDescription: 'L’IA utilise le premier contenu renseigné et génère les trois versions. Vérifiez avant d’enregistrer.',
+        empty: 'Ajoutez d’abord du contenu dans au moins une langue, puis utilisez l’IA.',
+        generated: 'L’IA a généré les brouillons chinois, anglais et français.',
+        applyFirst: 'Générez d’abord les brouillons IA.',
+        applied: 'Les champs chinois, anglais et français ont été synchronisés. Vérifiez avant d’enregistrer.',
+        applyButton: 'Synchroniser',
+        generateButton: 'Préparer et traduire',
+        generating: 'Génération...',
+        pasteTrigger: 'Coller du texte',
+        pasteTitle: 'Coller le texte du cours',
+        pasteDescription: 'Collez une description, un message ou un ancien tableau. L’IA remplira les champs du cours.',
+        pastePlaceholder: 'Exemple : Lundi 17:00-18:00, danse chinoise enfants, 2527 Baseline Road, 2e étage. Pour 5-7 ans.',
+        bulkTrigger: 'Créer plusieurs horaires',
+        bulkTitle: 'Coller plusieurs horaires',
+        bulkDescription: 'Vous pouvez écrire plusieurs lignes ou une plage comme lundi à vendredi. L’IA créera plusieurs cours.',
+        bulkPlaceholder: 'Exemple :\nLundi à vendredi 17:00-18:00 danse chinoise enfants, 2527 Baseline Road, 2e étage.\nSamedi 10:00-11:30 danse chinoise ados, même lieu.',
+        cancel: 'Annuler',
+        pasteSubmit: 'Remplir',
+        bulkSubmit: 'Générer et créer',
+      };
+    }
+    if (locale === 'en') {
+      return {
+        syncTitle: 'AI Chinese / English / French sync',
+        syncDescription: 'AI uses the first language that has content and generates all three versions. Review before saving.',
+        empty: 'Add content in at least one language before using AI polish and translation.',
+        generated: 'AI generated Chinese, English, and French drafts.',
+        applyFirst: 'Generate AI drafts first.',
+        applied: 'Chinese, English, and French fields were synced. Please review before saving.',
+        applyButton: 'Sync languages',
+        generateButton: 'Polish and translate',
+        generating: 'Generating...',
+        pasteTrigger: 'Paste text to fill',
+        pasteTitle: 'Paste class text',
+        pasteDescription: 'Paste a class description, message, or old table text. AI will fill the schedule fields.',
+        pastePlaceholder: 'Example: Monday 5:00-6:00pm beginner Chinese dance, 2527 Baseline Road, 2nd floor. For ages 5-7.',
+        bulkTrigger: 'Bulk create schedules',
+        bulkTitle: 'Paste multiple schedules',
+        bulkDescription: 'You can write multiple lines or a range like Monday to Friday. AI will create multiple classes.',
+        bulkPlaceholder: 'Example:\nMonday to Friday 5:00-6:00pm beginner Chinese dance, 2527 Baseline Road, 2nd floor.\nSaturday 10:00-11:30am teen Chinese dance, same location.',
+        cancel: 'Cancel',
+        pasteSubmit: 'Fill form',
+        bulkSubmit: 'Generate and create',
+      };
+    }
+    return {
+      syncTitle: 'AI 中英法同步',
+      syncDescription: 'AI 会使用第一个已填写的语言内容，并生成中文、英文、法语版本。检查后再保存。',
+      empty: '请先在任意语言里填写一些内容，再使用 AI 整理和翻译。',
+      generated: 'AI 已生成中英法草稿。',
+      applyFirst: '请先生成 AI 草稿。',
+      applied: '已同步到中英法字段，请检查后保存。',
+      applyButton: '语言同步',
+      generateButton: '整理并翻译',
+      generating: '生成中...',
+      pasteTrigger: '粘贴文字 AI 填表',
+      pasteTitle: '粘贴课程文字',
+      pasteDescription: '把课程介绍、微信文字、旧表格内容直接粘贴进来，AI 会拆成课程名、时间、地点和中英法内容。',
+      pastePlaceholder: '例：周一 5:00-6:00pm 少儿中国舞启蒙，2527 Baseline Road 二楼。适合 5-7 岁，训练基础身韵、软开和节奏感。',
+      bulkTrigger: '批量粘贴生成排课',
+      bulkTitle: '批量粘贴排课',
+      bulkDescription: '可以写多行，也可以写“周一到周五 5-6 点”。AI 会拆成多条课程并直接创建。',
+      bulkPlaceholder: '例：\n周一到周五 5:00-6:00pm 少儿中国舞启蒙，2527 Baseline Road 二楼，适合 5-7 岁。\n周六 10:00-11:30am 青少年中国舞提高班，同一地点。',
+      cancel: '取消',
+      pasteSubmit: 'AI 填入',
+      bulkSubmit: '生成并创建',
+    };
+  }, [locale]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -133,6 +268,15 @@ export default function AdminSchedulesPage() {
         ),
     }));
   }, [items, weekdays]);
+
+  function localizedItemField(item: CourseScheduleItem, key: 'title' | 'description' | 'location') {
+    if (contentLocale === 'zh') return String(item[key] ?? '');
+    return item.translations?.[contentLocale]?.[key] || String(item[key] ?? '');
+  }
+
+  function localizedItemTitle(item: CourseScheduleItem) {
+    return localizedItemField(item, 'title') || item.title;
+  }
 
   function loadData() {
     setLoading(true);
@@ -165,6 +309,29 @@ export default function AdminSchedulesPage() {
     if (contentLocale === 'zh') return String(form[key] ?? '');
     return form.translations?.[contentLocale]?.[String(key)] ?? '';
   }
+
+  const aiSyncSource = useMemo(() => {
+    const locales: ContentLocale[] = [contentLocale, 'zh', 'en', 'fr'];
+    const uniqueLocales = locales.filter((value, index) => locales.indexOf(value) === index);
+    for (const localeKey of uniqueLocales) {
+      const fieldForLocale = (key: keyof CourseScheduleItemBody) => {
+        if (localeKey === 'zh') return String(form[key] ?? '');
+        return form.translations?.[localeKey]?.[String(key)] ?? '';
+      };
+      const fields = {
+        title: fieldForLocale('title'),
+        description: fieldForLocale('description'),
+        location: fieldForLocale('location'),
+      };
+      if (Object.values(fields).some((value) => value.trim())) {
+        return { locale: localeKey, fields };
+      }
+    }
+    return {
+      locale: contentLocale,
+      fields: { title: '', description: '', location: '' },
+    };
+  }, [contentLocale, form]);
 
   function setLocalizedField(key: keyof CourseScheduleItemBody, value: string) {
     if (contentLocale === 'zh') {
@@ -199,6 +366,15 @@ export default function AdminSchedulesPage() {
           next.title = fields.title ?? next.title;
           next.description = fields.description ?? next.description;
           next.location = fields.location ?? next.location;
+          const parsedDay = parseAiWeekday(fields.day_of_week);
+          if (parsedDay !== null) next.day_of_week = parsedDay;
+          const startTime = normalizeAiTime(fields.start_time);
+          const endTime = normalizeAiTime(fields.end_time);
+          if (startTime) next.start_time = startTime;
+          if (endTime) next.end_time = endTime;
+          if (fields.order_index && !Number.isNaN(Number(fields.order_index))) {
+            next.order_index = Number(fields.order_index);
+          }
           return;
         }
         const localeKey = draft.locale as ContentLocale;
@@ -216,6 +392,65 @@ export default function AdminSchedulesPage() {
       });
       return next;
     });
+  }
+
+  function scheduleBodyFromAiDrafts(drafts: AiDraft[], index: number): CourseScheduleItemBody | null {
+    const zhDraft = drafts.find((draft) => draft.locale === 'zh') || drafts[0];
+    const fields = zhDraft?.fields || {};
+    const day = parseAiWeekday(fields.day_of_week);
+    const startTime = normalizeAiTime(fields.start_time);
+    const endTime = normalizeAiTime(fields.end_time);
+    const title = fields.title?.trim();
+    const location = fields.location?.trim() || initialForm.location;
+    if (!title || day === null || !startTime || !endTime) return null;
+
+    const translations: CourseScheduleItemBody['translations'] = {};
+    drafts.forEach((draft) => {
+      if (draft.locale === 'zh') return;
+      const localeKey = draft.locale as ContentLocale;
+      const draftFields = draft.fields || {};
+      translations[localeKey] = {
+        ...(draftFields.title ? { title: draftFields.title } : {}),
+        ...(draftFields.description ? { description: draftFields.description } : {}),
+        ...(draftFields.location ? { location: draftFields.location } : {}),
+      };
+    });
+
+    return {
+      day_of_week: day,
+      title,
+      start_time: startTime,
+      end_time: endTime,
+      description: fields.description || '',
+      location,
+      is_active: true,
+      order_index: Number(fields.order_index) || (index + 1) * 10,
+      translations,
+    };
+  }
+
+  async function createAiScheduleItems(aiItems: AiExtractItem[]) {
+    setSaving(true);
+    setMessage('');
+    setError('');
+    try {
+      const bodies = aiItems
+        .map((item, index) => scheduleBodyFromAiDrafts(item.drafts, index))
+        .filter((body): body is CourseScheduleItemBody => Boolean(body));
+      if (bodies.length === 0) {
+        throw new Error('AI 没有识别出完整排课，请确认文字里有课程名、星期和开始/结束时间。');
+      }
+      for (const body of bodies) {
+        await scheduleApi.create(body);
+      }
+      setMessage(`已创建 ${bodies.length} 条排课，请检查后调整。`);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : labels.common.saveFailed);
+      throw err;
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveScheduleItem(event: FormEvent<HTMLFormElement>) {
@@ -240,7 +475,7 @@ export default function AdminSchedulesPage() {
   }
 
   async function removeItem(item: CourseScheduleItem) {
-    if (!window.confirm(text.deleteConfirm.replace('{title}', item.title))) return;
+    if (!window.confirm(text.deleteConfirm.replace('{title}', localizedItemTitle(item)))) return;
     setError('');
     try {
       await scheduleApi.remove(item.id);
@@ -317,14 +552,54 @@ export default function AdminSchedulesPage() {
               <div className="md:col-span-6">
                 <AiLocaleSyncPanel
                   module="schedules"
-                  sourceLocale={contentLocale}
-                  fields={{
-                    title: localizedField('title'),
-                    description: localizedField('description'),
-                    location: localizedField('location'),
-                  }}
+                  sourceLocale={aiSyncSource.locale}
+                  fields={aiSyncSource.fields}
                   onApply={applyAiDrafts}
+                  title={aiText.syncTitle}
+                  description={aiText.syncDescription}
+                  labels={{
+                    empty: aiText.empty,
+                    generated: aiText.generated,
+                    applyFirst: aiText.applyFirst,
+                    applied: aiText.applied,
+                    applyButton: aiText.applyButton,
+                    generateButton: aiText.generateButton,
+                    generating: aiText.generating,
+                  }}
                 />
+              </div>
+              <div className="md:col-span-6">
+                <div className="flex flex-wrap gap-2">
+                  <AiPasteFillDialog
+                    module="schedules"
+                    sourceLocale={contentLocale}
+                    targetFields={['title', 'description', 'location', 'day_of_week', 'start_time', 'end_time']}
+                    onApply={applyAiDrafts}
+                    triggerLabel={aiText.pasteTrigger}
+                    title={aiText.pasteTitle}
+                    description={aiText.pasteDescription}
+                    placeholder={aiText.pastePlaceholder}
+                    instruction="Extract one class schedule item. If a time range is present, split it into start_time and end_time."
+                    labels={{
+                      empty: aiText.empty,
+                      cancel: aiText.cancel,
+                      submit: aiText.pasteSubmit,
+                    }}
+                  />
+                  <AiBulkScheduleDialog
+                    sourceLocale={contentLocale}
+                    onCreateItems={createAiScheduleItems}
+                    labels={{
+                      trigger: aiText.bulkTrigger,
+                      title: aiText.bulkTitle,
+                      description: aiText.bulkDescription,
+                      placeholder: aiText.bulkPlaceholder,
+                      empty: aiText.empty,
+                      cancel: aiText.cancel,
+                      submit: aiText.bulkSubmit,
+                    }}
+                  />
+                </div>
               </div>
               <label className="space-y-1">
                 <span className="text-xs font-medium text-muted-foreground">{text.weekday}</span>
@@ -394,15 +669,19 @@ export default function AdminSchedulesPage() {
               <CardContent className="space-y-2">
                 {day.items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{text.noClasses}</p>
-                ) : day.items.map((item) => (
+                ) : day.items.map((item) => {
+                  const itemTitle = localizedItemTitle(item);
+                  const itemLocation = localizedItemField(item, 'location');
+                  const itemDescription = localizedItemField(item, 'description');
+                  return (
                   <div key={item.id} className={`rounded-md border p-3 ${item.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}`}>
                     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <div className="font-semibold">{item.title}</div>
+                        <div className="font-semibold">{itemTitle}</div>
                         <div className="text-sm text-muted-foreground">
-                          {item.start_time} - {item.end_time} / {item.location}
+                          {item.start_time} - {item.end_time} / {itemLocation}
                         </div>
-                        {item.description && <div className="mt-1 text-sm text-muted-foreground">{item.description}</div>}
+                        {itemDescription && <div className="mt-1 text-sm text-muted-foreground">{itemDescription}</div>}
                       </div>
                       <div className="flex shrink-0 gap-2">
                         <SchedulePublishSwitch
@@ -418,7 +697,8 @@ export default function AdminSchedulesPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           ))}

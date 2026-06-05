@@ -19,6 +19,7 @@ import { adminContentLanguageOptions, adminUiText } from '@/lib/admin-i18n';
 import { cn } from '@/lib/utils';
 import { Edit2, ImagePlus, Loader2, Save, Trash2, UsersRound, X } from 'lucide-react';
 import { AiLocaleSyncPanel } from '@/components/admin/AiLocaleSyncPanel';
+import { AiPasteFillDialog } from '@/components/admin/AiPasteFillDialog';
 
 type ContentLocale = 'zh' | 'en' | 'fr';
 
@@ -293,6 +294,17 @@ export default function AdminFacultyPage() {
                   achievements: localizedField('achievements'),
                 }}
                 onApply={applyAiDrafts}
+              />
+
+              <AiPasteFillDialog
+                module="faculty"
+                sourceLocale={contentLocale}
+                targetFields={['name', 'role', 'bio', 'specialties', 'achievements', 'photo_url']}
+                onApply={applyAiDrafts}
+                title="粘贴教师资料"
+                description="把教师简介、履历、获奖经历或社媒文字粘贴进来，AI 会拆成姓名、职位、简介、专长和成就。"
+                placeholder={'例：李老师，毕业于北京舞蹈学院中国舞专业，曾任专业舞团演员。擅长中国古典舞、民族民间舞、少儿基本功训练，带领学生多次获得比赛奖项。'}
+                instruction="Extract one faculty profile. Keep specialties and achievements concise; use newline-separated achievements when there are multiple."
               />
 
               <label className="block space-y-1">

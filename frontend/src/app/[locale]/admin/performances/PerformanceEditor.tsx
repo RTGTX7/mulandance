@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { aiApi, isAuthenticated, performanceApi, type AiDraft, type PerformanceBody, type PerformanceItem } from '@/lib/api';
 import { adminContentLanguageOptions } from '@/lib/admin-i18n';
@@ -14,6 +14,7 @@ import { AdminSectionTabs } from '@/components/layout/AdminSectionTabs';
 import { CheckCircle2, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
 
 type ContentLocale = 'zh' | 'en' | 'fr';
+const CONTENT_LOCALES: ContentLocale[] = ['zh', 'en', 'fr'];
 
 interface FormState {
   title: string;
@@ -37,6 +38,13 @@ const emptyForm: FormState = {
   cover_image: '',
   is_current: true,
 };
+
+function normalizeTranslations(value?: PerformanceBody['translations']) {
+  return CONTENT_LOCALES.reduce<NonNullable<PerformanceBody['translations']>>((acc, locale) => {
+    acc[locale] = { ...(value?.[locale] || {}) };
+    return acc;
+  }, {});
+}
 
 function toDateInput(date: Date) {
   const year = date.getFullYear();
@@ -88,11 +96,12 @@ function formFromPerformance(item: PerformanceItem): FormState {
     venue: item.venue || '',
     cover_image: item.cover_image || '',
     is_current: item.is_current,
-    translations: item.translations || {},
+    translations: normalizeTranslations(item.translations),
   };
 }
 
 function bodyFromForm(form: FormState): PerformanceBody {
+  const translations = normalizeTranslations(form.translations);
   return {
     title: form.title,
     slug: form.slug || slugify(form.title),
@@ -102,7 +111,7 @@ function bodyFromForm(form: FormState): PerformanceBody {
     venue: form.venue,
     cover_image: form.cover_image,
     is_current: form.is_current,
-    translations: form.translations,
+    translations,
   };
 }
 
@@ -124,6 +133,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiDrafts, setAiDrafts] = useState<AiDraft[]>([]);
+  const loadedEditIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -131,13 +141,35 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
       return;
     }
 
-    if (!editId) return;
+    if (!editId) {
+      loadedEditIdRef.current = null;
+      setLoading(false);
+      return;
+    }
+
+    if (loadedEditIdRef.current === editId) return;
+
+    let cancelled = false;
+    setLoading(true);
 
     performanceApi.get(editId)
-      .then((item) => setForm(formFromPerformance(item)))
-      .catch((err) => setError(err instanceof Error ? err.message : t('admin.performances.loadFailed')))
-      .finally(() => setLoading(false));
-  }, [editId, locale, router, t]);
+      .then((item) => {
+        if (cancelled) return;
+        setForm(formFromPerformance(item));
+        loadedEditIdRef.current = editId;
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'Failed to load performance');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, locale, router]);
 
   const handleTitleChange = (title: string) => {
     setLocalizedField('title', title);
@@ -153,6 +185,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
       setForm((prev) => ({
         ...prev,
         [key]: value,
+        translations: normalizeTranslations(prev.translations),
         slug: key === 'title' && !editId && (!prev.slug || prev.slug.startsWith('performance-')) ? slugify(value) : prev.slug,
       }));
       return;
@@ -162,7 +195,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
       title: key === 'title' && !prev.title ? value : prev.title,
       slug: key === 'title' && !prev.slug ? slugify(value) : prev.slug,
       translations: {
-        ...(prev.translations || {}),
+        ...normalizeTranslations(prev.translations),
         [contentLocale]: {
           ...(prev.translations?.[contentLocale] || {}),
           [key]: value,
@@ -176,7 +209,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
     setForm((prev) => {
       const next: FormState = {
         ...prev,
-        translations: { ...(prev.translations || {}) },
+        translations: normalizeTranslations(prev.translations),
       };
 
       drafts.forEach((draft) => {
@@ -251,10 +284,11 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
     try {
       if (editId) {
         await performanceApi.update(editId, bodyFromForm(form));
+        router.push(`/${locale}/admin/performances/list`);
       } else {
-        await performanceApi.create(bodyFromForm(form));
+        const created = await performanceApi.create(bodyFromForm(form));
+        router.push(`/${locale}/admin/performances/editor/${created.id}`);
       }
-      router.push(`/${locale}/admin/performances/list`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('admin.performances.saveFailed'));
     } finally {
@@ -368,7 +402,7 @@ export function PerformanceEditor({ editId }: { editId?: string }) {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.title')}</label>
-                <Input value={localizedField('title')} onChange={(e) => handleTitleChange(e.target.value)} required />
+                <Input value={localizedField('title')} onChange={(e) => handleTitleChange(e.target.value)} required={contentLocale === 'zh'} />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">{t('admin.performances.fields.slug')}</label>

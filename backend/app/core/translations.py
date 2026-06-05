@@ -50,7 +50,12 @@ def localized_value(obj, field: str, locale: str | None):
     if value not in (None, ""):
         return value
     fallback = getattr(obj, field, None)
-    return fallback if fallback is not None else ""
+    if fallback not in (None, ""):
+        return fallback
+    zh_value = translations.get("zh", {}).get(field)
+    if zh_value not in (None, ""):
+        return zh_value
+    return ""
 
 
 def localized_payload(obj, fields: Iterable[str], locale: str | None) -> dict:

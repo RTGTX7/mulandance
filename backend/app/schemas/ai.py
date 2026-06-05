@@ -23,6 +23,68 @@ class AiTranslateResponse(BaseModel):
     warnings: list[str] = []
 
 
+class AiTranslateJobCreateResponse(BaseModel):
+    job_id: str
+    status: str = "pending"
+
+
+class AiTranslateJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    result: AiTranslateResponse | None = None
+    error: str = ""
+
+
+class AiExtractRequest(BaseModel):
+    module: str = Field(..., min_length=1, max_length=40)
+    source_locale: str = Field(default="zh", max_length=16)
+    target_locales: list[str] = Field(default_factory=lambda: ["zh", "en", "fr"])
+    raw_text: str = Field(..., min_length=1, max_length=12000)
+    target_fields: list[str] = Field(default_factory=list)
+    instruction: Optional[str] = Field(default=None, max_length=800)
+
+
+class AiExtractResponse(BaseModel):
+    module: str
+    source_locale: str
+    drafts: list[AiDraft]
+    warnings: list[str] = []
+
+
+class AiExtractItem(BaseModel):
+    drafts: list[AiDraft]
+    warnings: list[str] = []
+
+
+class AiExtractManyRequest(BaseModel):
+    module: str = Field(..., min_length=1, max_length=40)
+    source_locale: str = Field(default="zh", max_length=16)
+    target_locales: list[str] = Field(default_factory=lambda: ["zh", "en", "fr"])
+    raw_text: str = Field(..., min_length=1, max_length=16000)
+    target_fields: list[str] = Field(default_factory=list)
+    instruction: Optional[str] = Field(default=None, max_length=1000)
+    max_items: int = Field(default=20, ge=1, le=60)
+
+
+class AiExtractManyResponse(BaseModel):
+    module: str
+    source_locale: str
+    items: list[AiExtractItem]
+    warnings: list[str] = []
+
+
+class AiExtractManyJobCreateResponse(BaseModel):
+    job_id: str
+    status: str = "pending"
+
+
+class AiExtractManyJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    result: AiExtractManyResponse | None = None
+    error: str = ""
+
+
 class ImportedMedia(BaseModel):
     url: str
     path: str

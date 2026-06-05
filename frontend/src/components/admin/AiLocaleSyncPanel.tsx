@@ -7,6 +7,17 @@ import { Button } from '@/components/ui/button';
 
 const LOCALES: LocaleCode[] = ['zh', 'en', 'fr'];
 
+interface AiLocaleSyncLabels {
+  empty?: string;
+  generated?: string;
+  generateFailed?: string;
+  applyFirst?: string;
+  applied?: string;
+  applyButton?: string;
+  generateButton?: string;
+  generating?: string;
+}
+
 interface AiLocaleSyncPanelProps {
   module: string;
   sourceLocale: LocaleCode;
@@ -15,7 +26,19 @@ interface AiLocaleSyncPanelProps {
   title?: string;
   description?: string;
   compact?: boolean;
+  labels?: AiLocaleSyncLabels;
 }
+
+const defaultLabels: Required<AiLocaleSyncLabels> = {
+  empty: '请先填写一些内容，再使用 AI 整理和翻译。',
+  generated: 'AI 已生成中英法草稿。',
+  generateFailed: 'AI 生成失败',
+  applyFirst: '请先生成 AI 草稿。',
+  applied: '已同步到中英法字段，请检查后保存。',
+  applyButton: '语言同步',
+  generateButton: '整理并翻译',
+  generating: '生成中...',
+};
 
 export function AiLocaleSyncPanel({
   module,
@@ -25,17 +48,19 @@ export function AiLocaleSyncPanel({
   title = 'AI 中英法同步',
   description = '整理当前语言内容，并生成中文、英文、法语版本。检查后再保存。',
   compact = false,
+  labels,
 }: AiLocaleSyncPanelProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [drafts, setDrafts] = useState<AiDraft[]>([]);
+  const text = { ...defaultLabels, ...(labels || {}) };
 
   async function generateDrafts() {
     const cleanFields = Object.fromEntries(
       Object.entries(fields).filter(([, value]) => typeof value === 'string' && value.trim())
     );
     if (Object.keys(cleanFields).length === 0) {
-      setMessage('请先填写一些内容，再使用 AI 整理和翻译。');
+      setMessage(text.empty);
       return;
     }
 
@@ -50,9 +75,9 @@ export function AiLocaleSyncPanel({
         tone: 'polish messy draft, keep facts unchanged, then translate naturally',
       });
       setDrafts(result.drafts || []);
-      setMessage(result.warnings?.length ? result.warnings.join('；') : 'AI 已生成中英法草稿。');
+      setMessage(result.warnings?.length ? result.warnings.join('; ') : text.generated);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'AI generation failed');
+      setMessage(err instanceof Error ? err.message : text.generateFailed);
     } finally {
       setLoading(false);
     }
@@ -60,11 +85,11 @@ export function AiLocaleSyncPanel({
 
   function applyDrafts() {
     if (drafts.length === 0) {
-      setMessage('请先生成 AI 草稿。');
+      setMessage(text.applyFirst);
       return;
     }
     onApply(drafts);
-    setMessage('已同步到中英法字段，请检查后保存。');
+    setMessage(text.applied);
   }
 
   return (
@@ -81,12 +106,12 @@ export function AiLocaleSyncPanel({
           {drafts.length > 0 && (
             <Button type="button" variant="default" size="sm" onClick={applyDrafts}>
               <Wand2 className="mr-2 h-4 w-4" />
-              语言同步
+              {text.applyButton}
             </Button>
           )}
           <Button type="button" variant="outline" size="sm" onClick={generateDrafts} disabled={loading}>
             <Sparkles className="mr-2 h-4 w-4" />
-            {loading ? '生成中...' : '整理并翻译'}
+            {loading ? text.generating : text.generateButton}
           </Button>
         </div>
       </div>
@@ -103,7 +128,12 @@ export function AiLocaleSyncPanel({
             <div key={draft.locale} className="rounded-lg border border-purple-100 bg-white p-3 text-sm">
               <div className="font-semibold">{draft.locale.toUpperCase()}</div>
               <div className="mt-2 line-clamp-3 text-slate-600">
-                {draft.fields.title || draft.fields.name || draft.fields.description || draft.fields.body || draft.fields.body_markdown || 'Ready'}
+                {draft.fields.title ||
+                  draft.fields.name ||
+                  draft.fields.description ||
+                  draft.fields.body ||
+                  draft.fields.body_markdown ||
+                  'Ready'}
               </div>
             </div>
           ))}

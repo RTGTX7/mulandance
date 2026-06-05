@@ -285,6 +285,49 @@ export interface AiTranslateResponse {
   warnings?: string[];
 }
 
+export interface AiTranslateJobCreateResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+}
+
+export interface AiTranslateJobStatusResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  result?: AiTranslateResponse | null;
+  error?: string;
+}
+
+export interface AiExtractResponse {
+  module: string;
+  source_locale: string;
+  drafts: AiDraft[];
+  warnings?: string[];
+}
+
+export interface AiExtractItem {
+  drafts: AiDraft[];
+  warnings?: string[];
+}
+
+export interface AiExtractManyResponse {
+  module: string;
+  source_locale: string;
+  items: AiExtractItem[];
+  warnings?: string[];
+}
+
+export interface AiExtractManyJobCreateResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+}
+
+export interface AiExtractManyJobStatusResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  result?: AiExtractManyResponse | null;
+  error?: string;
+}
+
 export interface ImportedMedia {
   url: string;
   path: string;
@@ -460,13 +503,48 @@ function wait(ms: number) {
 }
 
 export const aiApi = {
-  translate: (body: {
+  translate: async (body: {
     module: string;
     source_locale: string;
     target_locales: string[];
     fields: Record<string, string>;
     tone?: string;
-  }) => api.post<AiTranslateResponse>('/v1/ai/translate', body),
+  }) => {
+    const job = await api.post<AiTranslateJobCreateResponse>('/v1/ai/translate/jobs', body);
+    while (true) {
+      await wait(2500);
+      const status = await api.get<AiTranslateJobStatusResponse>(`/v1/ai/translate/jobs/${job.job_id}`);
+      if (status.status === 'succeeded' && status.result) return status.result;
+      if (status.status === 'failed') throw new Error(status.error || 'AI translation failed');
+    }
+  },
+
+  extract: (body: {
+    module: string;
+    source_locale: string;
+    target_locales: string[];
+    raw_text: string;
+    target_fields: string[];
+    instruction?: string;
+  }) => api.post<AiExtractResponse>('/v1/ai/extract', body),
+
+  extractMany: async (body: {
+    module: string;
+    source_locale: string;
+    target_locales: string[];
+    raw_text: string;
+    target_fields: string[];
+    instruction?: string;
+    max_items?: number;
+  }) => {
+    const job = await api.post<AiExtractManyJobCreateResponse>('/v1/ai/extract-many/jobs', body);
+    while (true) {
+      await wait(2500);
+      const status = await api.get<AiExtractManyJobStatusResponse>(`/v1/ai/extract-many/jobs/${job.job_id}`);
+      if (status.status === 'succeeded' && status.result) return status.result;
+      if (status.status === 'failed') throw new Error(status.error || 'AI bulk extraction failed');
+    }
+  },
 
   importArticleUrls: async (body: {
     urls: string[];

@@ -23,6 +23,8 @@ from app.models import RegistrationSettings, SystemSettings, User
 from app.schemas.settings import (
     RegistrationLinks,
     RegistrationLinksUpdate,
+    HomepageButton,
+    HomepageHeroSlide,
     HomepageSettings,
     HomepageSettingsBundle,
     HomepageSettingsBundleUpdate,
@@ -306,6 +308,24 @@ def _homepage_defaults(locale: str = "zh") -> HomepageSettings:
                     "overlay": "from-primary/90 via-primary/70 to-primary/40",
                     "is_active": True,
                 },
+                {
+                    "badge": "Season Performances",
+                    "title": "2025/2026 Season",
+                    "subtitle": "Annual student showcase and Xiaohe Fengcai Children's Dance Competition.",
+                    "primary": {"label": "Learn About Events", "href": "/performances"},
+                    "secondary": {"label": "Watch on YouTube", "href": "https://www.youtube.com/@mulandancestudio21"},
+                    "overlay": "from-primary/95 via-primary/80 to-purple-900/60",
+                    "is_active": True,
+                },
+                {
+                    "badge": "Summer Camp",
+                    "title": "Summer Dance Camps 2026",
+                    "subtitle": "A one-week immersive dance experience for students ages 5 to 17.",
+                    "primary": {"label": "Register Now", "href": "/classes/register"},
+                    "secondary": {"label": "Learn More", "href": "/programs/summer-camps"},
+                    "overlay": "from-violet-800 via-purple-800 to-primary/80",
+                    "is_active": True,
+                },
             ],
             stats=[
                 {"value": "200+", "label": "Students"},
@@ -331,6 +351,24 @@ def _homepage_defaults(locale: str = "zh") -> HomepageSettings:
                     "primary": {"label": "Voir les cours", "href": "/programs"},
                     "secondary": {"label": "Voir la vidéo", "href": "https://www.youtube.com/@mulandancestudio21"},
                     "overlay": "from-primary/90 via-primary/70 to-primary/40",
+                    "is_active": True,
+                },
+                {
+                    "badge": "Saison de spectacles",
+                    "title": "Saison 2025/2026",
+                    "subtitle": "Spectacle annuel des eleves et concours de danse pour enfants Xiaohe Fengcai.",
+                    "primary": {"label": "Voir les evenements", "href": "/performances"},
+                    "secondary": {"label": "Voir sur YouTube", "href": "https://www.youtube.com/@mulandancestudio21"},
+                    "overlay": "from-primary/95 via-primary/80 to-purple-900/60",
+                    "is_active": True,
+                },
+                {
+                    "badge": "Camp d'ete",
+                    "title": "Camps de danse ete 2026",
+                    "subtitle": "Une experience immersive d'une semaine pour les eleves de 5 a 17 ans.",
+                    "primary": {"label": "S'inscrire", "href": "/classes/register"},
+                    "secondary": {"label": "En savoir plus", "href": "/programs/summer-camps"},
+                    "overlay": "from-violet-800 via-purple-800 to-primary/80",
                     "is_active": True,
                 },
             ],
@@ -421,6 +459,47 @@ def _merge_homepage_with_defaults(value: HomepageSettings | None, locale: str) -
     )
 
 
+def _localized_slide_with_reference(
+    *,
+    target: HomepageHeroSlide | None,
+    fallback: HomepageHeroSlide | None,
+    reference: HomepageHeroSlide,
+) -> HomepageHeroSlide:
+    target = target or HomepageHeroSlide()
+    fallback = fallback or HomepageHeroSlide()
+    return HomepageHeroSlide(
+        badge=target.badge or fallback.badge or reference.badge,
+        title=target.title or fallback.title or reference.title,
+        subtitle=target.subtitle or fallback.subtitle or reference.subtitle,
+        primary=HomepageButton(
+            label=target.primary.label or fallback.primary.label or reference.primary.label,
+            href=target.primary.href or reference.primary.href or fallback.primary.href,
+        ),
+        secondary=HomepageButton(
+            label=target.secondary.label or fallback.secondary.label or reference.secondary.label,
+            href=target.secondary.href or reference.secondary.href or fallback.secondary.href,
+        ),
+        image_url=reference.image_url or target.image_url or fallback.image_url,
+        overlay=reference.overlay or target.overlay or fallback.overlay,
+        is_active=reference.is_active,
+    )
+
+
+def _align_homepage_carousel_to_reference(value: HomepageSettings, locale: str, reference: HomepageSettings) -> HomepageSettings:
+    if not reference.hero_slides:
+        return value
+    defaults = _homepage_defaults(locale)
+    aligned_slides = [
+        _localized_slide_with_reference(
+            target=value.hero_slides[index] if index < len(value.hero_slides) else None,
+            fallback=defaults.hero_slides[index] if index < len(defaults.hero_slides) else None,
+            reference=reference_slide,
+        )
+        for index, reference_slide in enumerate(reference.hero_slides)
+    ]
+    return HomepageSettings(hero_slides=aligned_slides, stats=value.stats, cta=value.cta)
+
+
 def _homepage_bundle(settings: SystemSettings) -> HomepageSettingsBundle:
     if not settings.homepage_json:
         return HomepageSettingsBundle(
@@ -435,10 +514,13 @@ def _homepage_bundle(settings: SystemSettings) -> HomepageSettingsBundle:
         raw = None
 
     if isinstance(raw, dict) and any(locale in raw for locale in LOCALES):
+        zh = _merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("zh")), "zh")
+        en = _merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("en")), "en")
+        fr = _merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("fr")), "fr")
         return HomepageSettingsBundle(
-            zh=_merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("zh")), "zh"),
-            en=_merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("en")), "en"),
-            fr=_merge_homepage_with_defaults(_homepage_single_from_raw(raw.get("fr")), "fr"),
+            zh=zh,
+            en=_align_homepage_carousel_to_reference(en, "en", zh),
+            fr=_align_homepage_carousel_to_reference(fr, "fr", zh),
         )
 
     legacy = _homepage_single_from_raw(raw)
