@@ -114,6 +114,54 @@ const defaultHomepageBundle: HomepageSettingsBundle = {
   fr: defaultHomepageFr,
 };
 
+function heroSlidesText(slides: HomepageHeroSlide[]) {
+  return slides
+    .map((slide) =>
+      [
+        slide.badge || '',
+        slide.title || '',
+        slide.subtitle || '',
+        slide.primary?.label || '',
+        slide.secondary?.label || '',
+      ].join(' :: ')
+    )
+    .join('\n');
+}
+
+function applyHeroSlidesText(
+  currentSlides: HomepageHeroSlide[],
+  text: string | undefined,
+  locale: PolicyLocale
+) {
+  if (!text?.trim()) return currentSlides;
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines.map((line, index) => {
+    const currentSlide = currentSlides[index] || { ...emptySlides[locale] };
+    const [badge, title, subtitle, primaryLabel, secondaryLabel] = line
+      .split('::')
+      .map((part) => part.trim());
+
+    return {
+      ...currentSlide,
+      badge: badge || currentSlide.badge,
+      title: title || currentSlide.title,
+      subtitle: subtitle || currentSlide.subtitle,
+      primary: {
+        ...currentSlide.primary,
+        label: primaryLabel || currentSlide.primary?.label || '',
+      },
+      secondary: {
+        ...currentSlide.secondary,
+        label: secondaryLabel || currentSlide.secondary?.label || '',
+      },
+    };
+  });
+}
+
 function isVideoUrl(url: string) {
   return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
 }
@@ -253,26 +301,28 @@ export default function AdminHomepagePage() {
         const localeKey = draft.locale as PolicyLocale;
         const fields = draft.fields || {};
         const currentLocaleForm = next[localeKey] || defaultHomepageBundle[localeKey];
-        const firstSlide = currentLocaleForm.hero_slides[0] || emptySlides[localeKey];
         next[localeKey] = {
           ...currentLocaleForm,
-          hero_slides: [
-            {
-              ...firstSlide,
-              ...(fields.badge ? { badge: fields.badge } : {}),
-              ...(fields.title ? { title: fields.title } : {}),
-              ...(fields.subtitle ? { subtitle: fields.subtitle } : {}),
-              primary: {
-                ...firstSlide.primary,
-                ...(fields.primary_label ? { label: fields.primary_label } : {}),
-              },
-              secondary: {
-                ...firstSlide.secondary,
-                ...(fields.secondary_label ? { label: fields.secondary_label } : {}),
-              },
-            },
-            ...currentLocaleForm.hero_slides.slice(1),
-          ],
+          hero_slides: fields.hero_slides_text
+            ? applyHeroSlidesText(currentLocaleForm.hero_slides, fields.hero_slides_text, localeKey)
+            : currentLocaleForm.hero_slides.map((slide, index) =>
+                index === 0
+                  ? {
+                      ...slide,
+                      ...(fields.badge ? { badge: fields.badge } : {}),
+                      ...(fields.title ? { title: fields.title } : {}),
+                      ...(fields.subtitle ? { subtitle: fields.subtitle } : {}),
+                      primary: {
+                        ...slide.primary,
+                        ...(fields.primary_label ? { label: fields.primary_label } : {}),
+                      },
+                      secondary: {
+                        ...slide.secondary,
+                        ...(fields.secondary_label ? { label: fields.secondary_label } : {}),
+                      },
+                    }
+                  : slide
+              ),
           cta: {
             ...currentLocaleForm.cta,
             ...(fields.cta_title ? { title: fields.cta_title } : {}),
@@ -383,11 +433,7 @@ export default function AdminHomepagePage() {
             sourceLocale={contentLocale}
             uiLocale={locale}
             fields={{
-              badge: form.hero_slides[0]?.badge || '',
-              title: form.hero_slides[0]?.title || '',
-              subtitle: form.hero_slides[0]?.subtitle || '',
-              primary_label: form.hero_slides[0]?.primary?.label || '',
-              secondary_label: form.hero_slides[0]?.secondary?.label || '',
+              hero_slides_text: heroSlidesText(form.hero_slides),
               cta_title: form.cta.title,
               cta_subtitle: form.cta.subtitle,
               cta_note: form.cta.note,
