@@ -123,8 +123,11 @@ def _ensure_article_group_source_url_column():
             logger.warning("Adding missing article_groups.source_url column...")
             conn.execute(text("ALTER TABLE article_groups ADD COLUMN source_url TEXT"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_article_groups_source_url ON article_groups(source_url)"))
-            conn.commit()
             logger.info("article_groups.source_url column added.")
+        if "show_on_homepage" not in columns:
+            logger.warning("Adding missing article_groups.show_on_homepage column...")
+            conn.execute(text("ALTER TABLE article_groups ADD COLUMN show_on_homepage BOOLEAN NOT NULL DEFAULT 1"))
+        conn.commit()
     except Exception as e:
         logger.error(f"Failed ensuring article_groups.source_url column: {e}")
     finally:
@@ -338,16 +341,17 @@ def _run_article_migration():
 def _migrate_programs_if_needed():
     """Add editable program fields and seed default programs when empty."""
     from sqlalchemy import text
+    import json
     import uuid
 
     defaults = [
         ("chinese", "Chinese Dance", "Classical and folk Chinese dance training for different ages and levels.", "dance", "All levels", "/programs/chinese-dance.jpg", 10),
-        ("folk", "Folk Dance", "Folk dance classes that build rhythm, culture, and stage confidence.", "dance", "All levels", "/programs/folk-dance.jpg", 20),
+        ("folk", "Folk Dance", "Folk dance classes that build rhythm, culture, and stage confidence.", "dance", "All levels", "/programs/chinese-dance.jpg", 20),
         ("ballet", "Ballet", "Structured ballet training focused on technique, posture, musicality, and strength.", "dance", "Children, teens, adults", "/programs/ballet.jpg", 30),
-        ("contemporary", "Contemporary", "Contemporary dance training with technique, improvisation, and creative movement.", "dance", "Beginner to advanced", "/programs/contemporary.jpg", 40),
-        ("jazz", "Jazz", "Jazz dance classes with energy, flexibility, musicality, and performance skills.", "dance", "Beginner to advanced", "/programs/jazz.jpg", 50),
-        ("hip-hop", "Hip-Hop", "Street dance training covering foundations, groove, choreography, and freestyle.", "dance", "Beginner to advanced", "/programs/hip-hop.jpg", 60),
-        ("summer-camps", "Summer Camps", "Seasonal camp programs with dance training, activities, and performance opportunities.", "camp", "Ages 5+", "/programs/summer-camps.jpg", 70),
+        ("contemporary", "Contemporary", "Contemporary dance training with technique, improvisation, and creative movement.", "dance", "Beginner to advanced", "/programs/ballet.jpg", 40),
+        ("jazz", "Jazz", "Jazz dance classes with energy, flexibility, musicality, and performance skills.", "dance", "Beginner to advanced", "/programs/ballet.jpg", 50),
+        ("hip-hop", "Hip-Hop", "Street dance training covering foundations, groove, choreography, and freestyle.", "dance", "Beginner to advanced", "/programs/chinese-dance.jpg", 60),
+        ("summer-camps", "Summer Camps", "Seasonal camp programs with dance training, activities, and performance opportunities.", "camp", "Ages 5+", "/programs/chinese-dance.jpg", 70),
     ]
 
     conn = engine.connect()
@@ -363,6 +367,8 @@ def _migrate_programs_if_needed():
             conn.execute(text("ALTER TABLE programs ADD COLUMN cover_image VARCHAR(1000)"))
         if "order_index" not in columns:
             conn.execute(text("ALTER TABLE programs ADD COLUMN order_index INTEGER DEFAULT 0"))
+        if "translations_json" not in columns:
+            conn.execute(text("ALTER TABLE programs ADD COLUMN translations_json TEXT"))
 
         program_count = conn.execute(text("SELECT COUNT(*) FROM programs")).scalar()
         if program_count == 0:
@@ -387,6 +393,67 @@ def _migrate_programs_if_needed():
                     "order_index": order_index,
                 })
 
+        # Previous seeded records reference images that were never included in
+        # the deployed public assets. Preserve uploads, changing only legacy
+        # built-in paths that would otherwise return 404.
+        for slug, legacy_image, cover_image in [
+            ("folk", "/programs/folk-dance.jpg", "/programs/chinese-dance.jpg"),
+            ("contemporary", "/programs/contemporary.jpg", "/programs/ballet.jpg"),
+            ("jazz", "/programs/jazz.jpg", "/programs/ballet.jpg"),
+            ("hip-hop", "/programs/hip-hop.jpg", "/programs/chinese-dance.jpg"),
+            ("summer-camps", "/programs/summer-camps.jpg", "/programs/chinese-dance.jpg"),
+        ]:
+            conn.execute(
+                text("UPDATE programs SET cover_image = :cover_image WHERE slug = :slug AND cover_image = :legacy_image"),
+                {"slug": slug, "legacy_image": legacy_image, "cover_image": cover_image},
+            )
+
+        # Old built-in records predate the multilingual content fields. These
+        # defaults are applied only while the translation bundle is empty; any
+        # content subsequently maintained in the admin is left untouched.
+        default_translations = {
+            "chinese": {
+                "zh": {"name": "中国古典舞", "description": "系统学习中国古典舞与民族民间舞，感受传统文化与舞蹈艺术。", "category": "舞蹈", "level": "所有级别"},
+                "en": {"name": "Classical Chinese Dance", "description": "Training in classical and folk Chinese dance for dancers of different ages and levels.", "category": "Dance", "level": "All levels"},
+                "fr": {"name": "Danse classique chinoise", "description": "Formation en danse classique et folklorique chinoise pour differents ages et niveaux.", "category": "Danse", "level": "Tous les niveaux"},
+            },
+            "folk": {
+                "zh": {"name": "中国民族民间舞", "description": "学习不同地域的民族民间舞风格，培养节奏感、文化理解和舞台表现力。", "category": "舞蹈", "level": "所有级别"},
+                "en": {"name": "Chinese Folk Dance", "description": "Folk dance classes that build rhythm, cultural understanding, and stage confidence.", "category": "Dance", "level": "All levels"},
+                "fr": {"name": "Danse folklorique chinoise", "description": "Cours de danse folklorique qui developpent le rythme, la culture et la confiance sur scene.", "category": "Danse", "level": "Tous les niveaux"},
+            },
+            "ballet": {
+                "zh": {"name": "芭蕾舞", "description": "以技巧、体态、乐感和力量为重点的系统芭蕾训练。", "category": "舞蹈", "level": "儿童、青少年及成人"},
+                "en": {"name": "Ballet", "description": "Structured ballet training focused on technique, posture, musicality, and strength.", "category": "Dance", "level": "Children, teens, adults"},
+                "fr": {"name": "Ballet", "description": "Formation structuree en ballet axee sur la technique, la posture, la musicalite et la force.", "category": "Danse", "level": "Enfants, adolescents et adultes"},
+            },
+            "contemporary": {
+                "zh": {"name": "现代舞", "description": "通过技巧、即兴和创意动作探索现代舞表达。", "category": "舞蹈", "level": "初级至高级"},
+                "en": {"name": "Contemporary", "description": "Contemporary dance training with technique, improvisation, and creative movement.", "category": "Dance", "level": "Beginner to advanced"},
+                "fr": {"name": "Danse contemporaine", "description": "Formation en danse contemporaine avec technique, improvisation et mouvement creatif.", "category": "Danse", "level": "Debutant a avance"},
+            },
+            "jazz": {
+                "zh": {"name": "爵士舞", "description": "充满活力的爵士舞课程，训练柔韧性、乐感和舞台表现力。", "category": "舞蹈", "level": "初级至高级"},
+                "en": {"name": "Jazz", "description": "Jazz dance classes with energy, flexibility, musicality, and performance skills.", "category": "Dance", "level": "Beginner to advanced"},
+                "fr": {"name": "Jazz", "description": "Cours de jazz dynamiques developpant souplesse, musicalite et presence scenique.", "category": "Danse", "level": "Debutant a avance"},
+            },
+            "hip-hop": {
+                "zh": {"name": "街舞", "description": "学习街舞基础、律动、编舞与自由舞。", "category": "舞蹈", "level": "初级至高级"},
+                "en": {"name": "Hip-Hop", "description": "Street dance training covering foundations, groove, choreography, and freestyle.", "category": "Dance", "level": "Beginner to advanced"},
+                "fr": {"name": "Hip-Hop", "description": "Formation en danse urbaine couvrant les bases, le groove, la choregraphie et le freestyle.", "category": "Danse", "level": "Debutant a avance"},
+            },
+            "summer-camps": {
+                "zh": {"name": "暑期夏令营", "description": "假期中的舞蹈强化课程，包含训练、活动与展示机会。", "category": "夏令营", "level": "5岁及以上"},
+                "en": {"name": "Summer Camps", "description": "Seasonal camp programs with dance training, activities, and performance opportunities.", "category": "Camp", "level": "Ages 5+"},
+                "fr": {"name": "Camps d'ete", "description": "Programmes saisonniers avec formation en danse, activites et occasions de spectacle.", "category": "Camp", "level": "5 ans et plus"},
+            },
+        }
+        for slug, translations in default_translations.items():
+            conn.execute(
+                text("UPDATE programs SET translations_json = :translations WHERE slug = :slug AND (translations_json IS NULL OR translations_json IN ('', '{}'))"),
+                {"slug": slug, "translations": json.dumps(translations, ensure_ascii=False)},
+            )
+
         conn.commit()
     except Exception as e:
         logger.error(f"Program migration failed: {e}", exc_info=True)
@@ -398,6 +465,7 @@ def _migrate_programs_if_needed():
 def _migrate_system_settings_if_needed():
     """Add newer settings columns to existing SQLite databases."""
     from sqlalchemy import text
+    import json
 
     conn = engine.connect()
     try:
@@ -418,8 +486,20 @@ def _migrate_system_settings_if_needed():
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN classroom_pricing_json TEXT DEFAULT ''"))
         if "homepage_json" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
+        if "homepage_draft_json" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_draft_json TEXT"))
+        if "homepage_published_at" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_published_at DATETIME"))
+        if "site_draft_json" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN site_draft_json TEXT"))
+        if "site_published_at" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN site_published_at DATETIME"))
         if "ai_enabled" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_enabled INTEGER DEFAULT 0"))
+        if "ai_thinking_enabled" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_thinking_enabled INTEGER DEFAULT 0"))
+        if "ai_image_enabled" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_image_enabled INTEGER DEFAULT 0"))
         if "ai_provider" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_provider VARCHAR(100) DEFAULT 'openai_compatible'"))
         if "ai_api_base_url" not in columns:
@@ -430,6 +510,57 @@ def _migrate_system_settings_if_needed():
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_model VARCHAR(200) DEFAULT ''"))
         if "ai_timeout_seconds" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_timeout_seconds INTEGER DEFAULT 600"))
+        if "translations_json" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN translations_json TEXT"))
+
+        # Existing installations may have a single-language settings record
+        # from before the multilingual settings editor existed. Seed only an
+        # empty translation bundle, never overwriting maintained copy.
+        system_translations = {
+            "zh": {
+                "site_name": "木兰舞蹈工作室",
+                "header_cta_label": "立即报名",
+                "footer_newsletter_title": "加入我们",
+                "copyright_text": "版权所有。",
+            },
+            "en": {
+                "site_name": "Mulan Dance Studio",
+                "header_cta_label": "Register",
+                "footer_newsletter_title": "Join Us",
+                "copyright_text": "All rights reserved.",
+            },
+            "fr": {
+                "site_name": "Mulan Dance Studio",
+                "header_cta_label": "Inscrivez-vous",
+                "footer_newsletter_title": "Rejoignez-nous",
+                "copyright_text": "Tous droits reserves.",
+            },
+        }
+        raw_translations = conn.execute(
+            text("SELECT translations_json FROM system_settings WHERE id = 1")
+        ).scalar()
+        try:
+            saved_translations = json.loads(raw_translations or "{}")
+        except (TypeError, ValueError):
+            saved_translations = {}
+        if not isinstance(saved_translations, dict):
+            saved_translations = {}
+        translations_changed = False
+        for locale, defaults in system_translations.items():
+            saved_locale = saved_translations.get(locale)
+            if not isinstance(saved_locale, dict):
+                saved_locale = {}
+                saved_translations[locale] = saved_locale
+                translations_changed = True
+            for field, value in defaults.items():
+                if saved_locale.get(field) in (None, ""):
+                    saved_locale[field] = value
+                    translations_changed = True
+        if translations_changed:
+            conn.execute(
+                text("UPDATE system_settings SET translations_json = :translations WHERE id = 1"),
+                {"translations": json.dumps(saved_translations, ensure_ascii=False)},
+            )
         conn.commit()
     except Exception as e:
         logger.error(f"System settings migration failed: {e}", exc_info=True)
@@ -473,6 +604,362 @@ def _migrate_admin_roles_if_needed():
         conn.commit()
     except Exception as e:
         logger.error(f"Admin role migration failed: {e}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _migrate_multilingual_nicknames_if_needed():
+    """Add localized teacher nicknames while preserving the legacy nickname."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        exists = conn.execute(text(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='user_profiles'"
+        )).fetchone()
+        if not exists:
+            return
+        columns = {
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(user_profiles)")).fetchall()
+        }
+        for name in ("nickname_zh", "nickname_en", "nickname_fr"):
+            if name not in columns:
+                conn.execute(text(f"ALTER TABLE user_profiles ADD COLUMN {name} VARCHAR(100)"))
+        conn.execute(text(
+            "UPDATE user_profiles SET nickname_zh = first_name "
+            "WHERE nickname_zh IS NULL OR trim(nickname_zh) = ''"
+        ))
+        conn.commit()
+    except Exception as exc:
+        logger.error(f"Multilingual nickname migration failed: {exc}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _migrate_faculty_account_link_if_needed():
+    """Allow one public faculty profile to be owned by one teacher account."""
+    from sqlalchemy import text
+    conn = engine.connect()
+    try:
+        exists = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='faculty_members'")).fetchone()
+        if not exists:
+            return
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(faculty_members)")).fetchall()}
+        if "user_id" not in columns:
+            conn.execute(text("ALTER TABLE faculty_members ADD COLUMN user_id VARCHAR(36)"))
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_faculty_members_user_id ON faculty_members(user_id)"))
+            conn.commit()
+    except Exception as exc:
+        logger.error(f"Faculty account-link migration failed: {exc}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _migrate_pricing_catalogs_if_needed():
+    """Create the structured pricing catalogs once, preserving saved legacy JSON."""
+    import json
+    from decimal import Decimal, InvalidOperation
+    from app.core.database import SessionLocal
+    from app.core.translations import parse_translations, set_translation_bundle
+    from app.models import (
+        PricingCatalog, PricingContentBlock, PricingOption, PricingPlan,
+        Studio, StudioRoom, SystemSettings,
+    )
+
+    db = SessionLocal()
+    try:
+        if db.query(PricingCatalog).count():
+            return
+        settings_row = db.query(SystemSettings).first()
+        settings_translations = parse_translations(getattr(settings_row, "translations_json", None)) if settings_row else {}
+
+        def parse_value(raw, fallback):
+            try:
+                value = json.loads(raw or "")
+                return value if isinstance(value, (dict, list)) else fallback
+            except (TypeError, ValueError):
+                return fallback
+
+        program_default = {
+            "table": {"programLabel": "Program / Plan", "column1Label": "Unit Price", "column2Label": "Total Price", "column3Label": "Validity / Notes"},
+            "items": [
+                {"program": "Package A / 80 Hours", "column1Currency": "CAD", "column1Value": "15", "column2Currency": "CAD", "column2Value": "1356", "column3Value": "Valid for 548 days after the first class. 50% deposit, balance due within 1 month of program start."},
+                {"program": "Package B / 40 Hours", "column1Currency": "CAD", "column1Value": "17", "column2Currency": "CAD", "column2Value": "768.4", "column3Value": "Valid for 365 days after the first class. 50% deposit, balance due within 2 weeks of program start."},
+                {"program": "Package C / 16 Hours", "column1Currency": "CAD", "column1Value": "20", "column2Currency": "CAD", "column2Value": "361.6", "column3Value": "Valid for 182 days after the first class. Full payment required at purchase."},
+                {"program": "Package D / 120 Hours", "column1Currency": "CAD", "column1Value": "14", "column2Currency": "CAD", "column2Value": "1898.4", "column3Value": "Valid for 365 days after the first class. 50% deposit, balance due within 1 month of program start."},
+                {"program": "Single Class", "column1Currency": "CAD", "column1Value": "30", "column2Currency": "", "column2Value": "", "column3Value": "Class price scales by class duration."},
+            ],
+            "infoCards": [
+                {"title": "Financial Aid Available", "body": "Families can contact the studio to ask about available support options."},
+                {"title": "Flexible Packages", "body": "Packages can cover class hours, term bundles, memberships, or single classes."},
+                {"title": "Confirm Class Length", "body": "Class duration may vary by group; confirm how hours are counted before purchase."},
+            ],
+            "payment": {"title": "Payment & Usage Notes", "columns": [
+                {"title": "Accepted Methods", "items": ["Credit or debit card", "Bank transfer", "Cash or cheque at the studio"]},
+                {"title": "Before Purchase", "items": ["Confirm package validity", "Confirm installment dates", "Confirm how class duration uses package hours"]},
+            ]},
+        }
+        program_sources = {}
+        base_program = parse_value(getattr(settings_row, "program_pricing_json", "") if settings_row else "", program_default)
+        for locale in ("zh", "en", "fr"):
+            raw = settings_translations.get(locale, {}).get("program_pricing_json", "")
+            program_sources[locale] = parse_value(raw, base_program)
+        program_catalog = PricingCatalog(kind="program", title="课程价格", subtitle="选择适合学习安排的课程或课时方案。", is_dirty=False)
+        set_translation_bundle(program_catalog, {
+            "zh": {"title": "课程价格", "subtitle": "选择适合学习安排的课程或课时方案。"},
+            "en": {"title": "Program Pricing", "subtitle": "Choose a class or hour package that fits your training."},
+            "fr": {"title": "Tarifs des cours", "subtitle": "Choisissez un cours ou un forfait adapté à votre formation."},
+        })
+        db.add(program_catalog); db.flush()
+
+        def decimal_value(value):
+            text_value = str(value or "").replace(",", "").strip()
+            try: return Decimal(text_value)
+            except (InvalidOperation, ValueError): return None
+
+        base_items = base_program.get("items", []) if isinstance(base_program, dict) else []
+        for index, raw_item in enumerate(base_items):
+            if not isinstance(raw_item, dict): continue
+            title = str(raw_item.get("program") or "")
+            detail = str(raw_item.get("column3Value") or raw_item.get("hours") or "")
+            plan = PricingPlan(catalog_id=program_catalog.id, title=title, description="", badge="", details_json=json.dumps([detail] if detail else [], ensure_ascii=False), is_active=True, is_featured=index == 0, sort_order=index)
+            translations = {}
+            for locale, source in program_sources.items():
+                localized_items = source.get("items", []) if isinstance(source, dict) else []
+                localized_item = localized_items[index] if index < len(localized_items) and isinstance(localized_items[index], dict) else raw_item
+                localized_detail = str(localized_item.get("column3Value") or localized_item.get("hours") or "")
+                translations[locale] = {"title": str(localized_item.get("program") or title), "description": "", "badge": "", "details": [localized_detail] if localized_detail else []}
+            set_translation_bundle(plan, translations); db.add(plan); db.flush()
+            table = base_program.get("table", {}) if isinstance(base_program, dict) else {}
+            price_specs = [
+                ("column1Value", "column1Currency", str(table.get("column1Label") or "Unit Price")),
+                ("column2Value", "column2Currency", str(table.get("column2Label") or "Total Price")),
+            ]
+            option_index = 0
+            for value_key, currency_key, label in price_specs:
+                amount = decimal_value(raw_item.get(value_key))
+                if amount is None or amount <= 0: continue
+                currency_raw = str(raw_item.get(currency_key) or "CAD").upper().replace("$", "CAD")
+                currency = currency_raw if len(currency_raw) == 3 else "CAD"
+                option = PricingOption(plan_id=plan.id, label=label, amount=amount, currency=currency, unit="", note="", sort_order=option_index)
+                option_translations = {}
+                for locale, source in program_sources.items():
+                    localized_table = source.get("table", {}) if isinstance(source, dict) else {}
+                    option_translations[locale] = {"label": str(localized_table.get("column1Label" if value_key == "column1Value" else "column2Label") or label), "unit": "", "note": ""}
+                set_translation_bundle(option, option_translations); db.add(option); option_index += 1
+
+        blocks = []
+        if isinstance(base_program, dict):
+            blocks.extend(("info", item) for item in base_program.get("infoCards", []) if isinstance(item, dict))
+            payment = base_program.get("payment", {})
+            blocks.extend(("payment", item) for item in payment.get("columns", []) if isinstance(item, dict))
+        for index, (block_type, item) in enumerate(blocks):
+            block = PricingContentBlock(catalog_id=program_catalog.id, block_type=block_type, title=str(item.get("title") or ""), body=str(item.get("body") or ""), items_json=json.dumps(item.get("items") or [], ensure_ascii=False), is_active=True, sort_order=index)
+            set_translation_bundle(block, {locale: {"title": block.title, "body": block.body, "items": item.get("items") or []} for locale in ("zh", "en", "fr")}); db.add(block)
+
+        rental_default = {"items": [
+            {"image_url": "", "hourlyCurrency": "CAD", "hourlyPrice": "80", "hourlyTime": "hour", "halfDayCurrency": "CAD", "halfDayPrice": "280", "halfDayTime": "4 hours", "fullDayCurrency": "CAD", "fullDayPrice": "520", "fullDayTime": "day"},
+            {"image_url": "", "hourlyCurrency": "CAD", "hourlyPrice": "45", "hourlyTime": "hour", "halfDayCurrency": "CAD", "halfDayPrice": "160", "halfDayTime": "4 hours", "fullDayCurrency": "CAD", "fullDayPrice": "300", "fullDayTime": "day"},
+        ], "notes": {"title": "Before You Book", "items": ["Submitting a request does not guarantee a room.", "Payment is required to reserve a room."]}}
+        base_rental = parse_value(getattr(settings_row, "classroom_pricing_json", "") if settings_row else "", rental_default)
+        rental_sources = {}
+        for locale in ("zh", "en", "fr"):
+            raw = settings_translations.get(locale, {}).get("classroom_pricing_json", "")
+            rental_sources[locale] = parse_value(raw, base_rental)
+
+        rental_catalog = PricingCatalog(kind="rental", title="教室租赁价格", subtitle="查看可出租教室的价格并提交租赁申请。", is_dirty=True)
+        set_translation_bundle(rental_catalog, {
+            "zh": {"title": "教室租赁价格", "subtitle": "查看可出租教室的价格并提交租赁申请。"},
+            "en": {"title": "Rental Pricing", "subtitle": "Review studio rates before submitting a rental request."},
+            "fr": {"title": "Tarifs de location", "subtitle": "Consultez les tarifs avant d’envoyer une demande."},
+        })
+        db.add(rental_catalog); db.flush()
+        rentable_rooms = db.query(StudioRoom).join(Studio, Studio.id == StudioRoom.studio_id).filter(StudioRoom.is_active.is_(True), StudioRoom.is_rentable.is_(True), Studio.is_active.is_(True)).order_by(StudioRoom.sort_order, StudioRoom.name).all()
+        for index, room in enumerate(rentable_rooms):
+            rental_items = base_rental.get("items", []) if isinstance(base_rental, dict) else []
+            raw_item = rental_items[min(index, len(rental_items) - 1)] if rental_items else rental_default["items"][min(index, 1)]
+            hourly = str(raw_item.get("hourlyPrice") or "0")
+            half_day = str(raw_item.get("halfDayPrice") or "0")
+            full_day = str(raw_item.get("fullDayPrice") or "0")
+            plan = PricingPlan(catalog_id=rental_catalog.id, room_id=room.id, title=room.name, description="", image_url=str(raw_item.get("image_url") or raw_item.get("imageUrl") or ""), details_json="[]", is_active=True, is_featured=index == 0, sort_order=index)
+            set_translation_bundle(plan, {locale: {"title": room.name, "description": "", "badge": "", "details": []} for locale in ("zh", "en", "fr")}); db.add(plan); db.flush()
+            labels = [
+                ("Hourly", hourly, str(raw_item.get("hourlyTime") or "hour"), str(raw_item.get("hourlyCurrency") or "CAD")),
+                ("Half day", half_day, str(raw_item.get("halfDayTime") or "4 hours"), str(raw_item.get("halfDayCurrency") or "CAD")),
+                ("Full day", full_day, str(raw_item.get("fullDayTime") or "day"), str(raw_item.get("fullDayCurrency") or "CAD")),
+            ]
+            translated_labels = {"zh": [("每小时", "小时"), ("半天", "4 小时"), ("全天", "天")], "en": [("Hourly", "hour"), ("Half day", "4 hours"), ("Full day", "day")], "fr": [("À l’heure", "heure"), ("Demi-journée", "4 heures"), ("Journée complète", "jour")]}
+            for option_index, (label, amount, unit, currency_raw) in enumerate(labels):
+                currency = currency_raw.upper().replace("$", "CAD")
+                if len(currency) != 3: currency = "CAD"
+                option = PricingOption(plan_id=plan.id, label=label, amount=Decimal(amount), currency=currency, unit=unit, note="", sort_order=option_index)
+                set_translation_bundle(option, {locale: {"label": translated_labels[locale][option_index][0], "unit": translated_labels[locale][option_index][1], "note": ""} for locale in ("zh", "en", "fr")}); db.add(option)
+
+        rental_notes = base_rental.get("notes", {}) if isinstance(base_rental, dict) else {}
+        if rental_notes.get("title") or rental_notes.get("items"):
+            block = PricingContentBlock(catalog_id=rental_catalog.id, block_type="notice", title=str(rental_notes.get("title") or ""), body="", items_json=json.dumps(rental_notes.get("items") or [], ensure_ascii=False), is_active=True, sort_order=0)
+            translations = {}
+            for locale, source in rental_sources.items():
+                notes = source.get("notes", {}) if isinstance(source, dict) else {}
+                translations[locale] = {"title": str(notes.get("title") or block.title), "body": "", "items": notes.get("items") or rental_notes.get("items") or []}
+            set_translation_bundle(block, translations); db.add(block)
+
+        db.commit()
+        # Publish the currently visible program defaults. Rental remains a draft until real rooms are reviewed.
+        from app.api.v1.pricing import _draft_response
+        program_catalog.published_at = datetime.utcnow()
+        locales = {locale: _draft_response(db, program_catalog, locale, translations=False) for locale in ("zh", "en", "fr")}
+        program_catalog.published_json = json.dumps({"version": 1, "locales": locales}, ensure_ascii=False, default=str)
+        program_catalog.is_dirty = False
+        db.commit()
+    except Exception as exc:
+        logger.error(f"Pricing migration failed: {exc}", exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
+
+def _seed_unified_schedule_resources_if_needed():
+    """Create the initial Studio A/B resources without importing legacy bookings."""
+    from app.models import Studio, StudioRoom
+    from sqlalchemy import text
+
+    session = None
+    try:
+        from app.core.database import SessionLocal
+        session = SessionLocal()
+        columns = {row[1] for row in session.execute(text("PRAGMA table_info(fixed_class_plans)")).fetchall()}
+        if columns and "translations_json" not in columns:
+            session.execute(text("ALTER TABLE fixed_class_plans ADD COLUMN translations_json TEXT"))
+        if columns and "days_of_week_json" not in columns:
+            session.execute(text("ALTER TABLE fixed_class_plans ADD COLUMN days_of_week_json TEXT DEFAULT '[]'"))
+        studio = session.query(Studio).filter(Studio.name == "Mulan Dance Studio").first()
+        if not studio:
+            studio = Studio(name="Mulan Dance Studio", is_active=True)
+            session.add(studio)
+            session.flush()
+        existing = {room.name for room in session.query(StudioRoom).filter(StudioRoom.studio_id == studio.id).all()}
+        for name, order in (("Studio A", 10), ("Studio B", 20)):
+            if name not in existing:
+                session.add(StudioRoom(studio_id=studio.id, name=name, sort_order=order, is_active=True))
+        session.commit()
+    except Exception as e:
+        logger.error(f"Unified schedule resource seed failed: {e}", exc_info=True)
+        if session:
+            session.rollback()
+    finally:
+        if session:
+            session.close()
+
+
+def _migrate_schedule_booking_visibility_if_needed():
+    """Add the public schedule flag without changing visibility of existing bookings."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(schedule_bookings)")).fetchall()}
+        if columns and "is_public" not in columns:
+            conn.execute(text("ALTER TABLE schedule_bookings ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT 0"))
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Schedule booking visibility migration failed: {e}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _migrate_external_rental_schema_if_needed():
+    """Add rental flags and the link from confirmed bookings to rental requests."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        room_columns = {row[1] for row in conn.execute(text("PRAGMA table_info(studio_rooms)")).fetchall()}
+        if room_columns and "is_rentable" not in room_columns:
+            conn.execute(text("ALTER TABLE studio_rooms ADD COLUMN is_rentable BOOLEAN NOT NULL DEFAULT 0"))
+        booking_columns = {row[1] for row in conn.execute(text("PRAGMA table_info(schedule_bookings)")).fetchall()}
+        if booking_columns and "external_request_id" not in booking_columns:
+            conn.execute(text("ALTER TABLE schedule_bookings ADD COLUMN external_request_id VARCHAR(36)"))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"External rental schema migration failed: {e}", exc_info=True)
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _migrate_fixed_course_ai_drafts_if_needed():
+    """Keep SQLite deployments compatible with fixed-course AI drafts."""
+    from sqlalchemy import text
+
+    conn = engine.connect()
+    try:
+        tables = {row[0] for row in conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))}
+        if "course_templates" in tables:
+            columns = {row[1] for row in conn.execute(text("PRAGMA table_info(course_templates)"))}
+            additions = {
+                "is_ai_draft": "ALTER TABLE course_templates ADD COLUMN is_ai_draft INTEGER NOT NULL DEFAULT 0",
+                "ai_draft_meta_json": "ALTER TABLE course_templates ADD COLUMN ai_draft_meta_json TEXT",
+                "allow_unassigned_teacher": "ALTER TABLE course_templates ADD COLUMN allow_unassigned_teacher INTEGER NOT NULL DEFAULT 0",
+                "allow_unassigned_room": "ALTER TABLE course_templates ADD COLUMN allow_unassigned_room INTEGER NOT NULL DEFAULT 0",
+            }
+            for column, statement in additions.items():
+                if column not in columns:
+                    conn.execute(text(statement))
+        if "course_offering_slots" in tables:
+            slot_columns = {
+                row[1]: row for row in conn.execute(text("PRAGMA table_info(course_offering_slots)"))
+            }
+            room_column = slot_columns.get("room_id")
+            if room_column and int(room_column[3]) == 1:
+                conn.commit()
+                conn.execute(text("PRAGMA foreign_keys=OFF"))
+                conn.execute(text("DROP TABLE IF EXISTS course_offering_slots_nullable_room"))
+                conn.execute(text("""
+                    CREATE TABLE course_offering_slots_nullable_room (
+                        id VARCHAR(36) NOT NULL PRIMARY KEY,
+                        offering_id VARCHAR(36) NOT NULL,
+                        teacher_id VARCHAR(36),
+                        room_id VARCHAR(36),
+                        days_of_week_json TEXT,
+                        start_time VARCHAR(5) NOT NULL,
+                        end_time VARCHAR(5) NOT NULL,
+                        sort_order INTEGER NOT NULL,
+                        created_at DATETIME DEFAULT (CURRENT_TIMESTAMP),
+                        FOREIGN KEY(offering_id) REFERENCES course_offerings (id) ON DELETE CASCADE,
+                        FOREIGN KEY(teacher_id) REFERENCES users (id) ON DELETE SET NULL,
+                        FOREIGN KEY(room_id) REFERENCES studio_rooms (id) ON DELETE RESTRICT
+                    )
+                """))
+                conn.execute(text("""
+                    INSERT INTO course_offering_slots_nullable_room
+                        (id, offering_id, teacher_id, room_id, days_of_week_json, start_time, end_time, sort_order, created_at)
+                    SELECT id, offering_id, teacher_id, room_id, days_of_week_json, start_time, end_time, sort_order, created_at
+                    FROM course_offering_slots
+                """))
+                conn.execute(text("DROP TABLE course_offering_slots"))
+                conn.execute(text("ALTER TABLE course_offering_slots_nullable_room RENAME TO course_offering_slots"))
+                conn.execute(text("CREATE INDEX ix_course_offering_slots_offering_id ON course_offering_slots (offering_id)"))
+                conn.execute(text("CREATE INDEX ix_course_offering_slots_teacher_id ON course_offering_slots (teacher_id)"))
+                conn.execute(text("CREATE INDEX ix_course_offering_slots_room_id ON course_offering_slots (room_id)"))
+                conn.commit()
+                conn.execute(text("PRAGMA foreign_keys=ON"))
+        if "system_settings" in tables:
+            columns = {row[1] for row in conn.execute(text("PRAGMA table_info(system_settings)"))}
+            if "ai_feature_models_json" not in columns:
+                conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_feature_models_json TEXT"))
+            if "ai_thinking_enabled" not in columns:
+                conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_thinking_enabled INTEGER DEFAULT 0"))
+            if "ai_image_enabled" not in columns:
+                conn.execute(text("ALTER TABLE system_settings ADD COLUMN ai_image_enabled INTEGER DEFAULT 0"))
+        conn.commit()
+    except Exception as exc:
+        logger.error(f"Fixed-course AI draft migration failed: {exc}", exc_info=True)
         conn.rollback()
     finally:
         conn.close()
@@ -799,8 +1286,8 @@ def _seed_course_schedule_if_needed():
 
 
 app = FastAPI(
-    title="Grace Dance Academy API",
-    description="REST API for the Grace Dance Academy website",
+    title="Mulan Dance Studio API",
+    description="REST API for the Mulan Dance Studio website",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -812,15 +1299,21 @@ app = FastAPI(
 async def startup_event():
     """Initialize database and data directories on app startup."""
     logger.info("=" * 50)
-    logger.info("Grace Dance Academy API - Starting up")
+    logger.info("Mulan Dance Studio API - Starting up")
     logger.info("=" * 50)
     
     _ensure_data_directories()
     _ensure_database_tables()
     _migrate_admin_roles_if_needed()
+    _migrate_multilingual_nicknames_if_needed()
     _bootstrap_admin_from_env()
     _migrate_system_settings_if_needed()
     _migrate_programs_if_needed()
+    _migrate_faculty_account_link_if_needed()
+    _migrate_pricing_catalogs_if_needed()
+    _migrate_schedule_booking_visibility_if_needed()
+    _migrate_external_rental_schema_if_needed()
+    _migrate_fixed_course_ai_drafts_if_needed()
     _seed_news_taxonomy_if_needed()
     _seed_course_schedule_if_needed()
     _migrate_article_groups_if_needed()

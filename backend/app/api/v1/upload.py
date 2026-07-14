@@ -5,13 +5,41 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
+from app.core.database import get_db
+from app.core.permissions import require_user_permission
+from app.models import User
+from app.api.v1.settings import get_current_user
+from sqlalchemy.orm import Session
 
 router = APIRouter()
+
+UPLOAD_PERMISSION_MAP = {
+    "homepage": "content.homepage",
+    "articles": "content.news.articles",
+    "performances": "content.performances",
+    "programs": "teaching.programs",
+    "pricing": "teaching.pricing",
+    "faculty": "teaching.faculty",
+    "settings": "system.brand",
+}
+
+
+def require_upload_permission(
+    module: str = Query(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    if module == "profile":
+        return user
+    permission = UPLOAD_PERMISSION_MAP.get(module)
+    if not permission:
+        raise HTTPException(status_code=400, detail="Unknown upload module")
+    return require_user_permission(user, db, permission, "manage")
 
 # Upload storage directory: data/uploads/images/editor/
 UPLOAD_ROOT = Path(settings.UPLOADS_DIR)
@@ -72,7 +100,7 @@ def ensure_static_mount(app) -> None:
 
 
 @router.post("/image")
-async def upload_image(request: Request, file: UploadFile = File(...)):
+async def upload_image(request: Request, file: UploadFile = File(...), _: User = Depends(require_upload_permission)):
     """Upload an image file and return its URL.
     
     Accepted image types: PNG, JPG, JPEG, GIF, WEBP, SVG
@@ -127,7 +155,7 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
 
 
 @router.post("/video")
-async def upload_video(request: Request, file: UploadFile = File(...)):
+async def upload_video(request: Request, file: UploadFile = File(...), _: User = Depends(require_upload_permission)):
     """Upload a homepage/background video and return its URL.
 
     Accepted video types: MP4, WEBM, OGG, MOV.
@@ -174,7 +202,7 @@ async def upload_video(request: Request, file: UploadFile = File(...)):
 
 
 @router.post("/file")
-async def upload_file(request: Request, file: UploadFile = File(...)):
+async def upload_file(request: Request, file: UploadFile = File(...), _: User = Depends(require_upload_permission)):
     """Upload a general document/file to data/uploads/files/YYYY/MM/."""
     allowed_types = {
         "application/pdf",

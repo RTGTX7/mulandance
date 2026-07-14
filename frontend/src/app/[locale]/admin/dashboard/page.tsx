@@ -71,6 +71,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1];
+  const showLabel = locale === 'zh' || locale === 'zh-Hant' ? '显示' : locale === 'fr' ? 'Afficher' : 'Show';
   const [stats, setStats] = useState<Stats>({ total: 0, published: 0, drafts: 0, categories: 0, tags: 0 });
   const [articleGroups, setArticleGroups] = useState<NewsArticleGroup[]>([]);
   const [showCount, setShowCount] = useState(5);
@@ -196,7 +197,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground md:text-sm">
-              <span className="hidden sm:inline">Show</span>
+              <span className="hidden sm:inline">{showLabel}</span>
               <select
                 value={showCount}
                 onChange={(event) => setShowCount(Number(event.target.value))}

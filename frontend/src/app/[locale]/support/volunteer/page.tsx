@@ -29,7 +29,7 @@ export default function VolunteerPage() {
         <Card className="mb-12">
           <CardContent className="pt-6">
             <p className="mb-4">
-              Our volunteers are the backbone of Grace Dance Academy. From helping at performances to
+              Our volunteers are an important part of Mulan Dance Studio. From helping at performances to
               supporting daily operations, your contribution makes a real difference in the lives of
               our students and the broader community.
             </p>

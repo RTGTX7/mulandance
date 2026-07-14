@@ -1,3 +1,5 @@
+import json
+import logging
 import threading
 import uuid
 import re
@@ -8,8 +10,9 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal, get_db
+from app.core.permissions import require_user_permission
 from app.core.security import decode_token
-from app.models import User, ArticleGroup
+from app.models import User, UserProfile, ArticleGroup, Studio, StudioRoom
 from app.core.config import settings as app_settings
 from app.api.v1.settings import _get_or_create_system_settings
 from app.schemas.ai import (
@@ -22,6 +25,8 @@ from app.schemas.ai import (
     AiArticleImportResponse,
     AiExtractRequest,
     AiExtractResponse,
+    AiExtractJobCreateResponse,
+    AiExtractJobStatusResponse,
     AiExtractManyRequest,
     AiExtractManyResponse,
     AiExtractManyJobCreateResponse,
@@ -30,8 +35,13 @@ from app.schemas.ai import (
     AiTranslateResponse,
     AiTranslateJobCreateResponse,
     AiTranslateJobStatusResponse,
+    FixedCourseImportJobCreateResponse,
+    FixedCourseImportJobStatusResponse,
+    FixedCourseImportRequest,
+    FixedCourseImportResponse,
     ImportedSource,
 )
+
 from app.schemas.news import NewsArticleCreate
 from app.services.ai_article_generator import generate_imported_content
 from app.services.ai_translation import (
@@ -41,11 +51,13 @@ from app.services.ai_translation import (
     ensure_ai_configured,
     extract_fields_from_text,
     extract_many_fields_from_text,
+    fixed_course_import_from_text,
     translate_fields,
 )
 from app.services import news_files
 from app.services.url_importer import import_url, import_urls
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
 
@@ -53,8 +65,12 @@ _ai_import_jobs: dict[str, dict] = {}
 _ai_import_jobs_lock = threading.Lock()
 _ai_extract_many_jobs: dict[str, dict] = {}
 _ai_extract_many_jobs_lock = threading.Lock()
+_ai_extract_jobs: dict[str, dict] = {}
+_ai_extract_jobs_lock = threading.Lock()
 _ai_translate_jobs: dict[str, dict] = {}
 _ai_translate_jobs_lock = threading.Lock()
+_fixed_course_import_jobs: dict[str, dict] = {}
+_fixed_course_import_jobs_lock = threading.Lock()
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -77,14 +93,55 @@ def require_admin(user: User = Depends(get_current_user)) -> User:
     return user
 
 
-def _runtime_ai_config(db: Session) -> AiRuntimeConfig:
+def require_fixed_course_ai(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> User:
+    return require_user_permission(user, db, "teaching.schedules.ai", "manage")
+
+
+AI_MODULE_PERMISSIONS = {
+    "homepage": "content.homepage",
+    "articles": "content.news.articles",
+    "performances": "content.performances",
+    "programs": "teaching.programs",
+    "schedules": "teaching.schedules.ai",
+    "pricing": "teaching.pricing",
+    "faculty": "teaching.faculty",
+    "settings": "system",
+    "school_policy": "system.policy",
+}
+
+
+def require_ai_module(user: User, db: Session, module: str) -> None:
+    permission = AI_MODULE_PERMISSIONS.get(module)
+    if not permission:
+        raise HTTPException(status_code=400, detail="Unknown AI module")
+    require_user_permission(user, db, permission, "manage")
+
+
+def require_job_owner(job: dict, user: User) -> None:
+    if user.role != "super_admin" and job.get("user_id") != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI job not found")
+
+
+def _runtime_ai_config(db: Session, feature: str | None = None) -> AiRuntimeConfig:
     settings = _get_or_create_system_settings(db)
+    feature_model = ""
+    if feature:
+        try:
+            feature_models = json.loads(settings.ai_feature_models_json or "{}")
+        except (TypeError, ValueError):
+            feature_models = {}
+        if isinstance(feature_models, dict):
+            feature_model = str(feature_models.get(feature) or "").strip()
     return AiRuntimeConfig(
         enabled=bool(settings.ai_enabled),
         api_base_url=settings.ai_api_base_url or app_settings.AI_API_BASE_URL,
         api_key=settings.ai_api_key or app_settings.AI_API_KEY,
-        model=settings.ai_model or app_settings.AI_MODEL,
+        model=feature_model or settings.ai_model or app_settings.AI_MODEL,
         timeout_seconds=settings.ai_timeout_seconds or app_settings.AI_TIMEOUT_SECONDS or 600,
+        thinking_enabled=bool(settings.ai_thinking_enabled),
+        image_enabled=bool(settings.ai_image_enabled),
     )
 
 
@@ -326,11 +383,51 @@ def _set_extract_many_job(job_id: str, **updates) -> None:
         _ai_extract_many_jobs[job_id] = job
 
 
+def _set_extract_job(job_id: str, **updates) -> None:
+    with _ai_extract_jobs_lock:
+        job = _ai_extract_jobs.get(job_id, {})
+        job.update(updates)
+        _ai_extract_jobs[job_id] = job
+
+
 def _set_translate_job(job_id: str, **updates) -> None:
     with _ai_translate_jobs_lock:
         job = _ai_translate_jobs.get(job_id, {})
         job.update(updates)
         _ai_translate_jobs[job_id] = job
+
+
+def _set_fixed_course_import_job(job_id: str, **updates) -> None:
+    with _fixed_course_import_jobs_lock:
+        job = _fixed_course_import_jobs.get(job_id, {})
+        job.update(updates)
+        _fixed_course_import_jobs[job_id] = job
+
+
+def _fixed_course_import_context(db: Session) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    rooms = db.query(StudioRoom, Studio).join(Studio, Studio.id == StudioRoom.studio_id).filter(
+        StudioRoom.is_active.is_(True), Studio.is_active.is_(True)
+    ).order_by(Studio.name, StudioRoom.sort_order, StudioRoom.name).all()
+    resources = [
+        {"id": room.id, "name": room.name, "label": f"{studio.name} / {room.name}"}
+        for room, studio in rooms
+    ]
+    staff_rows = db.query(User, UserProfile).outerjoin(
+        UserProfile, UserProfile.user_id == User.id
+    ).filter(User.is_active.is_(True), User.role.in_(("super_admin", "admin"))).order_by(User.role, User.id).all()
+    staff = [
+        {
+            "id": user.id,
+            "nickname": (
+                profile.nickname_zh or profile.first_name or ""
+            ).strip() if profile else "",
+            "nickname_en": (profile.nickname_en or "").strip() if profile else "",
+            "nickname_fr": (profile.nickname_fr or "").strip() if profile else "",
+            "role": user.role,
+        }
+        for user, profile in staff_rows
+    ]
+    return resources, staff
 
 
 def _run_import_job(job_id: str, payload: AiArticleImportRequest, config: AiRuntimeConfig) -> None:
@@ -511,6 +608,67 @@ def _run_extract_many_job(job_id: str, payload: AiExtractManyRequest, config: Ai
         _set_extract_many_job(job_id, status="failed", error=str(exc))
 
 
+def _run_fixed_course_import_job(
+    job_id: str,
+    payload: FixedCourseImportRequest,
+    config: AiRuntimeConfig,
+    resources: list[dict[str, str]],
+    staff: list[dict[str, str]],
+) -> None:
+    _set_fixed_course_import_job(job_id, status="running")
+    try:
+        result = fixed_course_import_from_text(
+            raw_text=payload.raw_text,
+            source_locale=payload.source_locale,
+            ui_locale=payload.ui_locale,
+            resources=resources,
+            staff=staff,
+            max_items=payload.max_items,
+            config=config,
+        )
+        _set_fixed_course_import_job(job_id, status="succeeded", result=result, error="")
+    except HTTPException as exc:
+        _set_fixed_course_import_job(job_id, status="failed", error=str(exc.detail))
+    except Exception as exc:
+        logger.exception("Fixed-course AI import failed: %s", exc)
+        locale = payload.ui_locale if payload.ui_locale in {"zh", "en", "fr"} else "en"
+        message = {
+            "zh": "AI 返回的课程结构不完整，系统没有创建草稿。请重新解析；如果仍然失败，请检查每门课程是否写明星期和时间。",
+            "en": "The AI returned an incomplete course structure, so no draft was created. Try parsing again and check that each course includes its days and times.",
+            "fr": "L’IA a renvoyé une structure de cours incomplète; aucun brouillon n’a été créé. Réessayez et vérifiez que chaque cours contient les jours et les heures.",
+        }[locale]
+        _set_fixed_course_import_job(job_id, status="failed", error=message)
+
+
+def _to_extract_response(result) -> AiExtractResponse:
+    """Normalize the shared extraction service result for the extract API."""
+    return AiExtractResponse(
+        module=result.module,
+        source_locale=result.source_locale,
+        drafts=result.drafts,
+        warnings=result.warnings,
+    )
+
+
+def _run_extract_job(job_id: str, payload: AiExtractRequest, config: AiRuntimeConfig) -> None:
+    _set_extract_job(job_id, status="running")
+    try:
+        generated = extract_fields_from_text(
+            module=payload.module,
+            source_locale=payload.source_locale,
+            target_locales=payload.target_locales,
+            raw_text=payload.raw_text,
+            target_fields=payload.target_fields,
+            instruction=payload.instruction,
+            config=config,
+        )
+        _set_extract_job(job_id, status="succeeded", result=_to_extract_response(generated), error="")
+    except HTTPException as exc:
+        _set_extract_job(job_id, status="failed", error=str(exc.detail))
+    except Exception as exc:
+        _set_extract_job(job_id, status="failed", error=str(exc))
+
+
 def _run_translate_job(job_id: str, payload: AiTranslateRequest, config: AiRuntimeConfig) -> None:
     _set_translate_job(job_id, status="running")
     try:
@@ -535,6 +693,7 @@ def translate_content(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    require_ai_module(user, db, payload.module)
     try:
         config = _runtime_ai_config(db)
         return translate_fields(
@@ -559,6 +718,7 @@ def create_translate_job(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    require_ai_module(user, db, payload.module)
     try:
         config = _runtime_ai_config(db)
         ensure_ai_configured(config)
@@ -566,7 +726,7 @@ def create_translate_job(
         raise ai_unavailable_exception(exc) from exc
 
     job_id = uuid.uuid4().hex
-    _set_translate_job(job_id, status="pending", result=None, error="")
+    _set_translate_job(job_id, status="pending", result=None, error="", user_id=user.id)
     thread = threading.Thread(target=_run_translate_job, args=(job_id, payload, config), daemon=True)
     thread.start()
     return AiTranslateJobCreateResponse(job_id=job_id, status="pending")
@@ -581,6 +741,7 @@ def get_translate_job(
         job = _ai_translate_jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI translate job not found")
+    require_job_owner(job, user)
     return AiTranslateJobStatusResponse(
         job_id=job_id,
         status=job.get("status", "pending"),
@@ -595,9 +756,10 @@ def extract_content(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    require_ai_module(user, db, payload.module)
     try:
         config = _runtime_ai_config(db)
-        return extract_fields_from_text(
+        return _to_extract_response(extract_fields_from_text(
             module=payload.module,
             source_locale=payload.source_locale,
             target_locales=payload.target_locales,
@@ -605,7 +767,7 @@ def extract_content(
             target_fields=payload.target_fields,
             instruction=payload.instruction,
             config=config,
-        )
+        ))
     except AiConfigurationError as exc:
         raise ai_unavailable_exception(exc) from exc
     except ValueError as exc:
@@ -614,12 +776,53 @@ def extract_content(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
 
+@router.post("/extract/jobs", response_model=AiExtractJobCreateResponse)
+def create_extract_job(
+    payload: AiExtractRequest,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    require_ai_module(user, db, payload.module)
+    """Run a single AI form-fill request in the background.
+
+    Local models can take minutes to warm up or generate, which must not hold an
+    HTTP request open long enough for a browser or reverse proxy to time out.
+    """
+    try:
+        config = _runtime_ai_config(db)
+        ensure_ai_configured(config)
+    except AiConfigurationError as exc:
+        raise ai_unavailable_exception(exc) from exc
+
+    job_id = uuid.uuid4().hex
+    _set_extract_job(job_id, status="pending", result=None, error="", user_id=user.id)
+    thread = threading.Thread(target=_run_extract_job, args=(job_id, payload, config), daemon=True)
+    thread.start()
+    return AiExtractJobCreateResponse(job_id=job_id, status="pending")
+
+
+@router.get("/extract/jobs/{job_id}", response_model=AiExtractJobStatusResponse)
+def get_extract_job(job_id: str, user: User = Depends(require_admin)):
+    with _ai_extract_jobs_lock:
+        job = _ai_extract_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI extract job not found")
+    require_job_owner(job, user)
+    return AiExtractJobStatusResponse(
+        job_id=job_id,
+        status=job.get("status", "pending"),
+        result=job.get("result"),
+        error=job.get("error", ""),
+    )
+
+
 @router.post("/extract-many", response_model=AiExtractManyResponse)
 def extract_many_content(
     payload: AiExtractManyRequest,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    require_ai_module(user, db, payload.module)
     try:
         config = _runtime_ai_config(db)
         return extract_many_fields_from_text(
@@ -646,6 +849,7 @@ def create_extract_many_job(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    require_ai_module(user, db, payload.module)
     try:
         config = _runtime_ai_config(db)
         ensure_ai_configured(config)
@@ -653,7 +857,7 @@ def create_extract_many_job(
         raise ai_unavailable_exception(exc) from exc
 
     job_id = uuid.uuid4().hex
-    _set_extract_many_job(job_id, status="pending", result=None, error="")
+    _set_extract_many_job(job_id, status="pending", result=None, error="", user_id=user.id)
     thread = threading.Thread(target=_run_extract_many_job, args=(job_id, payload, config), daemon=True)
     thread.start()
     return AiExtractManyJobCreateResponse(job_id=job_id, status="pending")
@@ -668,7 +872,48 @@ def get_extract_many_job(
         job = _ai_extract_many_jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI extract job not found")
+    require_job_owner(job, user)
     return AiExtractManyJobStatusResponse(
+        job_id=job_id,
+        status=job.get("status", "pending"),
+        result=job.get("result"),
+        error=job.get("error", ""),
+    )
+
+
+@router.post("/fixed-course-import/jobs", response_model=FixedCourseImportJobCreateResponse)
+def create_fixed_course_import_job(
+    payload: FixedCourseImportRequest,
+    user: User = Depends(require_fixed_course_ai),
+    db: Session = Depends(get_db),
+):
+    try:
+        config = _runtime_ai_config(db, feature="fixed_course_import")
+        ensure_ai_configured(config)
+        resources, staff = _fixed_course_import_context(db)
+    except AiConfigurationError as exc:
+        raise ai_unavailable_exception(exc) from exc
+    if not resources:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Create an active studio room before importing fixed courses")
+
+    job_id = uuid.uuid4().hex
+    _set_fixed_course_import_job(job_id, status="pending", result=None, error="")
+    thread = threading.Thread(
+        target=_run_fixed_course_import_job,
+        args=(job_id, payload, config, resources, staff),
+        daemon=True,
+    )
+    thread.start()
+    return FixedCourseImportJobCreateResponse(job_id=job_id, status="pending")
+
+
+@router.get("/fixed-course-import/jobs/{job_id}", response_model=FixedCourseImportJobStatusResponse)
+def get_fixed_course_import_job(job_id: str, user: User = Depends(require_fixed_course_ai)):
+    with _fixed_course_import_jobs_lock:
+        job = _fixed_course_import_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fixed-course import job not found")
+    return FixedCourseImportJobStatusResponse(
         job_id=job_id,
         status=job.get("status", "pending"),
         result=job.get("result"),

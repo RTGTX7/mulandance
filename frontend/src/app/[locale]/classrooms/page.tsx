@@ -1,7 +1,8 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { PageHero } from '@/components/layout/PageHero';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,193 +11,187 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslations } from '@/components/ui/i18n-client';
 import {
-  ClassroomBooking,
-  ClassroomBookingBody,
   ClassroomCaptcha,
-  ClassroomRoom,
+  ExternalRentalRequestBody,
+  PublicRentalResource,
+  RoomOccupancy,
   classroomApi,
+  unifiedScheduleApi,
 } from '@/lib/api';
-import { CalendarDays, CheckCircle2, Clock3, RefreshCw, Send } from 'lucide-react';
 
 const displayOrder = [1, 2, 3, 4, 5, 6, 0];
-
-const initialForm: ClassroomBookingBody = {
-  room: 'large',
-  booking_type: 'external',
-  status: 'pending',
-  title: '',
-  teacher_name: '',
-  applicant_name: '',
-  applicant_contact: '',
-  day_of_week: 1,
-  start_time: '18:00',
-  end_time: '19:00',
-  notes: '',
+const isoFromLocalDate = (value: Date) => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
-
-function interpolate(template: string, values: Record<string, string | number>) {
-  return Object.entries(values).reduce(
-    (result, [key, value]) => result.replace(`{${key}}`, String(value)),
-    template
-  );
-}
-
-function findTimeConflict(bookings: ClassroomBooking[], form: ClassroomBookingBody) {
-  return bookings.find(
-    (item) =>
-      item.status === 'confirmed' &&
-      item.room === form.room &&
-      item.day_of_week === form.day_of_week &&
-      item.start_time < form.end_time &&
-      item.end_time > form.start_time
-  );
-}
+const isoToday = () => isoFromLocalDate(new Date());
+const dateFromIso = (value: string) => new Date(`${value}T12:00:00`);
+const isoFromDate = (value: Date) => value.toISOString().slice(0, 10);
+const addDays = (value: string, amount: number) => {
+  const next = dateFromIso(value);
+  next.setDate(next.getDate() + amount);
+  return isoFromDate(next);
+};
+const addMonths = (value: string, amount: number) => {
+  const next = dateFromIso(value);
+  next.setMonth(next.getMonth() + amount);
+  return isoFromDate(next);
+};
+const startOfWeek = (value: string) => {
+  const day = dateFromIso(value).getDay();
+  return addDays(value, -((day + 6) % 7));
+};
+const startOfMonthGrid = (value: string) => {
+  const first = `${value.slice(0, 8)}01`;
+  return startOfWeek(first);
+};
+const startOfMonth = (value: string) => `${value.slice(0, 8)}01`;
+const sixMonthsFromToday = () => {
+  const value = new Date();
+  value.setMonth(value.getMonth() + 6);
+  return isoFromLocalDate(value);
+};
+const laterOf = (first: string, second: string) => first > second ? first : second;
+const earlierOf = (first: string, second: string) => first < second ? first : second;
 
 export default function ClassroomsPage() {
   const t = useTranslations();
-  const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
-  const rawWeekdays = t.raw('common.weekdays.short') as string[] | undefined;
-  const weekdays = useMemo(
-    () => rawWeekdays || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-    [rawWeekdays]
-  );
-  const rooms: Array<{ key: ClassroomRoom; label: string; description: string; tone: string }> = useMemo(
-    () => [
-      {
-        key: 'large',
-        label: t('classroomsPage.rooms.large.label'),
-        description: t('classroomsPage.rooms.large.description'),
-        tone: 'border-purple-200 bg-purple-50 text-purple-800',
-      },
-      {
-        key: 'small',
-        label: t('classroomsPage.rooms.small.label'),
-        description: t('classroomsPage.rooms.small.description'),
-        tone: 'border-amber-200 bg-amber-50 text-amber-800',
-      },
-    ],
-    [t]
-  );
+  const weekdays = (t.raw('common.weekdays.short') as string[] | undefined) || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const [bookings, setBookings] = useState<ClassroomBooking[]>([]);
-  const [form, setForm] = useState<ClassroomBookingBody>(initialForm);
-  const [roomFilter, setRoomFilter] = useState<'all' | ClassroomRoom>('all');
+  const [resources, setResources] = useState<PublicRentalResource[]>([]);
+  const [occupancy, setOccupancy] = useState<RoomOccupancy[]>([]);
+  const [calendarMode, setCalendarMode] = useState<'week' | 'month'>('week');
+  const [calendarDate, setCalendarDate] = useState(isoToday);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [captcha, setCaptcha] = useState<ClassroomCaptcha | null>(null);
   const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const loadFailedMessage = t('classroomsPage.loadFailed');
-  const requiredMessage = t('classroomsPage.requiredFields');
-  const captchaRequiredMessage = t('classroomsPage.captchaRequired');
+  const [form, setForm] = useState<ExternalRentalRequestBody>({
+    room_id: '',
+    request_mode: 'single',
+    date: isoToday(),
+    start_date: null,
+    end_date: null,
+    days_of_week: [],
+    start_time: '18:00',
+    end_time: '19:00',
+    title: '',
+    applicant_name: '',
+    applicant_contact: '',
+    notes: '',
+  });
 
-  function roomLabel(room: ClassroomRoom) {
-    return rooms.find((item) => item.key === room)?.label || room;
-  }
+  const today = isoToday();
+  const maximumDate = sixMonthsFromToday();
+  const calendarGridStart = calendarMode === 'week' ? startOfWeek(calendarDate) : startOfMonthGrid(calendarDate);
+  const calendarGridEnd = addDays(calendarGridStart, calendarMode === 'week' ? 6 : 41);
+  const calendarQueryStart = laterOf(calendarGridStart, today);
+  const calendarQueryEnd = earlierOf(calendarGridEnd, maximumDate);
+  const calendarDays = useMemo(
+    () => Array.from({ length: calendarMode === 'week' ? 7 : 42 }, (_, index) => addDays(calendarGridStart, index)),
+    [calendarGridStart, calendarMode],
+  );
+  const canGoPrevious = calendarGridStart > startOfWeek(today);
+  const nextAnchor = calendarMode === 'week' ? addDays(calendarDate, 7) : addMonths(calendarDate, 1);
+  const canGoNext = nextAnchor <= maximumDate;
 
-  function bookingOwner(item: ClassroomBooking) {
-    return item.teacher_name || item.applicant_name || t('classroomsPage.ownerFallback');
-  }
+  const loadPublicSchedule = async () => {
+    if (calendarQueryStart > calendarQueryEnd) return;
+    setLoading(true);
+    setError('');
+    try {
+      const [nextResources, nextOccupancy] = await Promise.all([
+        unifiedScheduleApi.rentalResources(),
+        unifiedScheduleApi.roomOccupancy(calendarQueryStart, calendarQueryEnd),
+      ]);
+      setResources(nextResources);
+      setOccupancy(nextOccupancy);
+      setForm((current) => ({ ...current, room_id: current.room_id || nextResources[0]?.id || '' }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('classroomsPage.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => {
-    classroomApi
-      .list({ status: 'confirmed', locale })
-      .then(setBookings)
-      .catch((err) => setError(err instanceof Error ? err.message : loadFailedMessage))
-      .finally(() => setLoading(false));
-  }, [loadFailedMessage, locale]);
+  const refreshCaptcha = () => {
+    classroomApi.captcha().then((value) => {
+      setCaptcha(value);
+      setCaptchaAnswer('');
+    }).catch(() => setCaptcha(null));
+  };
 
-  function refreshCaptcha() {
-    classroomApi
-      .captcha()
-      .then((nextCaptcha) => {
-        setCaptcha(nextCaptcha);
-        setCaptchaAnswer('');
-      })
-      .catch(() => setCaptcha(null));
-  }
+  useEffect(() => { void loadPublicSchedule(); }, [calendarGridStart, calendarMode]);
+  useEffect(() => { refreshCaptcha(); }, []);
 
-  useEffect(() => {
-    refreshCaptcha();
-  }, []);
+  const occupancyByDate = useMemo(() => {
+    const grouped = new Map<string, RoomOccupancy[]>();
+    occupancy.forEach((item) => grouped.set(item.date, [...(grouped.get(item.date) || []), item]));
+    grouped.forEach((items) => items.sort((first, second) => first.start_time.localeCompare(second.start_time) || first.room_name.localeCompare(second.room_name)));
+    return grouped;
+  }, [occupancy]);
 
-  const visibleRooms = useMemo(() => {
-    return roomFilter === 'all' ? rooms : rooms.filter((room) => room.key === roomFilter);
-  }, [roomFilter, rooms]);
-
-  const calendarDays = useMemo(() => {
-    return displayOrder.map((day) => ({
-      day,
-      label: weekdays[day],
-      bookings: bookings
-        .filter((item) => item.day_of_week === day)
-        .filter((item) => roomFilter === 'all' || item.room === roomFilter)
-        .sort((a, b) =>
-          a.start_time.localeCompare(b.start_time) ||
-          a.end_time.localeCompare(b.end_time) ||
-          a.room.localeCompare(b.room)
-        ),
-    }));
-  }, [bookings, roomFilter, weekdays]);
-
-  const groupedByRoom = useMemo(() => {
-    return visibleRooms.map((room) => ({
-      ...room,
-      bookings: bookings
-        .filter((item) => item.room === room.key)
-        .sort((a, b) =>
-          a.day_of_week - b.day_of_week ||
-          a.start_time.localeCompare(b.start_time) ||
-          a.end_time.localeCompare(b.end_time)
-        ),
-    }));
-  }, [bookings, visibleRooms]);
-
-  const selectedConflict = useMemo(() => findTimeConflict(bookings, form), [bookings, form]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
+  const setField = <K extends keyof ExternalRentalRequestBody>(key: K, value: ExternalRentalRequestBody[K]) => {
+    setForm((current) => ({ ...current, [key]: value }));
     setMessage('');
     setError('');
+  };
 
+  const toggleWeekday = (day: number) => {
+    const days = form.days_of_week.includes(day)
+      ? form.days_of_week.filter((value) => value !== day)
+      : [...form.days_of_week, day].sort((a, b) => a - b);
+    setField('days_of_week', days);
+  };
+
+  const friendlySubmitError = (err: unknown) => {
+    const detail = err instanceof Error ? err.message : '';
+    const normalized = detail.toLowerCase();
+    if (normalized.includes('captcha')) return t('classroomsPage.captchaFailed');
+    if (normalized.includes('occupied') || normalized.includes('conflict') || normalized.includes('unavailable')) {
+      return t('classroomsPage.timeUnavailable');
+    }
+    if (normalized.includes('rental request limit')) return t('classroomsPage.contactLimitExceeded');
+    return t('classroomsPage.submitFailed');
+  };
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    setMessage('');
     try {
-      const cleanedForm = {
-        ...form,
-        title: form.title.trim(),
-        applicant_name: form.applicant_name?.trim() || '',
-        applicant_contact: form.applicant_contact?.trim() || '',
-        teacher_name: form.teacher_name?.trim() || '',
-        notes: form.notes?.trim() || '',
-      };
-      if (!cleanedForm.title || !cleanedForm.applicant_name || !cleanedForm.applicant_contact) {
-        setError(requiredMessage);
-        return;
-      }
-      const conflict = findTimeConflict(bookings, cleanedForm);
-      if (conflict) {
-        setError(
-          `${roomLabel(cleanedForm.room)} ${weekdays[cleanedForm.day_of_week]} ${conflict.start_time}-${conflict.end_time} 已被占用，请选择其他时间。`
-        );
-        return;
+      if (!form.room_id || !form.title.trim() || !form.applicant_name.trim() || !form.applicant_contact.trim()) {
+        throw new Error(t('classroomsPage.requiredFields'));
       }
       if (!captcha?.token || !captchaAnswer.trim()) {
-        setError(captchaRequiredMessage);
-        return;
+        throw new Error(t('classroomsPage.captchaRequired'));
       }
-
-      await classroomApi.verifyCaptcha({
-        token: captcha.token,
-        answer: captchaAnswer.trim(),
+      if (form.request_mode === 'weekly' && (!form.start_date || !form.end_date || form.days_of_week.length === 0)) {
+        throw new Error(t('classroomsPage.weeklyFieldsRequired'));
+      }
+      await unifiedScheduleApi.createExternalRentalRequest({
+        ...form,
+        title: form.title.trim(),
+        applicant_name: form.applicant_name.trim(),
+        applicant_contact: form.applicant_contact.trim(),
+        notes: form.notes.trim(),
+        captcha_token: captcha.token,
+        captcha_answer: captchaAnswer.trim(),
       });
-      sessionStorage.setItem('classroom_request_basic', JSON.stringify(cleanedForm));
-      router.push(`/${locale}/classrooms/request`);
-    } catch (err) {
+      setMessage(t('classroomsPage.submitSuccess'));
+      setForm((current) => ({ ...current, title: '', applicant_name: '', applicant_contact: '', notes: '' }));
       refreshCaptcha();
-      setError(err instanceof Error ? err.message : t('classroomsPage.captchaFailed'));
+      await loadPublicSchedule();
+    } catch (err) {
+      setError(friendlySubmitError(err));
+      refreshCaptcha();
     } finally {
       setSaving(false);
     }
@@ -213,343 +208,99 @@ export default function ClassroomsPage() {
 
       <main className="section-padding bg-slate-100">
         <div className="container space-y-8">
-
-        <section id="schedule" className="content-glass-section scroll-mt-24 p-4 md:p-5">
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-950">
-                <CalendarDays className="h-5 w-5 text-purple-600" />
-                {t('classroomsPage.calendarTitle')}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {t('classroomsPage.calendarHint')}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant={roomFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setRoomFilter('all')}
-              >
-                {t('common.ui.all')}
-              </Button>
-              {rooms.map((room) => (
-                <Button
-                  key={room.key}
-                  type="button"
-                  variant={roomFilter === room.key ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setRoomFilter(room.key)}
-                >
-                  {room.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="rounded-md border border-dashed border-slate-200 p-8 text-sm text-slate-500">
-              {t('common.ui.loading')}
-            </div>
-          ) : (
-            <>
-            <div className="mobile-card-list">
-              {calendarDays.map((day) => (
-                <div key={day.day} className="rounded-xl border border-white/70 bg-white/[0.78] p-3 shadow-sm shadow-purple-950/5 backdrop-blur-xl">
-                  <h3 className="mb-3 text-sm font-semibold text-slate-950">{day.label}</h3>
-                  {day.bookings.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-slate-200 px-3 py-5 text-center text-xs text-slate-400">
-                      {t('classroomsPage.available')}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {day.bookings.map((item) => {
-                        const room = rooms.find((entry) => entry.key === item.room) || rooms[0];
-                        return (
-                          <div key={item.id} className={`rounded-lg border px-3 py-2 text-xs leading-5 ${room.tone}`}>
-                            <div className="flex items-center justify-between gap-2 font-semibold">
-                              <span>{room.label}</span>
-                              <span className="whitespace-nowrap">{item.start_time}-{item.end_time}</span>
-                            </div>
-                            <div className="mt-1 font-medium text-slate-900">{item.title}</div>
-                            <div className="text-slate-600">{bookingOwner(item)}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+          <section id="schedule" className="content-glass-section scroll-mt-24 p-4 md:p-6">
+            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-950">
+                  <CalendarDays className="h-5 w-5 text-purple-600" />
+                  {t('classroomsPage.calendarTitle')}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">{t('classroomsPage.calendarHint')}</p>
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="w-[150px] text-xs font-medium text-slate-600">
+                  {t('classroomsPage.date')}
+                  <Input className="mt-1" type="date" min={today} max={maximumDate} value={calendarDate} onChange={(event) => setCalendarDate(earlierOf(maximumDate, laterOf(today, event.target.value || today)))} />
+                </label>
+                <Button title={t('classroomsPage.previous')} aria-label={t('classroomsPage.previous')} type="button" size="icon" variant="outline" disabled={!canGoPrevious} onClick={() => setCalendarDate((current) => calendarMode === 'week' ? addDays(current, -7) : addMonths(current, -1))}><ChevronLeft className="h-4 w-4" /></Button>
+                <Button title={t('classroomsPage.next')} aria-label={t('classroomsPage.next')} type="button" size="icon" variant="outline" disabled={!canGoNext} onClick={() => setCalendarDate(nextAnchor)}><ChevronRight className="h-4 w-4" /></Button>
+                <div className="flex rounded-md border p-1">
+                  <Button type="button" size="sm" variant={calendarMode === 'week' ? 'default' : 'ghost'} onClick={() => setCalendarMode('week')}>{t('classroomsPage.week')}</Button>
+                  <Button type="button" size="sm" variant={calendarMode === 'month' ? 'default' : 'ghost'} onClick={() => setCalendarMode('month')}>{t('classroomsPage.month')}</Button>
                 </div>
-              ))}
+              </div>
             </div>
 
-            <div className="desktop-wide-grid overflow-x-auto">
-              <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-lg border border-slate-200">
-                {calendarDays.map((day) => (
-                  <div key={day.day} className="min-h-[260px] border-r border-slate-200 last:border-r-0">
-                    <div className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900">
-                      {day.label}
-                    </div>
-                    <div className="space-y-2 p-3">
-                      {day.bookings.length === 0 ? (
-                        <div className="rounded-md border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
-                          {t('classroomsPage.available')}
-                        </div>
-                      ) : (
-                        day.bookings.map((item) => {
-                          const room = rooms.find((entry) => entry.key === item.room) || rooms[0];
-                          return (
-                            <div
-                              key={item.id}
-                              className={`rounded-md border px-3 py-2 text-xs leading-5 ${room.tone}`}
-                            >
-                              <div className="flex items-center justify-between gap-2 font-semibold">
-                                <span>{room.label}</span>
-                                <span className="whitespace-nowrap">
-                                  {item.start_time}-{item.end_time}
-                                </span>
-                              </div>
-                              <div className="mt-1 font-medium text-slate-900">{item.title}</div>
-                              <div className="text-slate-600">{bookingOwner(item)}</div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
+            {loading ? (
+              <div className="rounded-md border border-dashed border-slate-200 p-8 text-sm text-slate-500">{t('common.ui.loading')}</div>
+            ) : resources.length === 0 ? (
+              <div className="rounded-md border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">{t('classroomsPage.noRentableRooms')}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="grid min-w-[760px] grid-cols-7 gap-px overflow-hidden rounded-md border bg-slate-200">
+                  {displayOrder.map((day) => <div key={day} className="bg-slate-100 px-2 py-2 text-center text-xs font-semibold text-slate-600">{weekdays[day]}</div>)}
+                  {calendarDays.map((day) => {
+                    const isPast = day < today;
+                    const isBeyondLimit = day > maximumDate;
+                    const outsideMonth = calendarMode === 'month' && day.slice(0, 7) !== calendarDate.slice(0, 7);
+                    const items = occupancyByDate.get(day) || [];
+                    return <div key={day} className={`min-h-[150px] bg-white p-2 ${isPast || isBeyondLimit || outsideMonth ? 'bg-slate-50 text-slate-400' : ''}`}>
+                      <div className="mb-2 flex items-center justify-between gap-2"><span className="text-xs font-semibold">{day.slice(5)}</span>{items.length > 0 && <Badge variant="outline" className="px-1.5 py-0 text-[10px]">{items.length}</Badge>}</div>
+                      <div className="space-y-1">
+                        {items.map((item) => <div key={`${item.room_id}-${item.start_time}-${item.end_time}`} className="rounded border border-purple-200 bg-purple-50 px-2 py-1 text-[11px] leading-4 text-purple-900"><span className="block font-semibold">{item.start_time} - {item.end_time}</span><span className="block truncate">{item.room_name}</span></div>)}
+                      </div>
+                    </div>;
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section id="book" className="scroll-mt-24 grid grid-cols-1 gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="content-glass-section p-5 md:p-6">
+              <CalendarDays className="h-8 w-8 text-purple-600" />
+              <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t('classroomsPage.introTitle')}</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{t('classroomsPage.introText')}</p>
+              <div className="mt-5 space-y-3 text-sm text-slate-600">
+                {[t('classroomsPage.tipReview'), t('classroomsPage.tipContact'), t('classroomsPage.tipApproval'), t('classroomsPage.tipInternal')].map((tip) => (
+                  <div key={tip} className="flex items-start gap-2 leading-6"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /><span>{tip}</span></div>
                 ))}
               </div>
             </div>
-            </>
-          )}
-        </section>
 
-        <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {groupedByRoom.map((room) => (
-            <Card key={room.key} className="rounded-lg">
-              <CardHeader className="border-b">
-                <CardTitle className="flex items-center justify-between gap-3 text-lg">
-                  <span className="flex items-center gap-2">
-                    <Clock3 className="h-5 w-5 text-purple-600" />
-                    {room.label}
-                  </span>
-                  <Badge variant="outline">
-                    {interpolate(t('classroomsPage.confirmedCount'), { count: room.bookings.length })}
-                  </Badge>
-                </CardTitle>
-                <p className="text-sm text-slate-500">{room.description}</p>
-              </CardHeader>
-              <CardContent className="p-0">
-                {loading ? (
-                  <div className="p-5 text-sm text-slate-500">{t('common.ui.loading')}</div>
-                ) : room.bookings.length === 0 ? (
-                  <div className="p-5 text-sm text-slate-500">{t('classroomsPage.emptyRoom')}</div>
-                ) : (
-                  <div className="divide-y">
-                    {room.bookings.map((item) => (
-                      <div key={item.id} className="grid gap-2 p-4 text-sm md:grid-cols-[120px_150px_1fr]">
-                        <div className="font-semibold text-slate-900">{weekdays[item.day_of_week]}</div>
-                        <div className="text-slate-600">
-                          {item.start_time} - {item.end_time}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{item.title}</div>
-                          <div className="text-slate-500">{bookingOwner(item)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            <Card className="rounded-lg">
+              <CardHeader><CardTitle>{t('classroomsPage.formTitle')}</CardTitle></CardHeader>
+              <CardContent>
+                <form onSubmit={submit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {error && <div className="md:col-span-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+                  {message && <div className="md:col-span-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div>}
+
+                  <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.room')}</span><select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={form.room_id} onChange={(event) => setField('room_id', event.target.value)}>{resources.map((resource) => <option key={resource.id} value={resource.id}>{resource.studio_name} / {resource.name}</option>)}</select></label>
+                  <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.requestMode')}</span><select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={form.request_mode} onChange={(event) => setField('request_mode', event.target.value as ExternalRentalRequestBody['request_mode'])}><option value="single">{t('classroomsPage.singleDate')}</option><option value="weekly">{t('classroomsPage.weekly')}</option></select></label>
+
+                  {form.request_mode === 'single' ? (
+                    <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.date')}</span><Input type="date" min={today} max={maximumDate} required value={form.date || ''} onChange={(event) => setField('date', event.target.value)} /></label>
+                  ) : (
+                    <>
+                      <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.rangeStart')}</span><Input type="date" min={today} max={maximumDate} required value={form.start_date || ''} onChange={(event) => setField('start_date', event.target.value)} /></label>
+                      <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.rangeEnd')}</span><Input type="date" min={form.start_date || today} max={maximumDate} required value={form.end_date || ''} onChange={(event) => setField('end_date', event.target.value)} /></label>
+                      <div className="space-y-2 md:col-span-2"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.weekdays')}</span><div className="flex flex-wrap gap-2">{displayOrder.map((day) => <label key={day} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"><input type="checkbox" checked={form.days_of_week.includes(day)} onChange={() => toggleWeekday(day)} />{weekdays[day]}</label>)}</div></div>
+                    </>
+                  )}
+
+                  <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.startTime')}</span><Input type="time" required value={form.start_time} onChange={(event) => setField('start_time', event.target.value)} /></label>
+                  <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.endTime')}</span><Input type="time" required value={form.end_time} onChange={(event) => setField('end_time', event.target.value)} /></label>
+                  <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.purpose')}</span><Input required value={form.title} placeholder={t('classroomsPage.purposePlaceholder')} onChange={(event) => setField('title', event.target.value)} /></label>
+                  <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.applicant')}</span><Input required value={form.applicant_name} onChange={(event) => setField('applicant_name', event.target.value)} /></label>
+                  <label className="space-y-1"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.contact')}</span><Input required value={form.applicant_contact} placeholder={t('classroomsPage.contactPlaceholder')} onChange={(event) => setField('applicant_contact', event.target.value)} /></label>
+                  <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.notes')}</span><Textarea value={form.notes} placeholder={t('classroomsPage.notesPlaceholder')} onChange={(event) => setField('notes', event.target.value)} /></label>
+                  <div className="md:col-span-2 rounded-md border bg-slate-50 p-3"><div className="mb-2 flex items-center justify-between gap-3"><span className="text-sm font-medium text-slate-700">{t('classroomsPage.captcha')}</span><Button type="button" variant="ghost" size="sm" onClick={refreshCaptcha}>{t('classroomsPage.refreshCaptcha')}</Button></div><div className="flex items-center gap-3"><span className="font-mono text-sm">{captcha?.question || '...'}</span><Input className="max-w-[140px]" value={captchaAnswer} placeholder={t('classroomsPage.captchaPlaceholder')} onChange={(event) => setCaptchaAnswer(event.target.value)} /></div></div>
+                  <div className="flex justify-end md:col-span-2"><Button type="submit" disabled={saving || resources.length === 0}><Send className="mr-2 h-4 w-4" />{saving ? t('classroomsPage.submitting') : t('classroomsPage.submit')}</Button></div>
+                </form>
               </CardContent>
             </Card>
-          ))}
-        </section>
-
-        <section id="book" className="scroll-mt-24 grid grid-cols-1 gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="content-glass-section p-4 md:p-6">
-            <CalendarDays className="h-8 w-8 text-purple-600" />
-            <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t('classroomsPage.introTitle')}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {t('classroomsPage.introText')}
-            </p>
-            <div className="mt-5 space-y-3 text-sm text-slate-600">
-              {[
-                t('classroomsPage.tipRoom'),
-                t('classroomsPage.tipPending'),
-                t('classroomsPage.tipPaymentRequired'),
-                t('classroomsPage.tipNotes'),
-              ].map((tip) => (
-                <div key={tip} className="flex items-start gap-2 leading-6">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                  <span>{tip}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle>{t('classroomsPage.formTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {error && (
-                  <div className="md:col-span-2">
-                    <div className="mx-auto max-w-2xl rounded-md border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
-                      {error}
-                    </div>
-                  </div>
-                )}
-
-                <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.room')}</span>
-                  <select
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                    value={form.room}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, room: event.target.value as ClassroomRoom }))
-                    }
-                  >
-                    {rooms.map((room) => (
-                      <option key={room.key} value={room.key}>
-                        {room.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.weekday')}</span>
-                  <select
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                    value={form.day_of_week}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, day_of_week: Number(event.target.value) }))
-                    }
-                  >
-                    {displayOrder.map((day) => (
-                      <option key={day} value={day}>
-                        {weekdays[day]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.startTime')}</span>
-                  <Input
-                    type="time"
-                    required
-                    value={form.start_time}
-                    onChange={(event) => setForm((prev) => ({ ...prev, start_time: event.target.value }))}
-                  />
-                </label>
-
-                <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.endTime')}</span>
-                  <Input
-                    type="time"
-                    required
-                    value={form.end_time}
-                    onChange={(event) => setForm((prev) => ({ ...prev, end_time: event.target.value }))}
-                  />
-                </label>
-
-                <label className="space-y-1 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">
-                    {t('classroomsPage.purpose')} <span className="text-red-500">*</span>
-                  </span>
-                  <Input
-                    required
-                    value={form.title}
-                    placeholder={interpolate(t('classroomsPage.purposePlaceholder'), { room: roomLabel(form.room) })}
-                    onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-                  />
-                </label>
-
-                <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">
-                    {t('classroomsPage.applicant')} <span className="text-red-500">*</span>
-                  </span>
-                  <Input
-                    required
-                    value={form.applicant_name || ''}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, applicant_name: event.target.value }))
-                    }
-                  />
-                </label>
-
-                <label className="space-y-1">
-                  <span className="text-sm font-medium text-slate-700">
-                    {t('classroomsPage.contact')} <span className="text-red-500">*</span>
-                  </span>
-                  <Input
-                    required
-                    value={form.applicant_contact || ''}
-                    placeholder={t('classroomsPage.contactPlaceholder')}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, applicant_contact: event.target.value }))
-                    }
-                  />
-                </label>
-
-                <label className="space-y-1 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">{t('classroomsPage.notes')}</span>
-                  <Textarea
-                    rows={4}
-                    value={form.notes || ''}
-                    placeholder={t('classroomsPage.notesPlaceholder')}
-                    onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-                  />
-                </label>
-
-                {selectedConflict && (
-                  <div className="md:col-span-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    {roomLabel(form.room)} {weekdays[form.day_of_week]} {selectedConflict.start_time}-{selectedConflict.end_time} 已被占用：
-                    {selectedConflict.title}。请选择其他时间段。
-                  </div>
-                )}
-
-                <label className="space-y-1 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">
-                    {t('classroomsPage.captcha')} <span className="text-red-500">*</span>
-                  </span>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <div className="flex h-10 min-w-[140px] items-center justify-center rounded-md border bg-slate-50 px-3 text-sm font-semibold text-slate-900">
-                      {captcha?.question || t('common.ui.loading')}
-                    </div>
-                    <Input
-                      required
-                      inputMode="numeric"
-                      value={captchaAnswer}
-                      placeholder={t('classroomsPage.captchaPlaceholder')}
-                      onChange={(event) => setCaptchaAnswer(event.target.value)}
-                    />
-                    <Button type="button" variant="outline" onClick={refreshCaptcha} className="shrink-0">
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      {t('classroomsPage.refreshCaptcha')}
-                    </Button>
-                  </div>
-                </label>
-
-                {message && (
-                  <div className="md:col-span-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {message}
-                  </div>
-                )}
-
-                <div className="mobile-action-row md:col-span-2">
-                  <Button type="submit" disabled={saving || Boolean(selectedConflict)} className="w-full sm:w-auto">
-                    <Send className="mr-2 h-4 w-4" />
-                    {saving ? t('classroomsPage.submitting') : t('classroomsPage.submit')}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
+          </section>
+        </div>
       </main>
     </div>
   );

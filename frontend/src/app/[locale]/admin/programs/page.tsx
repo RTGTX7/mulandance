@@ -182,8 +182,8 @@ export default function AdminProgramsPage() {
     setError('');
     try {
       const uploaded = file.type.startsWith('video/')
-        ? await uploadApi.video(file)
-        : await uploadApi.image(file);
+        ? await uploadApi.video(file, 'programs')
+        : await uploadApi.image(file, 'programs');
       setForm((current) => ({ ...current, cover_image: uploaded.url }));
     } catch (err) {
       setError(err instanceof Error ? err.message : text.uploadFailed);

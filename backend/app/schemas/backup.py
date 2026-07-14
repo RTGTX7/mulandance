@@ -5,6 +5,9 @@ class BackupInfo(BaseModel):
     filename: str
     size: int
     created_at: str
+    format_version: int = 1
+    app_version: str = ""
+    schema_revision: str = ""
 
 
 class BackupListResponse(BaseModel):

@@ -13,7 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { usersApi, type AdminRole } from '@/lib/api';
+import { usersApi, type AdminAccount } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import {
   BookOpen,
   CalendarDays,
@@ -24,7 +25,6 @@ import {
   FileText,
   Home,
   LayoutGrid,
-  ShieldCheck,
   Settings,
   UsersRound,
 } from 'lucide-react';
@@ -36,6 +36,7 @@ type AdminTab = {
   href: string;
   superOnly: boolean;
   teacherAccess: boolean;
+  permission: string;
 };
 
 type AdminGroup = {
@@ -49,36 +50,34 @@ const groups: AdminGroup[] = [
     key: 'content',
     icon: LayoutGrid,
     tabs: [
-      { key: 'homepage', labelKey: 'admin.tabs.homepage', icon: Home, href: '/admin/homepage', superOnly: false, teacherAccess: true },
-      { key: 'dashboard', labelKey: 'admin.tabs.newsArticles', icon: FileText, href: '/admin/dashboard', superOnly: false, teacherAccess: true },
-      { key: 'performances', labelKey: 'admin.tabs.performance', icon: CalendarDays, href: '/admin/performances', superOnly: false, teacherAccess: true },
+      { key: 'homepage', labelKey: 'admin.tabs.homepage', icon: Home, href: '/admin/homepage', superOnly: false, teacherAccess: true, permission: 'content.homepage' },
+      { key: 'dashboard', labelKey: 'admin.tabs.newsArticles', icon: FileText, href: '/admin/dashboard', superOnly: false, teacherAccess: true, permission: 'content.news.articles' },
+      { key: 'performances', labelKey: 'admin.tabs.performance', icon: CalendarDays, href: '/admin/performances', superOnly: false, teacherAccess: true, permission: 'content.performances' },
     ],
   },
   {
     key: 'teaching',
     icon: BookOpen,
     tabs: [
-      { key: 'programs', labelKey: 'admin.tabs.programs', icon: BookOpen, href: '/admin/programs', superOnly: false, teacherAccess: true },
-      { key: 'schedules', labelKey: 'admin.tabs.schedules', icon: CalendarDays, href: '/admin/schedules', superOnly: false, teacherAccess: true },
-      { key: 'faculty', labelKey: 'admin.tabs.faculty', icon: UsersRound, href: '/admin/faculty', superOnly: false, teacherAccess: true },
+      { key: 'programs', labelKey: 'admin.tabs.programs', icon: BookOpen, href: '/admin/programs', superOnly: false, teacherAccess: true, permission: 'teaching.programs' },
+      { key: 'schedules', labelKey: 'admin.tabs.schedules', icon: CalendarDays, href: '/admin/schedules', superOnly: false, teacherAccess: true, permission: 'teaching.schedules' },
+      { key: 'pricing', labelKey: 'admin.tabs.pricing', icon: DollarSign, href: '/admin/pricing', superOnly: true, teacherAccess: false, permission: 'teaching.pricing' },
+      { key: 'faculty', labelKey: 'admin.tabs.faculty', icon: UsersRound, href: '/admin/faculty', superOnly: true, teacherAccess: false, permission: 'teaching.faculty' },
+      { key: 'registrations', labelKey: 'admin.tabs.registration', icon: ClipboardList, href: '/admin/registrations', superOnly: true, teacherAccess: false, permission: 'teaching.registration' },
     ],
   },
   {
     key: 'operations',
     icon: DoorOpen,
     tabs: [
-      { key: 'classrooms', labelKey: 'admin.tabs.classrooms', icon: DoorOpen, href: '/admin/classrooms', superOnly: false, teacherAccess: true },
-      { key: 'registrations', labelKey: 'admin.tabs.registration', icon: ClipboardList, href: '/admin/registrations', superOnly: true, teacherAccess: false },
+      { key: 'classrooms', labelKey: 'admin.tabs.classrooms', icon: DoorOpen, href: '/admin/classrooms', superOnly: true, teacherAccess: false, permission: 'classrooms.rentals' },
     ],
   },
   {
     key: 'system',
     icon: Settings,
     tabs: [
-      { key: 'pricing', labelKey: 'admin.tabs.pricing', icon: DollarSign, href: '/admin/pricing', superOnly: true, teacherAccess: false },
-      { key: 'schoolPolicy', labelKey: 'admin.tabs.schoolPolicy', icon: FileText, href: '/admin/school-policy', superOnly: true, teacherAccess: false },
-      { key: 'settings', labelKey: 'admin.tabs.settings', icon: Settings, href: '/admin/settings', superOnly: true, teacherAccess: false },
-      { key: 'accounts', labelKey: 'admin.tabs.accounts', icon: ShieldCheck, href: '/admin/accounts', superOnly: true, teacherAccess: false },
+      { key: 'settings', labelKey: 'admin.tabs.settings', icon: Settings, href: '/admin/settings', superOnly: false, teacherAccess: true, permission: 'system' },
     ],
   },
 ];
@@ -87,7 +86,7 @@ const groupLabels = {
   zh: {
     content: '网站内容',
     teaching: '教学管理',
-    operations: '教室与报名',
+    operations: '教室使用',
     system: '系统管理',
     teacherHint: '老师权限',
     superHint: '主管理员',
@@ -96,7 +95,7 @@ const groupLabels = {
   en: {
     content: 'Website Content',
     teaching: 'Teaching',
-    operations: 'Rooms & Registration',
+    operations: 'Classroom Use',
     system: 'System',
     teacherHint: 'Teacher Access',
     superHint: 'Super Admin',
@@ -105,7 +104,7 @@ const groupLabels = {
   fr: {
     content: 'Contenu du site',
     teaching: 'Enseignement',
-    operations: 'Salles et inscriptions',
+    operations: 'Utilisation des salles',
     system: 'Système',
     teacherHint: 'Accès professeur',
     superHint: 'Super admin',
@@ -119,29 +118,32 @@ export function AdminSectionTabs() {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
   const labels = groupLabels[locale === 'zh' || locale === 'zh-Hant' || locale === 'fr' ? (locale === 'fr' ? 'fr' : 'zh') : 'en'];
-  const [role, setRole] = useState<AdminRole | null>(null);
+  const [account, setAccount] = useState<AdminAccount | null>(null);
   const activeTriggerRef = useRef<HTMLButtonElement | null>(null);
   const activeMobileGroupRef = useRef<HTMLButtonElement | null>(null);
   const [mobileGroupKey, setMobileGroupKey] = useState<AdminGroup['key'] | null>(null);
 
   useEffect(() => {
     usersApi.me()
-      .then((user) => setRole(user.role))
-      .catch(() => setRole(null));
+      .then(setAccount)
+      .catch(() => setAccount(null));
   }, []);
 
   const visibleGroups = groups
     .map((group) => ({
       ...group,
-      tabs: group.tabs.filter((tab) => role === 'super_admin' || (!tab.superOnly && tab.teacherAccess)),
+      tabs: group.tabs.filter((tab) => hasPermission(account, tab.permission)),
     }))
     .filter((group) => group.tabs.length > 0);
   const visibleTabs = visibleGroups.flatMap((group) => group.tabs);
   const allTabs = groups.flatMap((group) => group.tabs);
-  const activeKey = allTabs.find((tab) => pathname.includes(tab.href))?.key ?? 'dashboard';
+  const systemSettingsRoutes = ['/admin/studio-resources', '/admin/school-policy', '/admin/profile', '/admin/accounts'];
+  const activeKey = systemSettingsRoutes.some((href) => pathname.includes(href))
+    ? 'settings'
+    : allTabs.find((tab) => pathname.includes(tab.href))?.key ?? 'dashboard';
   const activeTab = visibleTabs.find((tab) => tab.key === activeKey);
   const activeGroup = visibleGroups.find((group) => group.tabs.some((tab) => tab.key === activeKey));
-  const selectedMobileGroup = visibleGroups.find((group) => group.key === (mobileGroupKey || activeGroup?.key)) || visibleGroups[0];
+  const selectedMobileGroup = visibleGroups.find((group) => group.key === mobileGroupKey);
 
   useEffect(() => {
     activeMobileGroupRef.current?.scrollIntoView({
@@ -150,12 +152,6 @@ export function AdminSectionTabs() {
       inline: 'center',
     });
   }, [activeKey, visibleGroups.length]);
-
-  useEffect(() => {
-    if (activeGroup && !mobileGroupKey) {
-      setMobileGroupKey(activeGroup.key);
-    }
-  }, [activeGroup, mobileGroupKey]);
 
   return (
     <div className="relative -mx-2 w-[calc(100%+1rem)] rounded-lg border border-white/60 bg-white/75 p-1.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl sm:mx-0 sm:w-full">
@@ -171,7 +167,7 @@ export function AdminSectionTabs() {
           const GroupIcon = group.icon;
           const groupActive = activeGroup?.key === group.key;
           const selected = selectedMobileGroup?.key === group.key;
-          const currentInGroup = group.tabs.find((tab) => tab.key === activeKey);
+          const highlighted = selected || groupActive;
           const groupLabel = labels[group.key];
 
           return (
@@ -179,9 +175,15 @@ export function AdminSectionTabs() {
               key={group.key}
               ref={groupActive ? activeMobileGroupRef : undefined}
               type="button"
-              onClick={() => setMobileGroupKey(group.key)}
+              onClick={() => {
+                if (group.tabs.length === 1) {
+                  router.push(`/${locale}${group.tabs[0].href}`);
+                  return;
+                }
+                setMobileGroupKey((current) => (current === group.key ? null : group.key));
+              }}
               className={`inline-flex h-9 min-w-max shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors active:scale-[0.98] ${
-                selected
+                highlighted
                   ? 'bg-purple-600 text-white shadow-sm shadow-purple-900/20'
                   : 'bg-white/45 text-gray-650 hover:bg-white/80 hover:text-gray-950'
               }`}
@@ -189,11 +191,6 @@ export function AdminSectionTabs() {
             >
               <GroupIcon className="h-3.5 w-3.5 shrink-0" />
               <span className="whitespace-nowrap">{groupLabel}</span>
-              {currentInGroup && (
-                <span className={`max-w-[6.75rem] truncate text-[11px] ${selected ? 'text-white/75' : 'text-muted-foreground'}`}>
-                  / {t(currentInGroup.labelKey, { defaultMessage: currentInGroup.key })}
-                </span>
-              )}
             </button>
           );
         })}
@@ -234,6 +231,34 @@ export function AdminSectionTabs() {
           const currentInGroup = group.tabs.find((tab) => tab.key === activeKey);
           const groupLabel = labels[group.key];
 
+          if (group.tabs.length === 1) {
+            const tab = group.tabs[0];
+            const tabLabel = t(tab.labelKey, { defaultMessage: tab.key });
+            return (
+              <Button
+                key={group.key}
+                ref={groupActive ? activeTriggerRef : undefined}
+                type="button"
+                size="sm"
+                variant={groupActive ? 'default' : 'ghost'}
+                onClick={() => router.push(`/${locale}${tab.href}`)}
+                className={`h-9 min-w-max shrink-0 rounded-lg px-3 text-xs md:h-9 md:text-sm ${
+                  groupActive
+                    ? 'bg-purple-600 text-white shadow-sm shadow-purple-900/20 hover:bg-purple-700'
+                    : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'
+                }`}
+              >
+                <GroupIcon className="mr-1.5 h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="whitespace-nowrap">{groupLabel}</span>
+                {tabLabel !== groupLabel && (
+                  <span className={`ml-1 max-w-[10rem] truncate text-[11px] md:text-xs ${groupActive ? 'text-white/75' : 'text-muted-foreground'}`}>
+                    / {tabLabel}
+                  </span>
+                )}
+              </Button>
+            );
+          }
+
           return (
             <DropdownMenu key={group.key}>
               <DropdownMenuTrigger asChild>
@@ -262,7 +287,7 @@ export function AdminSectionTabs() {
                 <DropdownMenuLabel className="flex items-center justify-between gap-3">
                   <span>{groupLabel}</span>
                   <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-700">
-                    {role === 'super_admin' ? labels.superHint : labels.teacherHint}
+                    {account?.role === 'super_admin' ? labels.superHint : labels.teacherHint}
                   </span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

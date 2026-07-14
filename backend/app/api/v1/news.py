@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.permissions import require_user_permission
 from app.models import NewsArticle, NewsCategory, NewsTag
 
 logger = logging.getLogger(__name__)
@@ -59,22 +60,16 @@ def get_current_user(
     return user
 
 
-def _require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role not in ("super_admin", "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
-        )
-    return user
+def _require_admin(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "content.news", "manage")
 
 
-def _require_admin_or_write(user: User = Depends(get_current_user)) -> User:
-    if user.role not in ("super_admin", "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions",
-        )
-    return user
+def _require_admin_or_write(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "content.news.articles", "manage")
+
+
+def _require_news_view(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "content.news.articles", "view")
 
 
 # ====================================================================
@@ -113,7 +108,7 @@ def list_admin_article_groups(
     status: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
-    user: User = Depends(_require_admin_or_write),
+    user: User = Depends(_require_news_view),
     db: Session = Depends(get_db),
 ):
     """Admin-only grouped list: one row per article with all locale versions."""
@@ -130,12 +125,30 @@ def list_admin_article_groups(
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
+@router.put("/admin/groups/{slug}/homepage")
+def set_article_homepage_visibility(
+    slug: str,
+    payload: dict,
+    user: User = Depends(_require_news_view),
+    db: Session = Depends(get_db),
+):
+    result = news_files.set_group_homepage_visibility(
+        db,
+        slug,
+        bool(payload.get("show_on_homepage", False)),
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Article group not found")
+    return result
+
+
 @router.get("", response_model=list[ArticleWithRelations])
 def list_public_news(
     category: Optional[str] = None,
     tag: Optional[str] = None,
     search: Optional[str] = None,
     locale: Optional[str] = None,
+    homepage: bool = False,
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -148,6 +161,7 @@ def list_public_news(
         tag_slug=tag,
         search=search,
         locale=locale,
+        homepage_only=homepage,
         limit=limit,
         offset=offset,
     )
@@ -168,6 +182,7 @@ def list_tags(db: Session = Depends(get_db)):
 def get_admin_article(
     slug: str,
     locale: Optional[str] = None,
+    user: User = Depends(_require_news_view),
     db: Session = Depends(get_db),
 ):
     if locale:
@@ -180,7 +195,7 @@ def get_admin_article(
 
 
 @router.get("/admin/id/{article_id}", response_model=ArticleWithHtml)
-def get_admin_article_by_id(article_id: str, db: Session = Depends(get_db)):
+def get_admin_article_by_id(article_id: str, user: User = Depends(_require_news_view), db: Session = Depends(get_db)):
     article = db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")

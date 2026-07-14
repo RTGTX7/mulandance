@@ -13,6 +13,7 @@ MODULE_FIELD_ALLOWLIST = {
         "subtitle",
         "primary_label",
         "secondary_label",
+        "stats_labels",
         "cta_title",
         "cta_subtitle",
         "cta_note",
@@ -30,6 +31,10 @@ MODULE_FIELD_ALLOWLIST = {
     "faculty": {"name", "title", "role", "bio", "specialties", "achievements"},
     "classrooms": {"name", "title", "description", "features", "notes_title", "notes_body", "body"},
     "pricing": {
+        "title",
+        "description",
+        "badge",
+        "body",
         "program_items_text",
         "info_cards_text",
         "payment_title",

@@ -46,7 +46,11 @@ def generate_imported_content(
 ) -> GeneratedImportedContent:
     source_lang = normalize_locale(source_locale)
     targets = validate_locales(target_locales)
-    image_urls = [media.url for media in source.media] or source.images[:3]
+    image_urls = (
+        ([media.url for media in source.media] or source.images[:3])
+        if config and config.image_enabled
+        else []
+    )
     source_payload = {
         "url": source.url,
         "source_locale": source_lang,
@@ -102,6 +106,7 @@ def generate_imported_content(
             {"role": "user", "content": json.dumps(source_payload, ensure_ascii=False)},
         ],
         temperature=0.3,
+        disable_thinking=True,
         config=config,
     )
 

@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, Numeric, UniqueConstraint
 from sqlalchemy.sql import func
 import uuid
 import enum
+import json
 
 from app.core.database import Base
 
@@ -34,6 +35,9 @@ class UserProfile(Base):
     user_id = Column(String(36), ForeignKey("users.id"), unique=True, nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
+    nickname_zh = Column(String(100))
+    nickname_en = Column(String(100))
+    nickname_fr = Column(String(100))
     avatar_url = Column(String(500))
     phone = Column(String(20))
     date_of_birth = Column(DateTime)
@@ -112,6 +116,45 @@ class Performance(Base):
     translations_json = Column(Text)
     related_article_ids = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserPermission(Base):
+    __tablename__ = "user_permissions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    permission_key = Column(String(120), nullable=False)
+    can_view = Column(Boolean, nullable=False, default=False)
+    can_manage = Column(Boolean, nullable=False, default=False)
+    updated_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint("user_id", "permission_key", name="uq_user_permission_key"),)
+
+
+class PermissionAuditLog(Base):
+    __tablename__ = "permission_audit_logs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    actor_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"))
+    target_user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    before_json = Column(Text, nullable=False, default="{}")
+    after_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class PermissionPreset(Base):
+    __tablename__ = "permission_presets"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(120), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=False, default="")
+    permissions_json = Column(Text, nullable=False, default="[]")
+    created_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class PerformanceCast(Base):
@@ -297,13 +340,20 @@ class SystemSettings(Base):
     facebook_url = Column(String(1000), default="")
     tiktok_url = Column(String(1000), default="")
     homepage_json = Column(Text)
+    homepage_draft_json = Column(Text)
+    homepage_published_at = Column(DateTime(timezone=True))
+    site_draft_json = Column(Text)
+    site_published_at = Column(DateTime(timezone=True))
     translations_json = Column(Text)
     ai_enabled = Column(Boolean, default=False)
+    ai_thinking_enabled = Column(Boolean, default=False)
+    ai_image_enabled = Column(Boolean, default=False)
     ai_provider = Column(String(100), default="openai_compatible")
     ai_api_base_url = Column(String(1000), default="https://api.openai.com/v1")
     ai_api_key = Column(Text, default="")
     ai_model = Column(String(200), default="")
     ai_timeout_seconds = Column(Integer, default=600)
+    ai_feature_models_json = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -312,6 +362,7 @@ class FacultyMember(Base):
     __tablename__ = "faculty_members"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), unique=True, nullable=True, index=True)
     name = Column(String(200), nullable=False)
     role = Column(String(200))
     bio = Column(Text)
@@ -434,6 +485,228 @@ class ArticleGroup(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     shared_slug = Column(String(200), unique=True, nullable=False, index=True)
     source_url = Column(String(1200), index=True)
+    show_on_homepage = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+# ============================================================
+# Unified scheduling (fixed public classes + internal bookings)
+# ============================================================
+
+class CourseTemplate(Base):
+    __tablename__ = "course_templates"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    is_active = Column(Boolean, default=True, nullable=False)
+    translations_json = Column(Text)
+    is_ai_draft = Column(Boolean, default=False, nullable=False)
+    ai_draft_meta_json = Column(Text)
+    allow_unassigned_teacher = Column(Boolean, default=False, nullable=False)
+    allow_unassigned_room = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @property
+    def translations(self):
+        try:
+            value = json.loads(self.translations_json or "{}")
+            return value if isinstance(value, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+
+
+class CourseOffering(Base):
+    __tablename__ = "course_offerings"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    course_template_id = Column(String(36), ForeignKey("course_templates.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    start_date = Column(String(10), nullable=False, index=True)
+    end_date = Column(String(10), nullable=False, index=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_public = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class CourseOfferingSlot(Base):
+    __tablename__ = "course_offering_slots"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    offering_id = Column(String(36), ForeignKey("course_offerings.id", ondelete="CASCADE"), nullable=False, index=True)
+    teacher_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="RESTRICT"), nullable=True, index=True)
+    days_of_week_json = Column(Text, default="[]")
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def days_of_week(self):
+        try:
+            value = json.loads(self.days_of_week_json or "[]")
+            return [int(day) for day in value if 0 <= int(day) <= 6]
+        except (TypeError, ValueError):
+            return []
+
+
+class CourseOfferingSlotException(Base):
+    __tablename__ = "course_offering_slot_exceptions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    slot_id = Column(String(36), ForeignKey("course_offering_slots.id", ondelete="CASCADE"), nullable=False, index=True)
+    date = Column(String(10), nullable=False, index=True)
+    kind = Column(String(20), nullable=False, default="cancel")
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="RESTRICT"), nullable=True)
+    start_time = Column(String(5), nullable=True)
+    end_time = Column(String(5), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Studio(Base):
+    __tablename__ = "studios"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(160), nullable=False, unique=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudioRoom(Base):
+    __tablename__ = "studio_rooms"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    studio_id = Column(String(36), ForeignKey("studios.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(160), nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_rentable = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class FixedClassPlan(Base):
+    __tablename__ = "fixed_class_plans"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    teacher_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="RESTRICT"), nullable=False, index=True)
+    day_of_week = Column(Integer, nullable=False)
+    days_of_week_json = Column(Text, default="[]")
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    start_date = Column(String(10), nullable=False, index=True)
+    end_date = Column(String(10), nullable=False, index=True)
+    is_public = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    translations_json = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @property
+    def translations(self):
+        try:
+            value = json.loads(self.translations_json or "{}")
+            return value if isinstance(value, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+
+    @property
+    def days_of_week(self):
+        try:
+            values = json.loads(self.days_of_week_json or "[]")
+            return values if isinstance(values, list) and values else [self.day_of_week]
+        except (TypeError, ValueError):
+            return [self.day_of_week]
+
+
+class FixedClassException(Base):
+    __tablename__ = "fixed_class_exceptions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    plan_id = Column(String(36), ForeignKey("fixed_class_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    date = Column(String(10), nullable=False, index=True)
+    kind = Column(String(20), nullable=False, default="cancel")  # cancel or replace
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="RESTRICT"), nullable=True)
+    start_time = Column(String(5), nullable=True)
+    end_time = Column(String(5), nullable=True)
+    title = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ScheduleBooking(Base):
+    __tablename__ = "schedule_bookings"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="RESTRICT"), nullable=False, index=True)
+    teacher_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    date = Column(String(10), nullable=False, index=True)
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    booking_type = Column(String(30), nullable=False)
+    title = Column(String(200), nullable=False)
+    student_name = Column(String(200), default="")
+    participant_count = Column(Integer, default=0, nullable=False)
+    notes = Column(Text, default="")
+    status = Column(String(20), nullable=False, default="confirmed")  # pending, confirmed, rejected, cancelled
+    is_locked = Column(Boolean, default=False, nullable=False)
+    is_public = Column(Boolean, default=False, nullable=False)
+    external_request_id = Column(String(36), ForeignKey("external_rental_requests.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class ExternalRentalRequest(Base):
+    __tablename__ = "external_rental_requests"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="RESTRICT"), nullable=False, index=True)
+    request_mode = Column(String(20), nullable=False, default="single")
+    date = Column(String(10), nullable=True, index=True)
+    start_date = Column(String(10), nullable=True, index=True)
+    end_date = Column(String(10), nullable=True, index=True)
+    days_of_week_json = Column(Text, default="[]", nullable=False)
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    title = Column(String(200), nullable=False)
+    applicant_name = Column(String(160), nullable=False)
+    applicant_contact = Column(String(200), nullable=False)
+    notes = Column(Text, default="")
+    status = Column(String(20), nullable=False, default="pending", index=True)
+    reviewed_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    @property
+    def days_of_week(self):
+        try:
+            value = json.loads(self.days_of_week_json or "[]")
+            return [int(day) for day in value if 0 <= int(day) <= 6]
+        except (TypeError, ValueError):
+            return []
+
+
+class ScheduleCoordinationRequest(Base):
+    __tablename__ = "schedule_coordination_requests"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    requested_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    booking_id = Column(String(36), ForeignKey("schedule_bookings.id", ondelete="SET NULL"), nullable=True)
+    requested_date = Column(String(10), nullable=False)
+    requested_room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="SET NULL"), nullable=True)
+    requested_start_time = Column(String(5), nullable=False)
+    requested_end_time = Column(String(5), nullable=False)
+    message = Column(Text, default="")
+    status = Column(String(20), nullable=False, default="pending")  # pending, approved, rejected
+    resolved_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolution_note = Column(Text, default="")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -472,3 +745,66 @@ class ArticleTranslation(Base):
 
     class Config:
         pass
+
+
+class PricingCatalog(Base):
+    __tablename__ = "pricing_catalogs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    kind = Column(String(20), nullable=False, unique=True, index=True)  # program, rental
+    title = Column(String(240), nullable=False, default="")
+    subtitle = Column(Text, default="")
+    translations_json = Column(Text, default="{}")
+    published_json = Column(Text, default="")
+    is_dirty = Column(Boolean, nullable=False, default=True)
+    published_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class PricingPlan(Base):
+    __tablename__ = "pricing_plans"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    catalog_id = Column(String(36), ForeignKey("pricing_catalogs.id", ondelete="CASCADE"), nullable=False, index=True)
+    program_id = Column(String(36), ForeignKey("programs.id", ondelete="SET NULL"), nullable=True, index=True)
+    room_id = Column(String(36), ForeignKey("studio_rooms.id", ondelete="SET NULL"), nullable=True, index=True)
+    title = Column(String(240), nullable=False, default="")
+    description = Column(Text, default="")
+    badge = Column(String(120), default="")
+    image_url = Column(String(1000), default="")
+    details_json = Column(Text, default="[]")
+    translations_json = Column(Text, default="{}")
+    is_active = Column(Boolean, nullable=False, default=True)
+    is_featured = Column(Boolean, nullable=False, default=False)
+    sort_order = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class PricingOption(Base):
+    __tablename__ = "pricing_options"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    plan_id = Column(String(36), ForeignKey("pricing_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    label = Column(String(180), nullable=False, default="")
+    amount = Column(Numeric(12, 2), nullable=False, default=0)
+    currency = Column(String(3), nullable=False, default="CAD")
+    unit = Column(String(120), default="")
+    note = Column(Text, default="")
+    translations_json = Column(Text, default="{}")
+    sort_order = Column(Integer, nullable=False, default=0)
+
+
+class PricingContentBlock(Base):
+    __tablename__ = "pricing_content_blocks"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    catalog_id = Column(String(36), ForeignKey("pricing_catalogs.id", ondelete="CASCADE"), nullable=False, index=True)
+    block_type = Column(String(40), nullable=False, default="info")
+    title = Column(String(240), nullable=False, default="")
+    body = Column(Text, default="")
+    items_json = Column(Text, default="[]")
+    translations_json = Column(Text, default="{}")
+    is_active = Column(Boolean, nullable=False, default=True)
+    sort_order = Column(Integer, nullable=False, default=0)

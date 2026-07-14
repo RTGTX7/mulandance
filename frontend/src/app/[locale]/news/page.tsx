@@ -220,10 +220,10 @@ export default function NewsPage() {
                       {primaryCategory && (
                         <Badge
                           variant="secondary"
-                          className="text-xs"
+                          className="border-primary/20 bg-accent text-xs text-accent-foreground"
                           style={
                             primaryCategory.color
-                              ? { backgroundColor: `${primaryCategory.color}20`, color: primaryCategory.color }
+                              ? { borderColor: primaryCategory.color }
                               : undefined
                           }
                         >

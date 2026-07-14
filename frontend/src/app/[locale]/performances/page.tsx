@@ -171,7 +171,7 @@ export default function PerformancesPage() {
                             <article className="season-event-card grid min-h-[148px] overflow-hidden rounded-[14px] md:min-h-[190px] md:rounded-[18px] md:grid-cols-[132px_minmax(0,1fr)_220px] lg:grid-cols-[150px_minmax(0,1fr)_260px]">
                               <div className="season-event-date relative flex min-h-[82px] flex-row items-center justify-between gap-2.5 px-3.5 py-2.5 md:min-h-full md:flex-col md:items-start md:justify-between md:px-5 md:py-5">
                                 <div>
-                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary/85">{parts.month}</p>
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/75">{parts.month}</p>
                                   <p className="mt-0.5 font-accent text-[2rem] leading-none text-primary md:text-6xl">{parts.day}</p>
                                   <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{parts.year}</p>
                                 </div>
@@ -186,16 +186,16 @@ export default function PerformancesPage() {
                                 <div className="flex min-w-0 flex-col justify-center px-3.5 py-3 md:px-6 md:py-6">
                                   <div className="mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-semibold text-slate-500 md:mb-3 md:gap-x-4 md:gap-y-2 md:text-sm">
                                     <span className="inline-flex items-center gap-1.5">
-                                      <CalendarDays className="h-3 w-3 text-secondary md:h-4 md:w-4" />
+                                      <CalendarDays className="h-3 w-3 text-primary md:h-4 md:w-4" />
                                       {dateText(item)}
                                     </span>
                                     <span className="inline-flex items-center gap-1.5">
-                                      <Clock className="h-3 w-3 text-secondary md:h-4 md:w-4" />
+                                      <Clock className="h-3 w-3 text-primary md:h-4 md:w-4" />
                                       {timeText(item)}
                                     </span>
                                     {item.venue && (
                                       <span className="inline-flex min-w-0 items-center gap-1.5">
-                                        <MapPin className="h-3 w-3 shrink-0 text-secondary md:h-4 md:w-4" />
+                                        <MapPin className="h-3 w-3 shrink-0 text-primary md:h-4 md:w-4" />
                                         <span className="truncate">{item.venue}</span>
                                       </span>
                                     )}
@@ -208,8 +208,8 @@ export default function PerformancesPage() {
                                       {item.description}
                                     </p>
                                   )}
-                                  <div className="mt-3 flex items-center gap-1.5 text-[12px] font-semibold text-secondary md:mt-5 md:gap-2 md:text-sm">
-                                    <span className="h-px w-5 bg-secondary/35 transition-all group-hover:w-8 md:w-8 md:group-hover:w-12" />
+                                  <div className="mt-3 flex items-center gap-1.5 text-[12px] font-semibold text-primary md:mt-5 md:gap-2 md:text-sm">
+                                    <span className="h-px w-5 bg-primary/35 transition-all group-hover:w-8 md:w-8 md:group-hover:w-12" />
                                     <span>{isArchive ? t('performanceTimeline.archive') : t('performanceTimeline.upcoming')}</span>
                                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1 md:h-4 md:w-4" />
                                   </div>
@@ -226,7 +226,7 @@ export default function PerformancesPage() {
                                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_22%,rgba(216,168,79,0.28),transparent_30%),linear-gradient(135deg,rgba(71,28,104,0.34),rgba(255,255,255,0.18))]" />
                                   )}
                                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.78)_14%,rgba(255,255,255,0.42)_32%,rgba(255,255,255,0.10)_54%,rgba(35,13,56,0.16)_100%)]" />
-                                  <div className="absolute bottom-4 right-4 rounded-full border border-white/55 bg-white/45 px-3 py-1 text-xs font-bold text-primary shadow-sm backdrop-blur-xl">
+                                  <div className="absolute bottom-4 right-4 rounded-full border border-primary/15 bg-white/80 px-3 py-1 text-xs font-bold text-primary shadow-sm backdrop-blur-xl">
                                     {String(index + 1).padStart(2, '0')}
                                   </div>
                                 </div>

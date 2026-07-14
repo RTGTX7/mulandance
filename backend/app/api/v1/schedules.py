@@ -4,8 +4,9 @@ from typing import List, Optional
 from pathlib import Path
 
 from app.core.config import settings
-from app.api.v1.settings import require_admin_or_editor
+from app.api.v1.settings import get_current_user
 from app.core.database import get_db
+from app.core.permissions import require_user_permission
 from app.core.translations import ensure_text_column, localized_payload, set_translation_bundle, translation_bundle
 from app.models import CourseScheduleItem, SchoolPolicy, User
 from app.schemas.schedule import (
@@ -20,6 +21,14 @@ from app.schemas.schedule import (
 router = APIRouter()
 POLICY_FILE = Path(settings.NEWS_FILES_DIR).parent / "pages" / "school-policy.md"
 TRANSLATABLE_FIELDS = ("title", "description", "location")
+
+
+def require_fixed_manage(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "teaching.schedules.fixed", "manage")
+
+
+def require_policy_manage(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "system.policy", "manage")
 
 
 def _ordered(query):
@@ -86,7 +95,7 @@ def list_schedule_items(
 @router.post("/classes", response_model=CourseScheduleItemResponse)
 def create_schedule_item(
     payload: CourseScheduleItemCreate,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_fixed_manage),
     db: Session = Depends(get_db),
 ):
     ensure_text_column(db, "course_schedule_items")
@@ -107,7 +116,7 @@ def create_schedule_item(
 def update_schedule_item(
     item_id: str,
     payload: CourseScheduleItemUpdate,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_fixed_manage),
     db: Session = Depends(get_db),
 ):
     ensure_text_column(db, "course_schedule_items")
@@ -133,7 +142,7 @@ def update_schedule_item(
 @router.delete("/classes/{item_id}")
 def delete_schedule_item(
     item_id: str,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_fixed_manage),
     db: Session = Depends(get_db),
 ):
     item = db.query(CourseScheduleItem).filter(CourseScheduleItem.id == item_id).first()
@@ -159,7 +168,7 @@ def get_school_policy(db: Session = Depends(get_db)):
 @router.put("/policy", response_model=SchoolPolicyResponse)
 def update_school_policy(
     payload: SchoolPolicyUpdate,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_policy_manage),
     db: Session = Depends(get_db),
 ):
     policy = _get_or_create_policy(db)

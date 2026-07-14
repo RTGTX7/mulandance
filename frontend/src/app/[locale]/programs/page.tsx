@@ -21,19 +21,59 @@ function visualFor(slug: string) {
   return iconMap.find((item) => slug.includes(item.test)) || { icon: BookOpen, color: 'from-red-500 to-pink-500' };
 }
 
+function detailPathFor(slug: string): string | null {
+  const paths: Record<string, string> = {
+    chinese: 'chinese-dance',
+    folk: 'chinese-dance',
+    ballet: 'ballet',
+    contemporary: 'contemporary',
+    jazz: 'jazz',
+    'hip-hop': 'hip-hop',
+    'summer-camps': 'summer-camps',
+  };
+  return paths[slug] || null;
+}
+
 export default function ProgramsPage() {
   const t = useTranslations();
   const locale = useLocale();
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
+    let active = true;
+    let timedOut = false;
+    setLoading(true);
+    setLoadFailed(false);
+    const timeout = window.setTimeout(() => {
+      if (!active) return;
+      timedOut = true;
+      setLoading(false);
+      setLoadFailed(true);
+    }, 12000);
+
     programApi
       .list(locale)
-      .then(setPrograms)
-      .catch(() => setPrograms([]))
-      .finally(() => setLoading(false));
-  }, [locale]);
+      .then((items) => {
+        if (!active || timedOut) return;
+        setPrograms(items);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active || timedOut) return;
+        setPrograms([]);
+        setLoadFailed(true);
+        setLoading(false);
+      })
+      .finally(() => window.clearTimeout(timeout));
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [locale, loadAttempt]);
 
   const sortedPrograms = useMemo(
     () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
@@ -42,10 +82,11 @@ export default function ProgramsPage() {
 
   return (
     <div className="pt-16">
-      <section className="relative min-h-[220px] overflow-hidden bg-gradient-to-r from-primary to-purple-700 py-8 md:h-[340px] md:py-0">
+      <section className="relative min-h-[220px] overflow-hidden border-b border-border bg-foreground py-8 md:h-[340px] md:py-0">
         <div className="absolute inset-0 bg-black/30" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-32 bg-gradient-to-b from-transparent via-purple-700/35 to-accent/20" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-24 bg-gradient-to-b from-transparent via-purple-500/20 to-accent/20 blur-xl" />
+        <div className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -bottom-40 left-[12%] h-72 w-72 rounded-full border border-primary/45" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-primary/70" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white relative z-10 px-4">
             <Breadcrumbs items={[{ label: t('common.nav.programs'), href: '/programs' }]} />
@@ -62,17 +103,24 @@ export default function ProgramsPage() {
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              Loading programs...
+              {t('programs.loading')}
+            </div>
+          ) : loadFailed ? (
+            <div role="alert" className="mx-auto max-w-lg rounded-lg border border-primary/20 bg-white p-8 text-center">
+              <p className="text-muted-foreground">{t('programs.loadFailed')}</p>
+              <Button type="button" variant="outline" className="mt-4" onClick={() => setLoadAttempt((current) => current + 1)}>
+                {t('programs.retry')}
+              </Button>
             </div>
           ) : sortedPrograms.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-white p-10 text-center text-muted-foreground">
-              Program information is being updated.
+              {t('programs.empty')}
             </div>
           ) : (
             sortedPrograms.map((program, index) => {
               const visual = visualFor(program.slug);
               const Icon = visual.icon;
-              const isSummerCamp = program.slug.includes('summer');
+              const detailPath = detailPathFor(program.slug);
 
               return (
                 <div key={program.id} id={program.slug} className="scroll-mt-24">
@@ -85,8 +133,8 @@ export default function ProgramsPage() {
                       {program.level && <p className="text-sm font-semibold text-primary mb-3">{program.level}</p>}
                       <p className="text-lead text-muted-foreground mb-4">{program.description}</p>
                       {program.syllabus_ref && <p className="text-body text-muted-foreground mb-6">{program.syllabus_ref}</p>}
-                      {isSummerCamp && (
-                        <Link href={`/${locale}/programs/summer-camps`}>
+                      {detailPath && (
+                        <Link href={`/${locale}/programs/${detailPath}`}>
                           <Button size="lg">{t('common.buttons.learnMore')}</Button>
                         </Link>
                       )}

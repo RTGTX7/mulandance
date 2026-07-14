@@ -75,6 +75,7 @@ class ArticleGroupResponse(BaseModel):
     """Article group with shared categories/tags and translations."""
     id: str
     shared_slug: str
+    show_on_homepage: bool = True
     translations: List[TranslationDetail] = []
     categories: List[NewsCategoryResponse] = []
     tags: List[NewsTagResponse] = []

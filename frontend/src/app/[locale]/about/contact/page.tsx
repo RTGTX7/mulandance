@@ -1,5 +1,6 @@
 'use client';
 
+import { FormEvent, useState } from 'react';
 import { useTranslations } from '@/components/ui/i18n-client';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,20 @@ import { MapPin, Phone, Mail } from 'lucide-react';
 
 export default function ContactPage() {
   const t = useTranslations();
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [openedMail, setOpenedMail] = useState(false);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const body = [
+      `${t('about.contact.form.name')}: ${form.name}`,
+      `${t('about.contact.form.email')}: ${form.email}`,
+      '',
+      form.message,
+    ].join('\n');
+    window.location.href = `mailto:info@mulandance.com?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(body)}`;
+    setOpenedMail(true);
+  };
 
   return (
     <div className="pt-16">
@@ -40,7 +55,7 @@ export default function ContactPage() {
             <Card>
               <CardHeader>
                 <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
-                <CardTitle className="text-center text-sm">{t('common.footer.address')}</CardTitle>
+                <CardTitle className="text-center text-sm">{t('about.contact.address')}</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-muted-foreground text-sm">{t('common.footer.address')}</p>
@@ -49,7 +64,7 @@ export default function ContactPage() {
             <Card>
               <CardHeader>
                 <Phone className="h-8 w-8 text-primary mx-auto mb-2" />
-                <CardTitle className="text-center text-sm">{t('common.footer.phone')}</CardTitle>
+                <CardTitle className="text-center text-sm">{t('about.contact.phone')}</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-muted-foreground text-sm">{t('common.footer.phone')}</p>
@@ -58,7 +73,7 @@ export default function ContactPage() {
             <Card>
               <CardHeader>
                 <Mail className="h-8 w-8 text-primary mx-auto mb-2" />
-                <CardTitle className="text-center text-sm">{t('common.footer.email')}</CardTitle>
+                <CardTitle className="text-center text-sm">{t('about.contact.email')}</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-muted-foreground text-sm">{t('common.footer.email')}</p>
@@ -69,37 +84,28 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div className="max-w-xl mx-auto mb-12">
             <h2 className="heading-lg text-center mb-8">{t('about.contact.form.submit')}</h2>
-            <div className="space-y-4">
+            <form className="space-y-4" onSubmit={submit}>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t('about.contact.form.name')}</label>
-                <Input placeholder={t('about.contact.form.namePlaceholder')} />
+                <Input required value={form.name} placeholder={t('about.contact.form.namePlaceholder')} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t('about.contact.form.email')}</label>
-                <Input type="email" placeholder={t('about.contact.form.emailPlaceholder')} />
+                <Input required type="email" value={form.email} placeholder={t('about.contact.form.emailPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t('about.contact.form.subject')}</label>
-                <Input placeholder={t('about.contact.form.subject')} />
+                <Input required value={form.subject} placeholder={t('about.contact.form.subject')} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t('about.contact.form.message')}</label>
-                <Textarea placeholder={t('about.contact.form.messagePlaceholder')} rows={5} />
+                <Textarea required value={form.message} placeholder={t('about.contact.form.messagePlaceholder')} rows={5} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} />
               </div>
-              <Button size="lg" className="w-full">{t('about.contact.form.submit')}</Button>
-            </div>
+              <Button type="submit" size="lg" className="w-full">{t('about.contact.form.submit')}</Button>
+              {openedMail && <p className="text-center text-sm text-muted-foreground">{t('about.contact.form.success')}</p>}
+            </form>
           </div>
 
-          {/* Coming Soon Section */}
-          <div className="bg-accent/30 rounded-2xl p-12 text-center">
-            <h2 className="heading-lg mb-4">Coming Soon</h2>
-            <p className="text-lead text-muted-foreground mb-6">
-              More contact features are under development.
-            </p>
-            <p className="text-body text-muted-foreground">
-              We are adding online booking and live chat support.
-            </p>
-          </div>
         </div>
       </section>
     </div>

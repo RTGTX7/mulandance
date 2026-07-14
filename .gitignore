@@ -40,6 +40,12 @@ uploads/
 media/
 data/backups/*.zip
 !data/backups/.gitkeep
+data/news/*
+!data/news/.gitkeep
+data/pages/*
+!data/pages/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
 
 # Database
 *.db
@@ -48,6 +54,21 @@ data/backups/*.zip
 # Testing
 coverage/
 .nyc_output/
+/output/
+/frontend/output/
+*.tsbuildinfo
+
+# Local AI agents and MCP clients
+/.kilo/
+/frontend/.agents/
+/frontend/.claude/
+/frontend/.codex/
+/frontend/.cursor/
+/frontend/.gemini/
+/frontend/.zed/
+/frontend/.mcp.json
+/frontend/opencode.json
+/frontend/config/mcporter.json
 
 # Misc
 *.orig

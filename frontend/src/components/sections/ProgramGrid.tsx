@@ -1,115 +1,164 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslations, useLocale } from '@/components/ui/i18n-client';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { ProgramItem, programApi } from '@/lib/api';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { useLocale, useTranslations } from '@/components/ui/i18n-client';
+import { ExhibitHeading, ExhibitReveal } from '@/components/motion/ExhibitMotion';
+import { type HomepageSection, type ProgramItem, homepageApi, programApi } from '@/lib/api';
 import { toPublicMediaUrl } from '@/lib/media';
-import { AnimatedLineHeading, RevealOnScroll } from '@/components/motion/ScrollEffects';
+import { cn } from '@/lib/utils';
 
 function isVideoUrl(url: string) {
   return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
 }
 
-function ProgramCard({ program, href, compact = false }: { program: ProgramItem; href: string; compact?: boolean }) {
-  const t = useTranslations();
+function detailPathFor(slug: string): string | null {
+  const paths: Record<string, string> = {
+    chinese: 'chinese-dance',
+    folk: 'chinese-dance',
+    ballet: 'ballet',
+    contemporary: 'contemporary',
+    jazz: 'jazz',
+    'hip-hop': 'hip-hop',
+    'summer-camps': 'summer-camps',
+  };
+
+  return paths[slug] || null;
+}
+
+function courseHref(locale: string, program: ProgramItem) {
+  const detailPath = detailPathFor(program.slug);
+  return detailPath ? `/${locale}/programs/${detailPath}` : `/${locale}/programs#${program.slug}`;
+}
+
+function ProgramMedia({ program, className }: { program: ProgramItem; className?: string }) {
   const mediaUrl = toPublicMediaUrl(program.cover_image || '');
 
-  return (
-    <Link
-      href={href}
-      className={`program-media-card homepage-glass-card group flex flex-col justify-end overflow-hidden ${
-        compact ? 'min-h-[136px] p-3' : 'min-h-[216px] p-5 md:min-h-[242px] md:p-6'
-      }`}
-    >
-      {mediaUrl && (
-        isVideoUrl(mediaUrl) ? (
-          <video
-            src={mediaUrl}
-            className="program-card-media h-full w-full object-cover opacity-95 transition-transform duration-700 group-hover:scale-105"
-            muted
-            loop
-            playsInline
-            autoPlay
-          />
-        ) : (
-          <div
-            className="program-card-media bg-cover bg-center opacity-95 transition-transform duration-700 group-hover:scale-105"
-            style={{ backgroundImage: `url(${mediaUrl})` }}
-          />
-        )
-      )}
-      <div
-        className={
-          mediaUrl
-            ? 'program-card-shade bg-[rgba(10,8,18,0.30)]'
-            : 'program-card-shade bg-transparent'
-        }
-      />
-      <div className={`program-copy-glass ${compact ? 'min-h-[100px]' : 'min-h-[156px] md:min-h-[160px]'} flex flex-col justify-start`}>
-        <h3 className={`${compact ? 'min-h-[34px] text-sm' : 'min-h-[50px] text-lg md:min-h-[56px] md:text-xl'} program-glass-title line-clamp-2 font-semibold leading-snug transition-colors`}>
-          {program.name}
-        </h3>
-        <p className={`${compact ? 'mt-1 line-clamp-2 text-xs' : 'mt-2 line-clamp-3 text-sm md:text-base'} program-glass-summary leading-relaxed`}>
-          {program.description}
-        </p>
-        <span className={`${compact ? 'mt-auto pt-2 text-xs' : 'mt-auto pt-4 text-sm'} program-glass-link inline-flex items-center gap-2 font-semibold transition-colors`}>
-          {t('common.buttons.learnMore')}
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </span>
-      </div>
-    </Link>
-  );
+  if (mediaUrl && isVideoUrl(mediaUrl)) {
+    return <video src={mediaUrl} className={cn('h-full w-full object-cover', className)} muted loop playsInline autoPlay />;
+  }
+
+  if (mediaUrl) {
+    return <div className={cn('h-full w-full bg-cover bg-center', className)} style={{ backgroundImage: `url(${mediaUrl})` }} />;
+  }
+
+  return <div className={cn('flex h-full w-full items-end bg-[#2b1a2c] p-6 font-heading text-3xl font-semibold text-white', className)}>{program.name}</div>;
 }
 
 export function ProgramGrid() {
   const t = useTranslations();
   const locale = useLocale();
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
+  const [section, setSection] = useState<HomepageSection | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    programApi.list(locale).then(setPrograms).catch(() => setPrograms([]));
+    let active = true;
+    setLoading(true);
+    programApi
+      .list(locale)
+      .then((items) => {
+        if (active) setPrograms(items);
+      })
+      .catch(() => {
+        if (active) setPrograms([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [locale]);
 
-  const visiblePrograms = useMemo(
-    () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)).slice(0, 6),
+  useEffect(() => {
+    let active = true;
+    homepageApi.get(locale)
+      .then((settings) => {
+        if (active) setSection(settings.sections.programs);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [locale]);
+
+  const orderedPrograms = useMemo(
+    () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
     [programs]
   );
 
+  if (section && !section.is_enabled) return null;
+
   return (
-    <section className="section-padding homepage-glass-section" aria-label={t('common.sections.ourPrograms')}>
-      <div className="container mx-auto">
-        <div className="homepage-glass-heading mb-6 px-4 py-4 text-center md:mb-10 md:px-8 md:py-5">
-          <AnimatedLineHeading text={t('home.programs.title')} className="mx-auto mb-2 md:mb-4" />
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-lg">
-            {t('home.programs.subtitle')}
-          </p>
-        </div>
+    <section className="exhibit-programs section-padding" aria-label={t('common.sections.ourPrograms')}>
+      <div className="container">
+        <ExhibitReveal className="mb-10 text-center md:mb-16" distance={24}>
+          <div className="mx-auto max-w-3xl">
+            <ExhibitHeading align="center" className="mx-auto mb-3">{section?.title || t('home.programs.title')}</ExhibitHeading>
+            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-lg">{section?.subtitle || t('home.programs.subtitle')}</p>
+            <Link href={`/${locale}/programs`} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-foreground">
+              {section?.link_label || t('common.buttons.viewAll')}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </ExhibitReveal>
 
-        <div className="grid grid-cols-2 gap-2 md:hidden">
-          {visiblePrograms.map((program, index) => {
-            const href = `/${locale}/programs#${program.slug}`;
+        {loading ? (
+          <div className="flex min-h-72 items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            {t('programs.loading')}
+          </div>
+        ) : orderedPrograms.length === 0 ? (
+          <p className="py-16 text-center text-muted-foreground">{t('programs.empty')}</p>
+        ) : (
+          <div className="border-t border-primary/15">
+            {orderedPrograms.map((program, index) => {
+              const mediaOnRight = index % 2 === 0;
+              return (
+                <article key={program.id} className="program-exhibit-row grid border-b border-primary/15 py-7 md:grid-cols-12 md:items-center md:gap-8 md:py-12 lg:gap-12">
+                  <ExhibitReveal
+                    className={cn('order-2 md:col-span-6', mediaOnRight ? 'md:order-1' : 'md:order-2')}
+                    from={mediaOnRight ? 'left' : 'right'}
+                    distance={36}
+                  >
+                    <div className="max-w-xl">
+                      <div className="mb-4 flex items-center gap-3 text-xs font-semibold text-primary">
+                        <span>{String(index + 1).padStart(2, '0')}</span>
+                        <span className="h-px w-8 bg-primary/35" />
+                        <span>{program.level || program.category}</span>
+                      </div>
+                      <h3 className="font-heading text-3xl font-semibold leading-tight text-foreground md:text-5xl">{program.name}</h3>
+                      <p className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground md:text-base">{program.description}</p>
+                      {program.syllabus_ref && <p className="mt-3 text-sm leading-6 text-muted-foreground">{program.syllabus_ref}</p>}
+                      <Link href={courseHref(locale, program)} className="group mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-foreground">
+                        {t('common.buttons.learnMore')}
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                    </div>
+                  </ExhibitReveal>
 
-            return (
-              <RevealOnScroll key={program.id} delay={(index % 2) * 70}>
-                <ProgramCard program={program} href={href} compact />
-              </RevealOnScroll>
-            );
-          })}
-        </div>
-
-        <div className="mx-auto hidden max-w-7xl grid-cols-1 gap-3 md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
-          {visiblePrograms.map((program, index) => {
-            const href = `/${locale}/programs#${program.slug}`;
-
-            return (
-              <RevealOnScroll key={program.id} delay={(index % 3) * 90}>
-                <ProgramCard program={program} href={href} />
-              </RevealOnScroll>
-            );
-          })}
-        </div>
+                  <ExhibitReveal
+                    className={cn('order-1 mb-6 md:col-span-6 md:mb-0', mediaOnRight ? 'md:order-2' : 'md:order-1')}
+                    delay={0.08}
+                    from={mediaOnRight ? 'right' : 'left'}
+                    distance={36}
+                  >
+                    <Link href={courseHref(locale, program)} className="program-exhibit-media group relative block aspect-[16/10] overflow-hidden rounded-md bg-[#2b1a2c]">
+                      <ProgramMedia program={program} className="transition-transform duration-700 group-hover:scale-[1.035]" />
+                      <div className="absolute inset-0 bg-black/15 transition-colors group-hover:bg-black/5" />
+                      <span className="absolute bottom-4 right-4 grid h-9 w-9 place-items-center rounded-md border border-white/70 bg-black/20 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </Link>
+                  </ExhibitReveal>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

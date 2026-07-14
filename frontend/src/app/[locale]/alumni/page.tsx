@@ -11,7 +11,7 @@ const alumniSpotlights = [
     name: 'Sarah Chen',
     gradYear: '2018',
     current: 'Principal Dancer, National Ballet',
-    quote: 'Grace Dance Academy gave me the foundation and confidence to pursue my dreams.',
+    quote: 'Mulan Dance Studio gave me the foundation and confidence to pursue my dreams.',
   },
   {
     name: 'Marcus Williams',

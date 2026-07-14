@@ -11,10 +11,10 @@ interface PageHeroProps {
 
 export function PageHero({ breadcrumbLabel, breadcrumbHref, title, subtitle }: PageHeroProps) {
   return (
-    <section className="relative min-h-[150px] overflow-hidden bg-gradient-to-br from-primary via-purple-700 to-accent/80 py-6 md:min-h-[280px] md:py-16">
-      <div className="absolute inset-0 bg-black/20" />
-      <div className="pointer-events-none absolute inset-x-4 bottom-0 top-8 rounded-[2rem] bg-white/10 blur-3xl md:inset-x-16" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-px bg-white/25" />
+    <section className="relative min-h-[150px] overflow-hidden border-b border-border bg-foreground py-6 md:min-h-[280px] md:py-16">
+      <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full border border-white/10" />
+      <div className="pointer-events-none absolute -bottom-44 left-[12%] h-72 w-72 rounded-full border border-primary/50" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-primary/70" />
       <div className="relative z-10 flex min-h-[118px] items-center justify-center md:min-h-[240px]">
         <div className="max-w-3xl px-4 text-center text-white">
           <Breadcrumbs items={[{ label: breadcrumbLabel, href: breadcrumbHref }]} />

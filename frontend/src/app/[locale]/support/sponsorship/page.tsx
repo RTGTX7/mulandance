@@ -37,7 +37,7 @@ export default function SponsorshipPage() {
         <Breadcrumbs items={[{ label: t('common.nav.support'), href: 'support' }]} />
         <h1 className="heading-xl mb-4">{t('support.sponsorship')}</h1>
         <p className="text-lead mb-12">
-          Partner with Grace Dance Academy to support dance education while gaining valuable visibility.
+          Partner with Mulan Dance Studio to support dance education and explore community visibility opportunities.
         </p>
 
         <Card className="mb-12">
@@ -61,8 +61,8 @@ export default function SponsorshipPage() {
                 <p className="text-sm text-muted-foreground">Years in Community</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary">Non-Profit</p>
-                <p className="text-sm text-muted-foreground">Tax Deductible</p>
+                <p className="text-2xl font-bold text-primary">Partnerships</p>
+                <p className="text-sm text-muted-foreground">Contact us for current options</p>
               </div>
             </div>
           </CardContent>
@@ -99,7 +99,7 @@ export default function SponsorshipPage() {
               Whether you want to sponsor a specific program, event, or scholarship fund, we would
               love to discuss a partnership that works for both parties.
             </p>
-            <a href="mailto:sponsor@gracedanceacademy.org">
+            <a href="mailto:info@mulandance.com?subject=Sponsorship%20inquiry">
               <Button variant="outline">Contact Our Development Team</Button>
             </a>
           </CardContent>

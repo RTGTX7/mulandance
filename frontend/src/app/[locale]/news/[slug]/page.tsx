@@ -207,10 +207,10 @@ export default function ArticleDetailPage() {
                   <Badge
                     key={cat.slug}
                     variant="secondary"
-                    className="text-sm"
+                    className="border-primary/20 bg-accent text-sm text-accent-foreground"
                     style={
                       cat.color
-                        ? { backgroundColor: `${cat.color}20`, color: cat.color }
+                        ? { borderColor: cat.color }
                         : undefined
                     }
                   >
@@ -254,7 +254,7 @@ export default function ArticleDetailPage() {
               <CardContent className="py-4 text-sm text-muted-foreground">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <span>
-                    {t('news.published', { defaultMessage: 'Published' })}:{' '}
+                    {t('news.publishedAt')}:{' '}
                     {article.published_at
                       ? formatDate(article.published_at, dateLocaleFor(locale))
                       : formatDate(article.created_at, dateLocaleFor(locale))}

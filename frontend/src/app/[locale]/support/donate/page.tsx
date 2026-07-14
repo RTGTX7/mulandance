@@ -52,7 +52,7 @@ export default function DonatePage() {
               maintain our facilities, and help us reach more students through community programs.
             </p>
             <p className="text-sm text-muted-foreground">
-              Grace Dance Academy is a registered non-profit. All donations are tax-deductible.
+              Please contact Mulan Dance Studio directly to confirm current donation options and any applicable documentation.
             </p>
           </CardContent>
         </Card>

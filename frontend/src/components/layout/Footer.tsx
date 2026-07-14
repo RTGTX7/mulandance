@@ -97,7 +97,7 @@ export function Footer() {
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <h4 className="mb-2 text-sm font-semibold leading-tight text-foreground">
               {t('common.footer.quickLinks')}
             </h4>
@@ -117,7 +117,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <h4 className="mb-2 text-sm font-semibold leading-tight text-foreground">
               {t('common.footer.contact')}
             </h4>
@@ -134,7 +134,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Mail className="h-3.5 w-3.5 shrink-0" />
-                <a href={`mailto:${settings.contact_email}`} className="transition-colors hover:text-foreground">
+                <a href={`mailto:${settings.contact_email}`} className="min-w-0 break-all transition-colors hover:text-foreground">
                   {settings.contact_email || t('common.footer.email')}
                 </a>
               </li>

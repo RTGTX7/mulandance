@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { homepageApi, type HomepageCta } from '@/lib/api';
+import { ExhibitHeading, ExhibitReveal } from '@/components/motion/ExhibitMotion';
 
 function XiaohongshuIcon() {
   return (
@@ -42,9 +43,12 @@ export function CTABanner() {
   const secondaryHref = localHref(customCta?.secondary?.href || '/about/contact');
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary via-purple-800 to-primary/90 py-7 text-white md:py-16">
+    <section className="exhibit-cta relative overflow-hidden bg-[#251326] py-12 text-white md:py-20">
       <div className="container relative z-10 text-center">
-        <h2 className="mb-2 text-2xl font-bold leading-tight text-white md:text-4xl">{title}</h2>
+        <ExhibitReveal distance={26}>
+          <ExhibitHeading align="center" className="mx-auto mb-3">{title}</ExhibitHeading>
+        </ExhibitReveal>
+        <ExhibitReveal delay={0.1} distance={22}>
         <p className="mx-auto mb-3 flex max-w-2xl flex-col items-center gap-0.5 text-sm font-semibold leading-snug text-white/85 sm:flex-row sm:justify-center sm:gap-2 md:mb-5 md:text-lg">
           {subtitleParts.length > 1 ? (
             subtitleParts.map((part, index) => (
@@ -60,7 +64,9 @@ export function CTABanner() {
         <p className="mx-auto mb-4 max-w-xl text-sm leading-relaxed text-white/72 md:mb-8 md:text-base">
           {note}
         </p>
+        </ExhibitReveal>
 
+        <ExhibitReveal delay={0.18} distance={20}>
         <div className="mx-auto grid w-full max-w-md grid-cols-2 gap-2 md:flex md:max-w-none md:justify-center md:gap-3">
           <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined}>
             <Button 
@@ -74,13 +80,15 @@ export function CTABanner() {
             <Button 
               size="lg" 
               variant="outline"
-              className="h-11 w-full rounded-lg border border-white bg-white px-3 text-sm font-semibold text-primary shadow-lg transition-all duration-300 hover:border-white hover:bg-white/90 hover:shadow-xl md:w-auto md:px-6"
+              className="h-11 w-full rounded-lg border border-white/70 bg-transparent px-3 text-sm font-semibold text-white shadow-none transition-all duration-300 hover:border-white hover:bg-white/10 hover:text-white md:w-auto md:px-6"
             >
               {customCta?.secondary?.label || t('home.cta.contact')}
             </Button>
           </Link>
         </div>
+        </ExhibitReveal>
 
+        <ExhibitReveal delay={0.24} distance={18}>
         <div className="mt-4 flex flex-col items-center justify-center gap-1.5 sm:flex-row sm:gap-5 md:mt-8">
           <a
             href="https://www.youtube.com/@mulandancestudio21"
@@ -101,6 +109,7 @@ export function CTABanner() {
             <span>Mulan Dance Studio</span>
           </a>
         </div>
+        </ExhibitReveal>
       </div>
     </section>
   );

@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.permissions import require_user_permission
 from app.core.translations import ensure_text_column, localized_payload, set_translation_bundle, translation_bundle
 from app.models import FacultyMember, User
 from app.schemas.faculty import (
     FacultyMemberCreate,
     FacultyMemberResponse,
+    FacultySelfUpdate,
     FacultyMemberUpdate,
 )
 
@@ -57,6 +59,22 @@ def require_admin_or_editor(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+def require_super_admin(user: User = Depends(get_current_user)) -> User:
+    if user.role != "super_admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super administrator access required")
+    return user
+
+
+def require_faculty_manage(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "teaching.faculty", "manage")
+
+
+def require_teacher_account(user: User = Depends(get_current_user)) -> User:
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Teacher account required")
+    return user
+
+
 def _ordered_query(db: Session):
     ensure_text_column(db, "faculty_members")
     return db.query(FacultyMember).order_by(
@@ -65,7 +83,7 @@ def _ordered_query(db: Session):
     )
 
 
-def _faculty_response(member: FacultyMember, locale: str | None = None, include_translations: bool = False) -> FacultyMemberResponse:
+def _faculty_response(member: FacultyMember, locale: str | None = None, include_translations: bool = False, include_account: bool = False) -> FacultyMemberResponse:
     data = {
         "id": member.id,
         "photo_url": member.photo_url,
@@ -73,6 +91,8 @@ def _faculty_response(member: FacultyMember, locale: str | None = None, include_
         "order_index": member.order_index or 0,
         "created_at": member.created_at,
         "updated_at": member.updated_at,
+        "user_id": member.user_id if include_account else None,
+        "is_self_managed": bool(member.user_id) if include_account else False,
         "translations": translation_bundle(member) if include_translations else {},
     }
     data.update(localized_payload(member, TRANSLATABLE_FIELDS, locale))
@@ -87,17 +107,17 @@ def list_public_faculty(locale: str | None = None, db: Session = Depends(get_db)
 
 @router.get("/admin/list", response_model=List[FacultyMemberResponse])
 def list_admin_faculty(
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_faculty_manage),
     db: Session = Depends(get_db),
 ):
     members = _ordered_query(db).all()
-    return [_faculty_response(member, include_translations=True) for member in members]
+    return [_faculty_response(member, include_translations=True, include_account=True) for member in members]
 
 
 @router.post("", response_model=FacultyMemberResponse)
 def create_faculty_member(
     payload: FacultyMemberCreate,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_faculty_manage),
     db: Session = Depends(get_db),
 ):
     data = payload.model_dump()
@@ -114,7 +134,7 @@ def create_faculty_member(
 def update_faculty_member(
     member_id: str,
     payload: FacultyMemberUpdate,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_faculty_manage),
     db: Session = Depends(get_db),
 ):
     member = db.query(FacultyMember).filter(FacultyMember.id == member_id).first()
@@ -136,7 +156,7 @@ def update_faculty_member(
 @router.delete("/{member_id}")
 def delete_faculty_member(
     member_id: str,
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_faculty_manage),
     db: Session = Depends(get_db),
 ):
     member = db.query(FacultyMember).filter(FacultyMember.id == member_id).first()
@@ -146,3 +166,47 @@ def delete_faculty_member(
     db.delete(member)
     db.commit()
     return {"detail": "Faculty member deleted"}
+
+
+@router.get("/me/profile", response_model=FacultyMemberResponse)
+def get_my_faculty_profile(
+    user: User = Depends(require_teacher_account),
+    db: Session = Depends(get_db),
+):
+    member = db.query(FacultyMember).filter(FacultyMember.user_id == user.id).first()
+    if not member:
+        from app.models import UserProfile
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
+        display_name = (
+            profile.nickname_zh or profile.first_name or ""
+        ).strip() if profile else ""
+        matches = db.query(FacultyMember).filter(FacultyMember.user_id.is_(None), FacultyMember.name == display_name).all() if display_name else []
+        if len(matches) == 1:
+            member = matches[0]
+            member.user_id = user.id
+        else:
+            member = FacultyMember(user_id=user.id, name=display_name or "Teacher", is_active=False, order_index=0)
+            set_translation_bundle(member, {"zh": {"name": display_name}, "en": {}, "fr": {}})
+            db.add(member)
+        db.commit(); db.refresh(member)
+    return _faculty_response(member, include_translations=True, include_account=True)
+
+
+@router.put("/me/profile", response_model=FacultyMemberResponse)
+def update_my_faculty_profile(
+    payload: FacultySelfUpdate,
+    user: User = Depends(require_teacher_account),
+    db: Session = Depends(get_db),
+):
+    member = db.query(FacultyMember).filter(FacultyMember.user_id == user.id).first()
+    if not member:
+        member = FacultyMember(user_id=user.id, name=payload.name.strip(), is_active=False, order_index=0)
+        db.add(member)
+    updates = payload.model_dump(exclude_unset=True)
+    translations = updates.pop("translations", None)
+    for field, value in updates.items():
+        setattr(member, field, value)
+    if translations is not None:
+        set_translation_bundle(member, translations)
+    db.commit(); db.refresh(member)
+    return _faculty_response(member, include_translations=True, include_account=True)

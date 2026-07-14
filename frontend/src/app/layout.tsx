@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display, Cormorant_Garamond } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import { CssStudio } from '@/components/dev/CssStudio';
 import './globals.css';
 
 const fontHeading = Playfair_Display({
@@ -72,6 +73,7 @@ export default function RootLayout({
           fontAccent.variable
         )}
       >
+        <CssStudio />
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

@@ -52,10 +52,12 @@ function parseNumericText(value: string) {
 export function AnimatedNumber({ value, className }: { value: string; className?: string }) {
   const parsed = useMemo(() => parseNumericText(value), [value]);
   const { ref, inView } = useInViewOnce<HTMLSpanElement>();
-  const [current, setCurrent] = useState(parsed ? 0 : null);
+  const [current, setCurrent] = useState(parsed ? parsed.target : null);
 
   useEffect(() => {
     if (!parsed || !inView) return;
+
+    setCurrent(0);
 
     let frame = 0;
     let start: number | null = null;
@@ -128,11 +130,7 @@ export function AnimatedLineHeading({
       className={cn('dance-line-heading', leftAligned && 'dance-line-heading-left', inView && 'is-visible', className)}
       aria-label={text}
     >
-      <svg aria-hidden="true" viewBox="0 0 1000 150" preserveAspectRatio="xMidYMid meet">
-        <text x={leftAligned ? 8 : 500} y="84" textAnchor={leftAligned ? 'start' : 'middle'} dominantBaseline="middle">
-          {text}
-        </text>
-      </svg>
+      <span>{text}</span>
     </h2>
   );
 }

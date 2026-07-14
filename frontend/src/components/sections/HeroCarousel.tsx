@@ -1,8 +1,9 @@
 ﻿'use client';
 
 import { useTranslations, useLocale } from '@/components/ui/i18n-client';
-import { Play } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef, type TouchEvent } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { homepageApi, type HomepageHeroSlide } from '@/lib/api';
@@ -11,6 +12,8 @@ import { toPublicMediaUrl } from '@/lib/media';
 function isVideoUrl(url: string) {
   return /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
 }
+
+const fallbackMedia = ['/programs/chinese-dance.jpg', '/programs/ballet.jpg'];
 
 export function HeroCarousel() {
   const t = useTranslations();
@@ -97,12 +100,6 @@ export function HeroCarousel() {
     if (current >= slides.length) setCurrent(0);
   }, [current, slides.length]);
 
-  useEffect(() => {
-    if (slides.length <= 1 || touchDeltaX !== 0) return;
-    const timer = setInterval(next, 6000);
-    return () => clearInterval(timer);
-  }, [next, slides.length, touchDeltaX]);
-
   const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
     if (slides.length <= 1) return;
     touchStartX.current = event.touches[0]?.clientX ?? null;
@@ -126,71 +123,62 @@ export function HeroCarousel() {
   };
 
   const renderSlide = (slide: HomepageHeroSlide, index: number) => {
-    const mediaUrl = toPublicMediaUrl(slide.image_url || '');
+    const mediaUrl = toPublicMediaUrl(slide.image_url || fallbackMedia[index % fallbackMedia.length]);
     const primaryHref = href(slide.primary?.href || '/programs');
     const secondaryHref = href(slide.secondary?.href || 'https://www.youtube.com/@mulandancestudio21');
 
     return (
       <article
         key={`${slide.title}-${index}`}
-        className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden"
+        className={`hero-slide relative h-full min-w-0 flex-[0_0_100%] overflow-hidden ${index === current ? 'hero-slide-active' : ''}`}
         aria-hidden={index !== current}
       >
-        <div className={`absolute inset-0 bg-gradient-to-br ${slide.overlay || defaultSlides[0].overlay}`} />
-        {mediaUrl && (
-          isVideoUrl(mediaUrl) ? (
-            <video
-              key={mediaUrl}
-              className="hero-media-drift absolute inset-0 h-full w-full object-cover opacity-48"
-              src={mediaUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-            />
-          ) : (
-            <div
-              className="hero-media-drift absolute inset-0 bg-cover bg-center opacity-48"
-              style={{ backgroundImage: `url(${mediaUrl})` }}
-            />
-          )
+        {isVideoUrl(mediaUrl) ? (
+          <video
+            key={mediaUrl}
+            className="hero-media-drift absolute inset-0 h-full w-full object-cover"
+            src={mediaUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <div
+            className="hero-media-drift absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${mediaUrl})` }}
+          />
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.20),transparent_34%),linear-gradient(to_top,rgba(15,23,42,0.42),rgba(15,23,42,0.14)_46%,rgba(15,23,42,0.34))]" />
-        <div className="hero-stage-beams absolute inset-0 opacity-80" aria-hidden="true" />
-        <div className="hero-film-grain absolute inset-0 opacity-[0.13]" aria-hidden="true" />
-        <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/18 via-black/5 to-transparent md:h-48" />
+        <div className="absolute inset-0 bg-[#160d1c]/60" />
+        <div className={`absolute inset-0 opacity-20 ${slide.overlay || defaultSlides[0].overlay}`} />
 
-        <div className="relative z-10 flex h-full items-center justify-center px-4 pb-24 pt-10 text-center text-white md:px-6 md:pb-20 md:pt-6">
-          <div className="hero-copy-glass w-full max-w-3xl rounded-2xl bg-white/[0.01] px-5 py-6 shadow-[0_22px_72px_rgba(20,8,45,0.1)] backdrop-blur-lg md:rounded-3xl md:px-10 md:py-8">
-            <span className="hero-kicker mb-4 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2 text-xs font-semibold tracking-normal backdrop-blur-lg md:mb-6 md:rounded-lg md:px-3 md:py-1.5 md:text-xs">
-              {slide.badge || t('common.appName')}
-            </span>
-            <h1 className="hero-draw-title heading-xl mx-auto mb-4 max-w-[12ch] text-balance text-white md:mb-4 md:max-w-none">
-              {slide.title}
-            </h1>
-            <p className="hero-copy mx-auto mb-7 max-w-[22rem] text-[15px] leading-relaxed text-white/[0.84] md:mb-8 md:max-w-2xl md:text-xl">
-              {slide.subtitle}
-            </p>
-            <div className="mx-auto grid w-full max-w-[22rem] grid-cols-2 items-center gap-3 md:max-w-[24rem]">
-              <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined} className="min-w-0">
-                <Button
-                  size="lg"
-                  className="hero-button hero-button-primary h-11 w-full rounded-xl px-3 text-sm font-semibold shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-300 hover:shadow-xl md:h-11"
-                >
-                  {slide.primary?.label || t('home.hero.slides.0.cta1')}
-                </Button>
-              </Link>
-              <Link href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined} className="min-w-0">
-                <Button
-                  size="lg"
-                  className="hero-button hero-button-secondary h-11 w-full rounded-xl px-3 text-sm font-semibold shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-300 hover:shadow-xl md:h-11"
-                >
-                  <span className="inline-flex min-w-0 items-center justify-center gap-1.5">
-                    <Play className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{slide.secondary?.label || t('home.hero.slides.0.cta2')}</span>
-                  </span>
-                </Button>
-              </Link>
+        <div className="hero-slide-content relative z-10 flex h-full items-end">
+          <div className="container w-full pb-24 pt-20 md:pb-28 md:pt-28">
+            <div className="max-w-xl text-left text-white md:max-w-2xl">
+              <Badge variant="outline" className="mb-5 w-fit border-white/45 bg-black/25 px-3 py-1 text-white shadow-none backdrop-blur-none">
+                {slide.badge || t('common.appName')}
+              </Badge>
+              <h1 className="mb-4 font-heading text-4xl leading-tight text-white md:text-6xl">
+                {slide.title}
+              </h1>
+              <p className="mb-7 max-w-xl text-base leading-7 text-white/90 md:mb-8 md:text-lg">
+                {slide.subtitle}
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link href={primaryHref} target={primaryHref.startsWith('http') ? '_blank' : undefined}>
+                  <Button size="lg" className="h-11 rounded-md bg-white text-primary shadow-none hover:bg-white/90 hover:shadow-none">
+                    {slide.primary?.label || t('home.hero.slides.0.cta1')}
+                  </Button>
+                </Link>
+                <Link href={secondaryHref} target={secondaryHref.startsWith('http') ? '_blank' : undefined}>
+                  <Button size="lg" variant="outline" className="h-11 rounded-md border-white/70 bg-transparent text-white shadow-none hover:border-white hover:bg-white/10 hover:text-white hover:shadow-none">
+                    <span className="inline-flex items-center gap-2">
+                      {slide.secondary?.label || t('home.hero.slides.0.cta2')}
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -200,7 +188,7 @@ export function HeroCarousel() {
 
   return (
     <section
-      className="hero-cinematic relative h-[62svh] min-h-[410px] max-h-[560px] overflow-hidden md:h-[70vh] md:min-h-[560px] md:max-h-[800px]"
+      className="hero-cinematic relative h-[min(520px,calc(100svh-4rem))] min-h-[410px] overflow-hidden md:h-[min(640px,calc(100svh-4rem))] md:min-h-[560px]"
       aria-label={t('common.sections.featuredPerformances')}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -217,21 +205,22 @@ export function HeroCarousel() {
       </div>
 
       {slides.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center rounded-full border border-white/12 bg-black/14 px-2.5 py-1.5 shadow-lg shadow-black/10 backdrop-blur-md md:bottom-8 md:gap-3 md:border-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none md:backdrop-blur-none">
+        <div className="absolute inset-x-4 bottom-6 z-20 flex items-center justify-center gap-3 md:inset-x-8 md:bottom-8">
           <button
             onClick={prev}
-            className="hidden rounded-lg border border-white/12 bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 md:block"
+            className="grid h-10 w-10 place-items-center rounded-md border border-white/45 bg-black/20 text-white transition-colors hover:bg-white/15"
             aria-label={t('common.accessibility.previous')}
+            title={t('common.accessibility.previous')}
           >
-            <span aria-hidden="true">‹</span>
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </button>
-          <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="flex items-center gap-2">
             {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goTo(index)}
-                className={`h-1.5 rounded-full transition-all duration-300 md:h-2 ${
-                  index === current ? 'w-5 bg-white md:w-8' : 'w-1.5 bg-white/45 hover:bg-white/60 md:w-2'
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  index === current ? 'w-7 bg-white' : 'w-2.5 bg-white/55 hover:bg-white/85'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
@@ -239,10 +228,11 @@ export function HeroCarousel() {
           </div>
           <button
             onClick={next}
-            className="hidden rounded-lg border border-white/12 bg-white/10 p-2 text-white backdrop-blur-sm transition-colors hover:bg-white/20 md:block"
+            className="grid h-10 w-10 place-items-center rounded-md border border-white/45 bg-black/20 text-white transition-colors hover:bg-white/15"
             aria-label={t('common.accessibility.next')}
+            title={t('common.accessibility.next')}
           >
-            <span aria-hidden="true">›</span>
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}

@@ -225,6 +225,11 @@ export default function ArticlesPage() {
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en';
   const text = articleAdminText[adminLocale(locale)];
+  const homepageText = adminLocale(locale) === 'zh'
+    ? { on: '首页显示', off: '首页隐藏', failed: '首页显示状态更新失败' }
+    : adminLocale(locale) === 'fr'
+      ? { on: 'Visible sur l’accueil', off: 'Masqué de l’accueil', failed: 'Impossible de modifier l’affichage sur l’accueil' }
+      : { on: 'On homepage', off: 'Hidden from homepage', failed: 'Failed to update homepage visibility' };
 
   const [groups, setGroups] = useState<NewsArticleGroup[]>([]);
   const [categories, setCategories] = useState<NewsCategory[]>([]);
@@ -238,6 +243,7 @@ export default function ArticlesPage() {
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [bulkPending, setBulkPending] = useState(false);
+  const [homepagePending, setHomepagePending] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -310,6 +316,20 @@ export default function ArticlesPage() {
       await loadGroups();
     } catch (err) {
       setError(err instanceof Error ? err.message : text.updateFailed);
+    }
+  }
+
+  async function updateHomepageVisibility(group: NewsArticleGroup, visible: boolean) {
+    setHomepagePending(group.shared_slug);
+    setError('');
+    setNotice('');
+    try {
+      await newsApi.setHomepageVisibility(group.shared_slug, visible);
+      await loadGroups();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : homepageText.failed);
+    } finally {
+      setHomepagePending(null);
     }
   }
 
@@ -574,6 +594,16 @@ export default function ArticlesPage() {
                           onCheckedChange={(checked) => updatePublished(group, checked)}
                           labels={{ published: text.published, draft: text.draft }}
                         />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={homepagePending === group.shared_slug}
+                          onClick={() => updateHomepageVisibility(group, !group.show_on_homepage)}
+                          className={`h-7 px-2 text-[11px] ${group.show_on_homepage ? 'border-purple-200 bg-purple-50 text-purple-700' : 'text-slate-500'}`}
+                        >
+                          {homepagePending === group.shared_slug ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                          {group.show_on_homepage ? homepageText.on : homepageText.off}
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => editVersion(group, primary?.locale || 'en')} title={text.edit} className="h-7 w-7 p-0">
                           <Edit className="h-3.5 w-3.5" />
                         </Button>

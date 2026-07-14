@@ -3,13 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { isAuthenticated, usersApi } from '@/lib/api';
-
-const SUPER_ADMIN_ONLY = [
-  '/admin/accounts',
-  '/admin/settings',
-  '/admin/registrations',
-  '/admin/pricing',
-];
+import { ADMIN_ROUTE_PERMISSIONS, firstAllowedAdminRoute, hasPermission } from '@/lib/permissions';
 
 export function AdminPermissionGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -38,9 +32,13 @@ export function AdminPermissionGate({ children }: { children: ReactNode }) {
           return;
         }
 
-        const needsSuperAdmin = SUPER_ADMIN_ONLY.some((path) => normalized.startsWith(path));
-        if (needsSuperAdmin && user.role !== 'super_admin') {
-          router.push(`/${locale}/admin/dashboard`);
+        if (normalized.startsWith('/admin/profile')) {
+          setAllowed(true);
+          return;
+        }
+        const routePermission = ADMIN_ROUTE_PERMISSIONS.find((item) => normalized.startsWith(item.path));
+        if (routePermission && !hasPermission(user, routePermission.permission)) {
+          router.replace(`/${locale}${firstAllowedAdminRoute(user)}`);
           return;
         }
 

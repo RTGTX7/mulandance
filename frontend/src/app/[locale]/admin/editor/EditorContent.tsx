@@ -321,17 +321,17 @@ const DEFAULT_TAGS: Tag[] = [
 
 // Markdown toolbar button config
 const TOOLBAR_BUTTONS = [
-  { icon: Bold, action: (v: string) => wrapText("**", "**", v), label: "Bold" },
-  { icon: Italic, action: (v: string) => wrapText("*", "*", v), label: "Italic" },
-  { icon: Underline, action: (v: string) => wrapText("<u>", "</u>", v), label: "Underline" },
-  { icon: Heading1, action: (v: string) => insertAtLineStart("# ", v), label: "H1" },
-  { icon: Heading2, action: (v: string) => insertAtLineStart("## ", v), label: "H2" },
-  { icon: Heading3, action: (v: string) => insertAtLineStart("### ", v), label: "H3" },
-  { icon: List, action: (v: string) => insertAtLineStart("- ", v), label: "Bullet List" },
-  { icon: ListOrdered, action: (v: string) => insertAtLineStart("1. ", v), label: "Numbered List" },
-  { icon: Code, action: (v: string) => wrapText("`", "`", v), label: "Inline Code" },
-  { icon: Quote, action: (v: string) => insertAtLineStart("> ", v), label: "Quote" },
-  { icon: LinkIcon, action: (v: string) => wrapText("[", "](url)", v), label: "Link" },
+  { icon: Bold, action: (v: string) => wrapText("**", "**", v), labelKey: "toolbarBold" },
+  { icon: Italic, action: (v: string) => wrapText("*", "*", v), labelKey: "toolbarItalic" },
+  { icon: Underline, action: (v: string) => wrapText("<u>", "</u>", v), labelKey: "toolbarUnderline" },
+  { icon: Heading1, action: (v: string) => insertAtLineStart("# ", v), labelKey: "heading1" },
+  { icon: Heading2, action: (v: string) => insertAtLineStart("## ", v), labelKey: "heading2" },
+  { icon: Heading3, action: (v: string) => insertAtLineStart("### ", v), labelKey: "heading3" },
+  { icon: List, action: (v: string) => insertAtLineStart("- ", v), labelKey: "toolbarBulletList" },
+  { icon: ListOrdered, action: (v: string) => insertAtLineStart("1. ", v), labelKey: "toolbarNumberedList" },
+  { icon: Code, action: (v: string) => wrapText("`", "`", v), labelKey: "toolbarInlineCode" },
+  { icon: Quote, action: (v: string) => insertAtLineStart("> ", v), labelKey: "toolbarQuote" },
+  { icon: LinkIcon, action: (v: string) => wrapText("[", "](url)", v), labelKey: "toolbarLink" },
 ];
 
 function wrapText(before: string, after: string, text: string): string {
@@ -607,7 +607,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
 
     setUploadingImage(true);
     try {
-      const result = await uploadApi.image(file);
+      const result = await uploadApi.image(file, 'articles');
       const markdown = `![${file.name}](${result.url})`;
       
       const textarea = textareaRef.current;
@@ -833,7 +833,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
   const handleInsertFile = async (file: File) => {
     setUploadingFile(true);
     try {
-      const result = await uploadApi.file(file);
+      const result = await uploadApi.file(file, 'articles');
       const markdown = `[${file.name}](${result.url})`;
       const textarea = textareaRef.current;
       if (textarea) {
@@ -1705,14 +1705,14 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
         <Card className="flex flex-col overflow-hidden">
           {/* Toolbar */}
           <div className="flex items-center gap-0.5 overflow-x-auto border-b bg-muted/20 p-1.5">
-            {TOOLBAR_BUTTONS.map(({ icon: Icon, action, label }, i) => (
+            {TOOLBAR_BUTTONS.map(({ icon: Icon, action, labelKey }, i) => (
               <Button
                 key={i}
                 variant="ghost"
                 size="sm"
                 onClick={() => handleToolbarAction(action)}
                 className="h-7 w-7 p-0"
-                title={label}
+                title={t(`admin.editor.${labelKey}`, { defaultMessage: labelKey })}
               >
                 <Icon className="h-3.5 w-3.5" />
               </Button>
@@ -1725,7 +1725,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               size="sm"
               onClick={() => imageInputRef.current?.click()}
               className="h-7 w-7 p-0"
-              title={uploadingImage ? "Uploading..." : "Insert Image"}
+              title={uploadingImage ? t("admin.editor.uploading") : t("admin.editor.insertImage")}
               disabled={uploadingImage}
             >
               {uploadingImage ? (
@@ -1747,7 +1747,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               className="h-7 w-7 p-0"
-              title={uploadingFile ? "Uploading..." : "Insert File"}
+              title={uploadingFile ? t("admin.editor.uploading") : t("admin.editor.insertFile")}
               disabled={uploadingFile}
             >
               {uploadingFile ? (
@@ -1799,7 +1799,7 @@ export function EditorContent({ editSlug }: { editSlug: string | null }) {
               <span>{wordCount} {t("admin.editor.wordCount")}</span>
               <span>{charCount} {t("admin.editor.charCount")}</span>
             </span>
-            <span className="hidden sm:inline">Markdown supported</span>
+            <span className="hidden sm:inline">{t("admin.editor.markdownSupported")}</span>
           </div>
         </Card>
       </main>

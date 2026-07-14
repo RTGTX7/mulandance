@@ -1,18 +1,34 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Optional
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.security import decode_token
+from app.core.permissions import require_user_permission
 from app.core.translations import ensure_text_column, localized_payload, set_translation_bundle, translation_bundle
 from app.schemas.event import EventCreate, EventUpdate, EventResponse, PerformanceCreate, PerformanceUpdate, PerformanceResponse
-from app.models import Event, Performance
+from app.models import Event, Performance, User
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
 PERFORMANCE_TRANSLATABLE_FIELDS = ("title", "description", "venue")
+
+
+def require_admin(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    payload = decode_token(token)
+    user_id = payload.get("sub") if payload else None
+    user = db.query(User).filter(User.id == user_id).first() if user_id else None
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+    return require_user_permission(user, db, "content.performances", "manage")
 
 
 def _ensure_performance_columns(db: Session) -> None:
@@ -130,6 +146,7 @@ def list_performances(
 @router.post("/performances", response_model=PerformanceResponse)
 def create_performance(
     performance_data: PerformanceCreate,
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     _ensure_performance_columns(db)
@@ -171,6 +188,7 @@ def get_performance(performance_id: str, locale: Optional[str] = Query(None), db
 def update_performance(
     performance_id: str,
     performance_data: PerformanceUpdate,
+    user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     _ensure_performance_columns(db)
@@ -203,7 +221,11 @@ def update_performance(
 
 
 @router.delete("/performances/{performance_id}")
-def delete_performance(performance_id: str, db: Session = Depends(get_db)):
+def delete_performance(
+    performance_id: str,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     performance = _find_performance(db, performance_id)
     if not performance:
         raise HTTPException(status_code=404, detail="Performance not found")

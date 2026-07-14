@@ -13,6 +13,8 @@ from app.api.v1 import (
     backups,
     settings as site_settings,
     ai,
+    unified_schedule,
+    pricing,
 )
 
 api_router = APIRouter()
@@ -30,3 +32,5 @@ api_router.include_router(schedules.router, prefix="/schedules", tags=["schedule
 api_router.include_router(backups.router, prefix="/backups", tags=["backups"])
 api_router.include_router(site_settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+api_router.include_router(unified_schedule.router, prefix="/schedule", tags=["unified schedule"])
+api_router.include_router(pricing.router, prefix="/pricing", tags=["pricing"])

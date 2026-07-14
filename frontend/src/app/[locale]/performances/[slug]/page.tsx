@@ -41,6 +41,11 @@ export default function PerformanceDetailPage() {
   const params = useParams();
   const locale = pathname.split('/')[1] || 'en';
   const text = detailText[pageLocale(locale)];
+  const backLabel = locale === 'zh' || locale === 'zh-Hant'
+    ? '返回演出与活动'
+    : locale === 'fr'
+      ? 'Retour aux événements'
+      : 'Back to events';
   const slug = params?.slug as string;
   const [performance, setPerformance] = useState<PerformanceItem | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>([]);
@@ -86,11 +91,11 @@ export default function PerformanceDetailPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/${locale}`)}
+            onClick={() => router.push(`/${locale}/performances`)}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            {t('performanceDetail.backHome')}
+            {backLabel}
           </Button>
         </div>
       </header>
@@ -110,8 +115,8 @@ export default function PerformanceDetailPage() {
           <div className="text-center py-16">
             <h2 className="text-2xl font-bold mb-2">{t('performanceDetail.notFoundTitle')}</h2>
             <p className="text-muted-foreground mb-4">{t('performanceDetail.notFoundText')}</p>
-            <Button onClick={() => router.push(`/${locale}`)}>
-              {t('performanceDetail.backHome')}
+            <Button onClick={() => router.push(`/${locale}/performances`)}>
+              {backLabel}
             </Button>
           </div>
         ) : (
@@ -200,9 +205,9 @@ export default function PerformanceDetailPage() {
               <CardContent className="py-4 text-sm text-muted-foreground">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <span>{t('performanceDetail.details')}</span>
-                  <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}`)}>
+                  <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}/performances`)}>
                     <ArrowLeft className="h-4 w-4 mr-1" />
-                    {t('performanceDetail.backHome')}
+                    {backLabel}
                   </Button>
                 </div>
               </CardContent>

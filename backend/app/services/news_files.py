@@ -452,6 +452,7 @@ def _get_group_with_relations(
     return {
         "id": str(group.id),
         "shared_slug": group.shared_slug,
+        "show_on_homepage": bool(getattr(group, "show_on_homepage", True)),
         "translations": translations_data,
         "categories": _category_response_items(categories),
         "tags": _tag_response_items(tags),
@@ -467,11 +468,15 @@ def list_article_groups(
     tag_slug: Optional[str] = None,
     search: Optional[str] = None,
     status: Optional[str] = None,
+    homepage_only: bool = False,
     limit: int = 50,
     offset: int = 0,
 ) -> Tuple[List[Dict[str, Any]], int]:
     """List article groups (shows one row per group in admin)."""
     query = db.query(ArticleGroup)
+
+    if homepage_only:
+        query = query.filter(ArticleGroup.show_on_homepage.is_(True))
 
     if category_slug:
         query = (
@@ -956,6 +961,7 @@ def list_articles(
     tag_slug: Optional[str] = None,
     search: Optional[str] = None,
     locale: Optional[str] = None,
+    homepage_only: bool = False,
     limit: int = 50,
     offset: int = 0,
 ) -> List[Dict[str, Any]]:
@@ -971,6 +977,7 @@ def list_articles(
             category_slug=category_slug,
             tag_slug=tag_slug,
             search=search,
+            homepage_only=homepage_only,
             limit=limit,
             offset=offset,
         )
@@ -1055,6 +1062,20 @@ def list_articles(
         result.append(article_data)
 
     return result
+
+
+def set_group_homepage_visibility(db: Session, slug: str, visible: bool) -> Optional[Dict[str, Any]]:
+    group = db.query(ArticleGroup).filter(ArticleGroup.shared_slug == slug).first()
+    if not group:
+        translation = db.query(ArticleTranslation).filter(ArticleTranslation.slug == slug).first()
+        if translation:
+            group = db.query(ArticleGroup).filter(ArticleGroup.id == translation.group_id).first()
+    if not group:
+        return None
+    group.show_on_homepage = bool(visible)
+    db.commit()
+    db.refresh(group)
+    return _get_group_with_relations(db, group)
 
 
 def get_article(

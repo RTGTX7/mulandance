@@ -14,9 +14,9 @@ export default function ChineseDancePage() {
 
   const features = [
     { icon: CheckCircle, title: t('programs.chinese.title'), desc: t('programs.chinese.description') },
-    { icon: Clock, title: t('programs.chinese.features.folk'), desc: t('programs.folkDesc') },
-    { icon: Users, title: t('programs.chinese.features.acrobatics'), desc: t('programs.chinese.features.acrobaticsDesc') },
-    { icon: Award, title: t('programs.chinese.features.cultural'), desc: t('programs.chinese.features.culturalDesc') },
+    { icon: Clock, title: t('programs.chinese.features.folk'), desc: t('programs.chinese.description') },
+    { icon: Users, title: t('programs.chinese.features.acrobatics'), desc: t('programs.chinese.description') },
+    { icon: Award, title: t('programs.chinese.features.cultural'), desc: t('programs.chinese.description') },
   ];
 
   return (
@@ -55,7 +55,7 @@ export default function ChineseDancePage() {
                 {t('programs.chinese.description')}
               </p>
               <p className="text-body text-muted-foreground">
-                {t('programs.chineseDesc')}
+                {t('programs.chinese.description')}
               </p>
             </div>
             <div className="rounded-2xl overflow-hidden shadow-xl">
@@ -88,23 +88,23 @@ export default function ChineseDancePage() {
 
           {/* Levels Section */}
           <div className="bg-accent/30 rounded-2xl p-8 mb-12">
-            <h2 className="heading-lg mb-8 text-center">{t('programs.levels.title')}</h2>
+            <h2 className="heading-lg mb-8 text-center">{t('programLevels.title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.children')}</h3>
-                <p className="text-muted-foreground">{t('programs.chineseDesc')}</p>
+                <p className="text-muted-foreground">{t('programLevels.childrenDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.teens')}</h3>
-                <p className="text-muted-foreground">{t('programs.chineseDesc')}</p>
+                <p className="text-muted-foreground">{t('programLevels.teensDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
-                <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.adults')}</h3>
-                <p className="text-muted-foreground">{t('programs.chineseDesc')}</p>
+                <h3 className="heading-sm font-semibold mb-3">{t('programLevels.adults')}</h3>
+                <p className="text-muted-foreground">{t('programLevels.adultsDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
-                <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.preProfessional')}</h3>
-                <p className="text-muted-foreground">{t('programs.chineseDesc')}</p>
+                <h3 className="heading-sm font-semibold mb-3">{t('programLevels.preProfessional')}</h3>
+                <p className="text-muted-foreground">{t('programLevels.preProfessionalDescription')}</p>
               </div>
             </div>
           </div>

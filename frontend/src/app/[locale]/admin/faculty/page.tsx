@@ -249,7 +249,7 @@ export default function AdminFacultyPage() {
     setUploading(true);
     setError('');
     try {
-      const uploaded = await uploadApi.image(file);
+      const uploaded = await uploadApi.image(file, 'faculty');
       setForm((current) => ({ ...current, photo_url: uploaded.url }));
     } catch (err) {
       setError(err instanceof Error ? err.message : text.uploadFailed);
@@ -478,6 +478,11 @@ export default function AdminFacultyPage() {
                         >
                           {member.is_active ? labels.resources.show : labels.resources.hidden}
                         </span>
+                        {member.is_self_managed && (
+                          <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700">
+                            {locale === 'zh' || locale === 'zh-Hant' ? '教师本人维护' : locale === 'fr' ? 'Géré par le professeur' : 'Teacher managed'}
+                          </span>
+                        )}
                       </div>
                       <p className="truncate text-sm text-muted-foreground">{member.role || text.missingRole}</p>
                       <p className="line-clamp-2 text-sm text-muted-foreground">{member.bio || text.missingBio}</p>

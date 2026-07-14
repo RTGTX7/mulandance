@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, Wand2 } from 'lucide-react';
 import { aiApi, type AiDraft, type LocaleCode } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ interface AiLocaleSyncLabels {
 interface AiLocaleSyncPanelProps {
   module: string;
   sourceLocale: LocaleCode;
+  targetLocales?: LocaleCode[];
   uiLocale?: string;
   fields: Record<string, string>;
   onApply: (drafts: AiDraft[]) => void;
@@ -84,6 +85,7 @@ function adminLocale(locale?: string) {
 export function AiLocaleSyncPanel({
   module,
   sourceLocale,
+  targetLocales = LOCALES,
   uiLocale,
   fields,
   onApply,
@@ -97,6 +99,12 @@ export function AiLocaleSyncPanel({
   const [drafts, setDrafts] = useState<AiDraft[]>([]);
   const localeDefaults = defaults[adminLocale(uiLocale)];
   const text = { ...localeDefaults.labels, ...(labels || {}) };
+  const fieldsSignature = JSON.stringify(fields);
+
+  useEffect(() => {
+    setDrafts([]);
+    setMessage('');
+  }, [module, sourceLocale, fieldsSignature]);
 
   async function generateDrafts() {
     const cleanFields = Object.fromEntries(
@@ -113,7 +121,7 @@ export function AiLocaleSyncPanel({
       const result = await aiApi.translate({
         module,
         source_locale: sourceLocale,
-        target_locales: LOCALES,
+        target_locales: targetLocales,
         fields: cleanFields,
         tone: 'polish messy draft, keep facts unchanged, then translate naturally',
       });
@@ -143,7 +151,11 @@ export function AiLocaleSyncPanel({
             <Sparkles className="h-4 w-4 text-purple-700" />
             {title || localeDefaults.title}
           </div>
-          {!compact && <p className="mt-1 text-xs text-purple-900/70">{description || localeDefaults.description}</p>}
+          {(!compact || description) && (
+            <p className="mt-1 text-xs text-purple-900/70">
+              {description || localeDefaults.description}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {drafts.length > 0 && (
@@ -176,6 +188,10 @@ export function AiLocaleSyncPanel({
                   draft.fields.description ||
                   draft.fields.body ||
                   draft.fields.body_markdown ||
+                  draft.fields.cta_title ||
+                  draft.fields.stats_labels ||
+                  draft.fields.site_name ||
+                  draft.fields.header_cta_label ||
                   'Ready'}
               </div>
             </div>

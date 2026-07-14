@@ -18,7 +18,8 @@ _DATABASE_URL = f"sqlite:///{_DB_PATH_FWSLASH}"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
-    PROJECT_NAME: str = "Grace Dance Academy API"
+    PROJECT_NAME: str = "Mulan Dance Studio API"
+    APP_VERSION: str = "2.2.0-alpha.0"
     DATABASE_URL: str = _DATABASE_URL
     SECRET_KEY: str = "change_me_in_production"
     ALGORITHM: str = "HS256"

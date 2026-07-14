@@ -72,7 +72,7 @@ export default function EDIPage() {
             <AccordionContent>
               <p className="text-sm text-muted-foreground">
                 We welcome feedback and suggestions on how to improve our equity, diversity, and inclusion efforts.
-                Please reach out to our DEI committee at diversity@gracedanceacademy.org.
+                Please reach out to Mulan Dance Studio at info@mulandance.com.
               </p>
             </AccordionContent>
           </AccordionItem>

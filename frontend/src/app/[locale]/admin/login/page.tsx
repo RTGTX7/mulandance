@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { getApiBaseUrl, setAuthToken } from '@/lib/api';
+import { getApiBaseUrl, setAuthToken, usersApi } from '@/lib/api';
+import { firstAllowedAdminRoute } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,10 +47,8 @@ export default function LoginPage() {
       const data = await res.json();
       setAuthToken(data.access_token);
       setSuccess(true);
-      
-      setTimeout(() => {
-        router.push(`/${locale}/admin/dashboard`);
-      }, 1000);
+      const account = await usersApi.me();
+      router.push(`/${locale}${firstAllowedAdminRoute(account)}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

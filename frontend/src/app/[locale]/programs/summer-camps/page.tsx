@@ -15,10 +15,10 @@ export default function SummerCampsPage() {
   const registerHref = `/${locale}/classes/register?type=summer-camp`;
 
   const features = [
-    { icon: CheckCircle, title: t('programs.summer.features.youngDancers'), desc: t('programs.summer.features.youngDancersDesc') },
-    { icon: Clock, title: t('programs.summer.features.intermediate'), desc: t('programs.summer.features.intermediateDesc') },
-    { icon: Users, title: t('programs.summer.features.intensive'), desc: t('programs.summer.features.intensiveDesc') },
-    { icon: Award, title: t('programs.summer.features.adult'), desc: t('programs.summer.features.adultDesc') },
+    { icon: CheckCircle, title: t('programs.summer.features.youngDancers'), desc: t('programs.summer.description') },
+    { icon: Clock, title: t('programs.summer.features.intermediate'), desc: t('programs.summer.description') },
+    { icon: Users, title: t('programs.summer.features.intensive'), desc: t('programs.summer.description') },
+    { icon: Award, title: t('programs.summer.features.adult'), desc: t('programs.summer.description') },
   ];
 
   return (
@@ -57,11 +57,11 @@ export default function SummerCampsPage() {
                 {t('programs.summer.description')}
               </p>
               <p className="text-body text-muted-foreground">
-                {t('programs.summerDesc')}
+                {t('programs.summer.description')}
               </p>
             </div>
             <div className="rounded-2xl overflow-hidden shadow-xl">
-              <img src="/programs/summer-camps.jpg" alt="Summer Camps" className="h-64 w-full object-cover sm:h-80 md:h-[400px]" />
+              <img src="/programs/chinese-dance.jpg" alt="Summer Camps" className="h-64 w-full object-cover sm:h-80 md:h-[400px]" />
             </div>
           </div>
 
@@ -94,19 +94,19 @@ export default function SummerCampsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.summer.features.youngDancers')}</h3>
-                <p className="text-muted-foreground">Ages 5-8. Fun and engaging dance activities designed for young children.</p>
+                <p className="text-muted-foreground">{t('programLevels.childrenDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.summer.features.intermediate')}</h3>
-                <p className="text-muted-foreground">Ages 9-12. Intermediate level classes covering multiple dance styles.</p>
+                <p className="text-muted-foreground">{t('programLevels.teensDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.summer.features.intensive')}</h3>
-                <p className="text-muted-foreground">Ages 13-17. Intensive training for serious dance students.</p>
+                <p className="text-muted-foreground">{t('programLevels.preProfessionalDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.summer.features.adult')}</h3>
-                <p className="text-muted-foreground">Family activities and parent-child dance workshops.</p>
+                <p className="text-muted-foreground">{t('programLevels.adultsDescription')}</p>
               </div>
             </div>
           </div>

@@ -7,6 +7,18 @@ export function getApiBaseUrl(): string {
 
 const TOKEN_KEY = 'dance_org_token';
 
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly details: unknown;
+
+  constructor(status: number, message: string, details: unknown) {
+    super(`${status}: ${message}`);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.details = details;
+  }
+}
+
 export type LocaleCode = 'zh' | 'en' | 'fr';
 export type LocalizedFieldMap = Partial<Record<LocaleCode, Record<string, string>>>;
 
@@ -156,8 +168,11 @@ async function request<T>(
       if (text) errorData = { detail: text };
     }
     const message = getErrorMessage(errorData);
-    console.error('[API Error]', response.status, fullUrl, errorData);
-    throw new Error(`${response.status}: ${message}`);
+    // Form validation and conflict checks intentionally return 4xx. Keep those
+    // visible while developing without reporting them as application failures.
+    const log = response.status >= 500 ? console.error : console.warn;
+    log('[API Error]', response.status, fullUrl, errorData);
+    throw new ApiRequestError(response.status, message, errorData.detail);
   }
 
   const contentType = response.headers.get('content-type');
@@ -240,6 +255,7 @@ export interface ArticleTranslationSummary {
 export interface NewsArticleGroup {
   id: string;
   shared_slug: string;
+  show_on_homepage: boolean;
   translations: ArticleTranslationSummary[];
   categories: NewsCategory[];
   tags: NewsTag[];
@@ -311,6 +327,18 @@ export interface AiExtractResponse {
   warnings?: string[];
 }
 
+export interface AiExtractJobCreateResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+}
+
+export interface AiExtractJobStatusResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  result?: AiExtractResponse | null;
+  error?: string;
+}
+
 export interface AiExtractItem {
   drafts: AiDraft[];
   warnings?: string[];
@@ -332,6 +360,57 @@ export interface AiExtractManyJobStatusResponse {
   job_id: string;
   status: 'pending' | 'running' | 'succeeded' | 'failed';
   result?: AiExtractManyResponse | null;
+  error?: string;
+}
+
+export interface FixedCourseImportIssue {
+  id: string;
+  field: string;
+  message: string;
+  blocking: boolean;
+  resolved: boolean;
+}
+
+export interface FixedCourseImportSlot {
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  room_id?: string | null;
+  teacher_id?: string | null;
+}
+
+export interface FixedCourseImportDraft {
+  template: {
+    title: string;
+    description: string;
+    translations: LocalizedFieldMap;
+  };
+  offering: {
+    name: string;
+    start_date: string;
+    end_date: string;
+    is_public: boolean;
+  };
+  slots: FixedCourseImportSlot[];
+  questions: FixedCourseImportIssue[];
+  assumptions: FixedCourseImportIssue[];
+}
+
+export interface FixedCourseImportResponse {
+  version: 'fixed_course_import.v1';
+  drafts: FixedCourseImportDraft[];
+  warnings: string[];
+}
+
+export interface FixedCourseImportJobCreateResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+}
+
+export interface FixedCourseImportJobStatusResponse {
+  job_id: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  result?: FixedCourseImportResponse | null;
   error?: string;
 }
 
@@ -437,6 +516,7 @@ export const newsApi = {
     tag?: string;
     search?: string;
     locale?: string;
+    homepage?: boolean;
     limit?: number;
     offset?: number;
   }) => {
@@ -445,6 +525,7 @@ export const newsApi = {
     if (params?.tag) query.set('tag', params.tag);
     if (params?.search) query.set('search', params.search);
     if (params?.locale) query.set('locale', params.locale);
+    if (params?.homepage) query.set('homepage', 'true');
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.offset) query.set('offset', String(params.offset));
     const qs = query.toString();
@@ -543,6 +624,11 @@ export const newsApi = {
       slugs,
       is_published: false,
     }),
+
+  setHomepageVisibility: (slug: string, visible: boolean) =>
+    api.put<NewsArticleGroup>(`/v1/news/admin/groups/${encodeURIComponent(slug)}/homepage`, {
+      show_on_homepage: visible,
+    }),
 };
 
 function wait(ms: number) {
@@ -566,14 +652,22 @@ export const aiApi = {
     }
   },
 
-  extract: (body: {
+  extract: async (body: {
     module: string;
     source_locale: string;
     target_locales: string[];
     raw_text: string;
     target_fields: string[];
     instruction?: string;
-  }) => api.post<AiExtractResponse>('/v1/ai/extract', body),
+  }) => {
+    const job = await api.post<AiExtractJobCreateResponse>('/v1/ai/extract/jobs', body);
+    while (true) {
+      await wait(2500);
+      const status = await api.get<AiExtractJobStatusResponse>(`/v1/ai/extract/jobs/${job.job_id}`);
+      if (status.status === 'succeeded' && status.result) return status.result;
+      if (status.status === 'failed') throw new Error(status.error || 'AI extraction failed');
+    }
+  },
 
   extractMany: async (body: {
     module: string;
@@ -590,6 +684,21 @@ export const aiApi = {
       const status = await api.get<AiExtractManyJobStatusResponse>(`/v1/ai/extract-many/jobs/${job.job_id}`);
       if (status.status === 'succeeded' && status.result) return status.result;
       if (status.status === 'failed') throw new Error(status.error || 'AI bulk extraction failed');
+    }
+  },
+
+  fixedCourseImport: async (body: {
+    raw_text: string;
+    source_locale: string;
+    ui_locale: string;
+    max_items?: number;
+  }) => {
+    const job = await api.post<FixedCourseImportJobCreateResponse>('/v1/ai/fixed-course-import/jobs', body);
+    while (true) {
+      await wait(2500);
+      const status = await api.get<FixedCourseImportJobStatusResponse>(`/v1/ai/fixed-course-import/jobs/${job.job_id}`);
+      if (status.status === 'succeeded' && status.result) return status.result;
+      if (status.status === 'failed') throw new Error(status.error || 'Fixed course AI import failed');
     }
   },
 
@@ -664,13 +773,13 @@ export const performanceApi = {
 // ====================================================================
 
 export const uploadApi = {
-  image: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
+  image: async (file: File, module: string): Promise<{ url: string; filename: string; path: string }> => {
     const API_URL = getApiBaseUrl();
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/api/v1/upload/image`, {
+    const response = await fetch(`${API_URL}/api/v1/upload/image?module=${encodeURIComponent(module)}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
@@ -685,13 +794,13 @@ export const uploadApi = {
 
     return response.json();
   },
-  video: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
+  video: async (file: File, module: string): Promise<{ url: string; filename: string; path: string }> => {
     const API_URL = getApiBaseUrl();
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/api/v1/upload/video`, {
+    const response = await fetch(`${API_URL}/api/v1/upload/video?module=${encodeURIComponent(module)}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
@@ -706,13 +815,13 @@ export const uploadApi = {
 
     return response.json();
   },
-  file: async (file: File): Promise<{ url: string; filename: string; path: string }> => {
+  file: async (file: File, module: string): Promise<{ url: string; filename: string; path: string }> => {
     const API_URL = getApiBaseUrl();
     const token = getAuthToken();
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/api/v1/upload/file`, {
+    const response = await fetch(`${API_URL}/api/v1/upload/file?module=${encodeURIComponent(module)}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
@@ -737,6 +846,9 @@ export interface BackupInfo {
   filename: string;
   size: number;
   created_at: string;
+  format_version: number;
+  app_version: string;
+  schema_revision: string;
 }
 
 export interface BackupListResponse {
@@ -837,6 +949,10 @@ export const settingsApi = {
     api.put<RegistrationLinks>('/v1/settings/registration-links', body),
   site: (locale?: string) => api.get<SystemSettings>(`/v1/settings/site${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
   siteAll: () => api.get<SystemSettings>('/v1/settings/site/all'),
+  siteDraft: () => api.get<SystemSettingsDraftResponse>('/v1/settings/site/draft'),
+  saveSiteDraft: (body: SystemSettings) =>
+    api.put<SystemSettingsDraftResponse>('/v1/settings/site/draft', body),
+  publishSite: () => api.post<SystemSettingsDraftResponse>('/v1/settings/site/publish', {}),
   updateSite: (body: SystemSettings) => api.put<SystemSettings>('/v1/settings/site', body),
   schoolPolicy: (locale = 'zh') =>
     api.get<SchoolPolicy>(`/v1/settings/school-policy?locale=${encodeURIComponent(locale)}`),
@@ -844,6 +960,8 @@ export const settingsApi = {
   updateSchoolPolicies: (body: SchoolPolicyBundle) =>
     api.put<SchoolPolicyBundle>('/v1/settings/school-policy', body),
   ai: () => api.get<AiProviderSettings>('/v1/settings/ai'),
+  aiModels: () => api.get<{ models: string[] }>('/v1/settings/ai/models'),
+  testAiModels: (body: { api_base_url: string; api_key?: string }) => api.post<{ models: string[] }>('/v1/settings/ai/models', body),
   updateAi: (body: AiProviderSettingsUpdate) =>
     api.put<AiProviderSettings>('/v1/settings/ai', body),
 };
@@ -860,9 +978,14 @@ export interface AdminAccount {
   role: AdminRole;
   first_name: string;
   last_name: string;
+  nickname_zh: string;
+  nickname_en: string;
+  nickname_fr: string;
   is_active: boolean;
   created_at: string;
+  phone?: string | null;
   translations?: LocalizedFieldMap;
+  permissions: Record<string, { view: boolean; manage: boolean }>;
 }
 
 export interface AdminAccountBody {
@@ -870,7 +993,11 @@ export interface AdminAccountBody {
   password?: string;
   first_name?: string;
   last_name?: string;
+  nickname_zh?: string;
+  nickname_en?: string;
+  nickname_fr?: string;
   is_active?: boolean;
+  phone?: string;
 }
 
 export interface AdminAccountListResponse {
@@ -880,8 +1007,42 @@ export interface AdminAccountListResponse {
   offset: number;
 }
 
+export interface PortalUser {
+  id: string;
+  email: string;
+  role: 'student' | 'parent' | 'alumni' | 'public' | AdminRole;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
 export const usersApi = {
   me: () => api.get<AdminAccount>('/v1/users/me'),
+  portalMe: () => api.get<PortalUser>('/v1/users/me'),
+  login: (body: { email: string; password: string }) => api.post<AuthTokens>('/v1/users/login', body),
+  register: (body: { email: string; password: string; first_name: string; last_name: string }) =>
+    api.post<PortalUser>('/v1/users/register', body),
+  updatePortalMe: (body: { first_name?: string; last_name?: string; phone?: string }) =>
+    api.put<PortalUser>('/v1/users/me', body),
+  updateMe: (body: {
+    first_name?: string;
+    last_name?: string;
+    nickname_zh?: string;
+    nickname_en?: string;
+    nickname_fr?: string;
+    phone?: string;
+    current_password?: string;
+    new_password?: string;
+  }) => api.put<AdminAccount>('/v1/users/me', body),
   adminAccounts: (params?: {
     search?: string;
     status?: 'all' | 'active' | 'disabled';
@@ -900,6 +1061,18 @@ export const usersApi = {
     api.post<AdminAccount>('/v1/users/admin/accounts', body),
   updateAdminAccount: (id: string, body: AdminAccountBody) =>
     api.put<AdminAccount>(`/v1/users/admin/accounts/${id}`, body),
+  permissionCatalog: () => api.get<PermissionCatalogItem[]>('/v1/users/permissions/catalog'),
+  accountPermissions: (id: string) =>
+    api.get<AccountPermissionsResponse>(`/v1/users/admin/accounts/${id}/permissions`),
+  updateAccountPermissions: (id: string, permissions: PermissionGrant[]) =>
+    api.put<AccountPermissionsResponse>(`/v1/users/admin/accounts/${id}/permissions`, { permissions }),
+  permissionPresets: () => api.get<PermissionPreset[]>('/v1/users/admin/permission-presets'),
+  createPermissionPreset: (body: PermissionPresetBody) =>
+    api.post<PermissionPreset>('/v1/users/admin/permission-presets', body),
+  updatePermissionPreset: (id: string, body: PermissionPresetBody) =>
+    api.put<PermissionPreset>(`/v1/users/admin/permission-presets/${id}`, body),
+  deletePermissionPreset: (id: string) =>
+    api.delete<{ detail: string }>(`/v1/users/admin/permission-presets/${id}`),
 };
 
 export interface SystemSettings {
@@ -933,20 +1106,26 @@ export interface SystemSettings {
 
 export interface AiProviderSettings {
   enabled: boolean;
+  thinking_enabled: boolean;
+  image_enabled: boolean;
   provider: string;
   api_base_url: string;
   model: string;
   timeout_seconds: number;
+  feature_models: Record<string, string>;
   api_key_set: boolean;
   api_key_masked: string;
 }
 
 export interface AiProviderSettingsUpdate {
   enabled: boolean;
+  thinking_enabled: boolean;
+  image_enabled: boolean;
   provider: string;
   api_base_url: string;
   model: string;
   timeout_seconds: number;
+  feature_models: Record<string, string>;
   api_key?: string;
   clear_api_key?: boolean;
 }
@@ -980,10 +1159,107 @@ export interface HomepageCta {
   secondary: HomepageButton;
 }
 
+export type PricingCatalogKind = 'program' | 'rental';
+export type PricingBlockType = 'info' | 'payment' | 'notice' | 'cta';
+export type PricingTranslations = Partial<Record<LocaleCode, Record<string, string | string[]>>>;
+
+export interface PricingOption {
+  id?: string;
+  label: string;
+  amount: string;
+  currency: string;
+  unit: string;
+  note: string;
+  sort_order: number;
+  translations: PricingTranslations;
+}
+
+export interface PricingPlan {
+  id?: string;
+  program_id?: string | null;
+  room_id?: string | null;
+  title: string;
+  description: string;
+  badge: string;
+  image_url: string;
+  details: string[];
+  is_active: boolean;
+  is_featured: boolean;
+  sort_order: number;
+  translations: PricingTranslations;
+  options: PricingOption[];
+  program_name?: string;
+  room_name?: string;
+  studio_name?: string;
+  room_is_rentable?: boolean;
+}
+
+export interface PricingContentBlock {
+  id?: string;
+  block_type: PricingBlockType;
+  title: string;
+  body: string;
+  items: string[];
+  is_active: boolean;
+  sort_order: number;
+  translations: PricingTranslations;
+}
+
+export interface PricingCatalog {
+  id?: string;
+  kind: PricingCatalogKind;
+  title: string;
+  subtitle: string;
+  translations: PricingTranslations;
+  plans: PricingPlan[];
+  blocks: PricingContentBlock[];
+  is_dirty?: boolean;
+  published_at?: string | null;
+}
+
+export const pricingApi = {
+  publicCatalog: (kind: PricingCatalogKind, locale: string) =>
+    api.get<PricingCatalog>(`/v1/pricing/public/${kind}?locale=${encodeURIComponent(locale)}`),
+  adminCatalog: (kind: PricingCatalogKind) => api.get<PricingCatalog>(`/v1/pricing/admin/${kind}`),
+  saveDraft: (kind: PricingCatalogKind, body: PricingCatalog) =>
+    api.put<PricingCatalog>(`/v1/pricing/admin/${kind}`, body),
+  publish: (kind: PricingCatalogKind) =>
+    api.post<{ catalog: PricingCatalog; warnings: string[] }>(`/v1/pricing/admin/${kind}/publish`, {}),
+};
+
+export interface HomepageSection {
+  title: string;
+  subtitle: string;
+  link_label: string;
+  is_enabled: boolean;
+}
+
+export type HomepageBlockType = 'hero' | 'stats' | 'performances' | 'programs' | 'news' | 'media' | 'cta';
+export interface HomepageBlock {
+  id: string;
+  type: HomepageBlockType;
+  title: string;
+  subtitle: string;
+  body: string;
+  media_url: string;
+  media_type: 'auto' | 'image' | 'video';
+  layout: 'default' | 'media_left' | 'media_right' | 'full_bleed';
+  link: HomepageButton;
+  is_enabled: boolean;
+}
+
+export interface HomepageSections {
+  programs: HomepageSection;
+  performances: HomepageSection;
+  news: HomepageSection;
+}
+
 export interface HomepageSettings {
   hero_slides: HomepageHeroSlide[];
   stats: HomepageStat[];
+  sections: HomepageSections;
   cta: HomepageCta;
+  blocks?: HomepageBlock[];
 }
 
 export type HomepageSettingsBundle = Record<LocaleCode, HomepageSettings>;
@@ -993,6 +1269,9 @@ export const homepageApi = {
   getAll: () => api.get<HomepageSettingsBundle>('/v1/settings/homepage/all'),
   update: (body: HomepageSettings, locale?: string) => api.put<HomepageSettings>(`/v1/settings/homepage${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, body),
   updateAll: (body: HomepageSettingsBundle) => api.put<HomepageSettingsBundle>('/v1/settings/homepage/all', body),
+  draft: () => api.get<{ bundle: HomepageSettingsBundle; is_dirty: boolean; published_at?: string | null }>('/v1/settings/homepage/draft'),
+  saveDraft: (body: HomepageSettingsBundle) => api.put<{ bundle: HomepageSettingsBundle; is_dirty: boolean; published_at?: string | null }>('/v1/settings/homepage/draft', body),
+  publish: () => api.post<{ bundle: HomepageSettingsBundle; is_dirty: boolean; published_at?: string | null }>('/v1/settings/homepage/publish', {}),
 };
 
 // ====================================================================
@@ -1001,6 +1280,8 @@ export const homepageApi = {
 
 export interface FacultyMember {
   id: string;
+  user_id?: string | null;
+  is_self_managed?: boolean;
   name: string;
   role?: string;
   bio?: string;
@@ -1033,6 +1314,9 @@ export const facultyApi = {
   update: (id: string, body: Partial<FacultyMemberBody>) =>
     api.put<FacultyMember>(`/v1/faculty/${id}`, body),
   remove: (id: string) => api.delete<Record<string, unknown>>(`/v1/faculty/${id}`),
+  myProfile: () => api.get<FacultyMember>('/v1/faculty/me/profile'),
+  updateMyProfile: (body: Omit<FacultyMemberBody, 'is_active' | 'order_index'>) =>
+    api.put<FacultyMember>('/v1/faculty/me/profile', body),
 };
 
 // ====================================================================
@@ -1210,4 +1494,266 @@ export const scheduleApi = {
     api.delete<Record<string, unknown>>(`/v1/schedules/classes/${id}`),
   policy: () => api.get<SchoolPolicy>('/v1/schedules/policy'),
   updatePolicy: (body: SchoolPolicy) => api.put<SchoolPolicy>('/v1/schedules/policy', body),
+};
+
+// ====================================================================
+// Unified scheduling API
+// ====================================================================
+
+export type ScheduleBookingType = 'solo' | 'duet' | 'trio' | 'group' | 'rehearsal' | 'makeup' | 'private' | 'external_rental' | 'room_lock';
+export type ScheduleBookingStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
+
+export interface StudioRoom {
+  id: string;
+  studio_id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+  is_rentable: boolean;
+}
+
+export interface Studio { id: string; name: string; is_active: boolean; }
+
+export interface CourseTemplate {
+  id: string;
+  title: string;
+  description: string;
+  is_active: boolean;
+  allow_unassigned_teacher?: boolean;
+  allow_unassigned_room?: boolean;
+  translations?: LocalizedFieldMap;
+  offering_count: number;
+  is_ai_draft?: boolean;
+  draft_questions?: FixedCourseImportIssue[];
+  draft_assumptions?: FixedCourseImportIssue[];
+  unresolved_question_count?: number;
+}
+
+export interface CourseTemplateBody {
+  title: string;
+  description: string;
+  is_active: boolean;
+  allow_unassigned_teacher?: boolean;
+  allow_unassigned_room?: boolean;
+  translations?: LocalizedFieldMap;
+}
+
+export interface PermissionCatalogItem {
+  key: string;
+  group: string;
+  parent?: string | null;
+  label_key: string;
+}
+
+export interface PermissionGrant {
+  key: string;
+  can_view: boolean;
+  can_manage: boolean;
+}
+
+export interface AccountPermissionsResponse {
+  user_id: string;
+  permissions: PermissionGrant[];
+  effective_permissions: Record<string, { view: boolean; manage: boolean }>;
+}
+
+export interface PermissionPresetBody {
+  name: string;
+  description: string;
+  permissions: PermissionGrant[];
+}
+
+export interface PermissionPreset extends PermissionPresetBody {
+  id: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface SystemSettingsDraftResponse {
+  settings: SystemSettings;
+  is_dirty: boolean;
+  published_at?: string | null;
+}
+
+export interface CourseOfferingSlot {
+  teacher_id?: string | null;
+  room_id?: string | null;
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  sort_order: number;
+}
+
+export interface CourseOffering {
+  id: string;
+  course_template_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  is_public: boolean;
+  slots: CourseOfferingSlot[];
+}
+
+export interface CourseOfferingBody extends Omit<CourseOffering, 'id' | 'course_template_id'> {}
+
+export interface FixedClassPlan {
+  id: string;
+  title: string;
+  description: string;
+  teacher_id?: string | null;
+  room_id: string;
+  day_of_week: number;
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  start_date: string;
+  end_date: string;
+  is_public: boolean;
+  is_active: boolean;
+  translations?: LocalizedFieldMap;
+}
+
+export interface FixedClassPlanBody extends Omit<FixedClassPlan, 'id'> {}
+
+export interface ScheduleBooking {
+  id: string;
+  room_id: string;
+  teacher_id?: string | null;
+  date: string;
+  start_time: string;
+  end_time: string;
+  booking_type: ScheduleBookingType;
+  title: string;
+  student_name: string;
+  participant_count: number;
+  notes: string;
+  is_public: boolean;
+  status: ScheduleBookingStatus;
+  is_locked: boolean;
+  created_by_id?: string | null;
+  external_request_id?: string | null;
+}
+
+export interface ScheduleBookingBody extends Omit<ScheduleBooking, 'id' | 'status' | 'is_locked' | 'created_by_id'> {}
+
+export interface ScheduleBookingBatchItem {
+  id: string;
+  booking: ScheduleBookingBody;
+}
+
+export interface ScheduleCalendarEvent {
+  id: string;
+  source: 'fixed' | 'booking';
+  date: string;
+  room_id: string;
+  room_name: string;
+  teacher_id?: string | null;
+  start_time: string;
+  end_time: string;
+  title: string;
+  booking_type?: ScheduleBookingType;
+  status: string;
+  is_locked: boolean;
+  is_public: boolean;
+  description: string;
+}
+
+export interface CoordinationRequestBody {
+  booking_id?: string | null;
+  requested_date: string;
+  requested_room_id?: string | null;
+  requested_start_time: string;
+  requested_end_time: string;
+  message: string;
+}
+
+export type ExternalRentalRequestMode = 'single' | 'weekly';
+export type ExternalRentalRequestStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled';
+
+export interface PublicRentalResource {
+  id: string;
+  studio_id: string;
+  studio_name: string;
+  name: string;
+}
+
+export interface RoomOccupancy {
+  room_id: string;
+  room_name: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+}
+
+export interface ExternalRentalRequestBody {
+  room_id: string;
+  request_mode: ExternalRentalRequestMode;
+  date?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  title: string;
+  applicant_name: string;
+  applicant_contact: string;
+  notes: string;
+  captcha_token?: string;
+  captcha_answer?: string;
+}
+
+export interface ExternalRentalRequest extends Omit<ExternalRentalRequestBody, 'captcha_token' | 'captcha_answer'> {
+  id: string;
+  status: ExternalRentalRequestStatus;
+  reviewed_by_id?: string | null;
+  reviewed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export const unifiedScheduleApi = {
+  studios: () => api.get<Studio[]>('/v1/schedule/studios'),
+  createStudio: (body: Omit<Studio, 'id'>) => api.post<Studio>('/v1/schedule/studios', body),
+  updateStudio: (id: string, body: Omit<Studio, 'id'>) => api.put<Studio>(`/v1/schedule/studios/${id}`, body),
+  removeStudio: (id: string) => api.delete<Record<string, unknown>>(`/v1/schedule/studios/${id}`),
+  resources: (activeOnly = true) => api.get<StudioRoom[]>(`/v1/schedule/resources?active_only=${activeOnly}`),
+  createRoom: (body: Omit<StudioRoom, 'id'>) => api.post<StudioRoom>('/v1/schedule/rooms', body),
+  updateRoom: (id: string, body: Omit<StudioRoom, 'id'>) => api.put<StudioRoom>(`/v1/schedule/rooms/${id}`, body),
+  removeRoom: (id: string) => api.delete<Record<string, unknown>>(`/v1/schedule/rooms/${id}`),
+  courseTemplates: () => api.get<CourseTemplate[]>('/v1/schedule/course-templates'),
+  createCourseTemplate: (body: CourseTemplateBody) => api.post<CourseTemplate>('/v1/schedule/course-templates', body),
+  updateCourseTemplate: (id: string, body: CourseTemplateBody) => api.put<CourseTemplate>(`/v1/schedule/course-templates/${id}`, body),
+  createCourseDraft: (body: FixedCourseImportDraft) => api.post<CourseTemplate>('/v1/schedule/course-drafts', body),
+  removeCourseTemplate: (id: string) => api.delete<Record<string, unknown>>(`/v1/schedule/course-templates/${id}`),
+  courseOfferings: (templateId: string) => api.get<CourseOffering[]>(`/v1/schedule/course-templates/${templateId}/offerings`),
+  createCourseOffering: (templateId: string, body: CourseOfferingBody) => api.post<CourseOffering>(`/v1/schedule/course-templates/${templateId}/offerings`, body),
+  updateCourseOffering: (id: string, body: CourseOfferingBody) => api.put<CourseOffering>(`/v1/schedule/course-offerings/${id}`, body),
+  removeCourseOffering: (id: string) => api.delete<Record<string, unknown>>(`/v1/schedule/course-offerings/${id}`),
+  publicClasses: (start: string, end: string, locale = 'zh') => api.get<ScheduleCalendarEvent[]>(`/v1/schedule/public/classes?start=${start}&end=${end}&locale=${encodeURIComponent(locale)}`),
+  calendar: (start: string, end: string, mine = false) => api.get<ScheduleCalendarEvent[]>(`/v1/schedule/calendar?start=${start}&end=${end}&mine=${mine}`),
+  fixedPlans: () => api.get<FixedClassPlan[]>('/v1/schedule/fixed-plans'),
+  createFixedPlan: (body: FixedClassPlanBody) => api.post<FixedClassPlan>('/v1/schedule/fixed-plans', body),
+  updateFixedPlan: (id: string, body: FixedClassPlanBody) => api.put<FixedClassPlan>(`/v1/schedule/fixed-plans/${id}`, body),
+  removeFixedPlan: (id: string) => api.delete<Record<string, unknown>>(`/v1/schedule/fixed-plans/${id}`),
+  addFixedException: (planId: string, body: { date: string; kind: 'cancel' | 'replace'; room_id?: string; start_time?: string; end_time?: string; title?: string; description?: string }) => api.post(`/v1/schedule/fixed-plans/${planId}/exceptions`, body),
+  bookings: (start: string, end: string, mine = false) => api.get<ScheduleBooking[]>(`/v1/schedule/bookings?start=${start}&end=${end}&mine=${mine}`),
+  createBooking: (body: ScheduleBookingBody) => api.post<ScheduleBooking>('/v1/schedule/bookings', body),
+  batchUpdateBookings: (items: ScheduleBookingBatchItem[]) => api.put<ScheduleBooking[]>('/v1/schedule/bookings/batch', { items }),
+  updateBooking: (id: string, body: ScheduleBookingBody & Partial<Pick<ScheduleBooking, 'status' | 'is_locked'>>) => api.put<ScheduleBooking>(`/v1/schedule/bookings/${id}`, body),
+  cancelBooking: (id: string) => api.delete<Record<string, unknown>>(`/v1/schedule/bookings/${id}`),
+  createCoordination: (body: CoordinationRequestBody) => api.post('/v1/schedule/coordination-requests', body),
+  coordinationRequests: () => api.get('/v1/schedule/coordination-requests'),
+  resolveCoordination: (id: string, status: 'approved' | 'rejected', resolution_note = '') => api.put(`/v1/schedule/coordination-requests/${id}`, { status, resolution_note }),
+  swapRooms: (first: string, second: string) => api.post(`/v1/schedule/bookings/${first}/swap/${second}`, {}),
+  rentalResources: () => api.get<PublicRentalResource[]>('/v1/schedule/public/rental-resources'),
+  roomOccupancy: (start: string, end: string, roomId?: string) => api.get<RoomOccupancy[]>(`/v1/schedule/public/room-occupancy?start=${start}&end=${end}${roomId ? `&room_id=${encodeURIComponent(roomId)}` : ''}`),
+  externalRentalRequests: (status?: ExternalRentalRequestStatus) => api.get<ExternalRentalRequest[]>(`/v1/schedule/external-rental-requests${status ? `?status=${status}` : ''}`),
+  createExternalRentalRequest: (body: ExternalRentalRequestBody) => api.post<ExternalRentalRequest>('/v1/schedule/external-rental-requests', body),
+  updateExternalRentalRequest: (id: string, body: ExternalRentalRequestBody) => api.put<ExternalRentalRequest>(`/v1/schedule/external-rental-requests/${id}`, body),
+  approveExternalRentalRequest: (id: string, note = '') => api.post<ExternalRentalRequest>(`/v1/schedule/external-rental-requests/${id}/approve`, { note }),
+  rejectExternalRentalRequest: (id: string, note = '') => api.post<ExternalRentalRequest>(`/v1/schedule/external-rental-requests/${id}/reject`, { note }),
+  cancelExternalRentalRequest: (id: string) => api.post<ExternalRentalRequest>(`/v1/schedule/external-rental-requests/${id}/cancel`, {}),
 };

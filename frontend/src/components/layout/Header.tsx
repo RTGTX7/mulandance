@@ -34,13 +34,12 @@ const navSections: NavSection[] = [
     key: 'performances',
     labelKey: 'common.nav.performances',
     href: '/performances',
-    links: [
-      { labelKey: 'performanceTimeline.title', href: '/performances' },
-    ],
+    links: [],
   },
   {
     key: 'programs',
     labelKey: 'common.nav.programs',
+    href: '/programs',
     links: [
       { labelKey: 'common.nav.programs', href: '/programs' },
       { labelKey: 'programs.pricing.title', href: '/programs/pricing' },
@@ -49,9 +48,9 @@ const navSections: NavSection[] = [
   {
     key: 'rentals',
     labelKey: 'common.nav.classrooms',
+    href: '/classrooms/pricing',
     links: [
-      { labelKey: 'classroomsPage.navSchedule', href: '/classrooms#schedule' },
-      { labelKey: 'classroomsPage.navBook', href: '/classrooms#book' },
+      { labelKey: 'classroomsPage.navBook', href: '/classrooms' },
       { labelKey: 'classroomsPage.navPricing', href: '/classrooms/pricing' },
     ],
   },
@@ -108,6 +107,11 @@ export function Header() {
       ? settings.header_cta_label
       : t('common.buttons.register');
   const ctaHref = settings.header_cta_href || defaultSettings.header_cta_href;
+  const adminPanelLabel = locale === 'zh'
+    ? '\u540e\u53f0\u7ba1\u7406'
+    : locale === 'fr'
+      ? 'Administration'
+      : 'Admin';
 
   useEffect(() => {
     const checkAuth = () => setAuthenticated(isAuthenticated());
@@ -158,11 +162,16 @@ export function Header() {
           >
             {t('common.nav.home')}
           </Link>
-          {navSections.map((section) => (
-            <div
+          {navSections.map((section) => section.href && section.links.length === 0 ? (
+            <Link
               key={section.key}
-              className="relative group"
+              href={href(section.href)}
+              className="whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:bg-white/60 hover:text-foreground hover:shadow-sm"
             >
+              {t(section.labelKey)}
+            </Link>
+          ) : (
+            <div key={section.key} className="relative group">
               {section.href ? (
                 <Link
                   href={href(section.href)}
@@ -230,7 +239,7 @@ export function Header() {
               <Button variant="outline" size="sm" asChild>
                 <Link href={href('/admin/dashboard')}>
                   <LayoutDashboard className="h-4 w-4 2xl:mr-1" />
-                  <span className="hidden 2xl:inline">Dashboard</span>
+                  <span className="hidden 2xl:inline">{adminPanelLabel}</span>
                 </Link>
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -253,10 +262,10 @@ export function Header() {
             <Link
               href={href('/admin/dashboard')}
               className="glass-control inline-flex h-8 items-center gap-1.5 px-2 text-xs font-semibold text-primary transition-all hover:bg-white/80 active:scale-95"
-              aria-label={t('admin.dashboard.title')}
+              aria-label={adminPanelLabel}
             >
               <LayoutDashboard className="h-4 w-4" />
-              <span className="hidden min-[390px]:inline">Dashboard</span>
+                <span className="hidden min-[390px]:inline">{adminPanelLabel}</span>
             </Link>
           )}
           <LanguageSwitcher compact />
@@ -280,7 +289,16 @@ export function Header() {
             >
               {t('common.nav.home')}
             </Link>
-            {navSections.map((section) => (
+            {navSections.map((section) => section.href && section.links.length === 0 ? (
+              <Link
+                key={section.key}
+                href={href(section.href)}
+                className="block rounded-lg px-3 py-1.5 text-sm font-semibold text-foreground transition-all hover:bg-white/60"
+                onClick={() => setMobileOpen(false)}
+              >
+                {t(section.labelKey)}
+              </Link>
+            ) : (
               <div key={section.key} className="rounded-lg border border-white/60 bg-white/50 p-1 shadow-sm">
                 <span className="block px-2 py-1 text-xs font-semibold uppercase text-muted-foreground">
                   {t(section.labelKey)}

@@ -13,10 +13,10 @@ export default function ContemporaryPage() {
   const registerHref = `/${locale}/classes/register`;
 
   const features = [
-    { icon: CheckCircle, title: t('programs.contemporary.features.technique'), desc: t('programs.contemporary.features.techniqueDesc') },
-    { icon: Clock, title: t('programs.contemporary.features.improvisation'), desc: t('programs.contemporary.features.improvisationDesc') },
-    { icon: Users, title: t('programs.contemporary.features.choreography'), desc: t('programs.contemporary.features.choreographyDesc') },
-    { icon: Award, title: t('programs.contemporary.features.performances'), desc: t('programs.contemporary.features.performancesDesc') },
+    { icon: CheckCircle, title: t('programs.contemporary.features.technique'), desc: t('programs.contemporary.description') },
+    { icon: Clock, title: t('programs.contemporary.features.improvisation'), desc: t('programs.contemporary.description') },
+    { icon: Users, title: t('programs.contemporary.features.choreography'), desc: t('programs.contemporary.description') },
+    { icon: Award, title: t('programs.contemporary.features.performances'), desc: t('programs.contemporary.description') },
   ];
 
   return (
@@ -55,11 +55,11 @@ export default function ContemporaryPage() {
                 {t('programs.contemporary.description')}
               </p>
               <p className="text-body text-muted-foreground">
-                {t('programs.contemporaryDesc')}
+                {t('programs.contemporary.description')}
               </p>
             </div>
             <div className="rounded-2xl overflow-hidden shadow-xl">
-              <img src="/programs/contemporary.jpg" alt="Contemporary Dance" className="h-64 w-full object-cover sm:h-80 md:h-[400px]" />
+              <img src="/programs/ballet.jpg" alt="Contemporary Dance" className="h-64 w-full object-cover sm:h-80 md:h-[400px]" />
             </div>
           </div>
 
@@ -88,23 +88,23 @@ export default function ContemporaryPage() {
 
           {/* Levels Section */}
           <div className="bg-accent/30 rounded-2xl p-8 mb-12">
-            <h2 className="heading-lg mb-8 text-center">{t('programs.levels.title')}</h2>
+            <h2 className="heading-lg mb-8 text-center">{t('programLevels.title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.children')}</h3>
-                <p className="text-muted-foreground">Ages 8-12. Introduction to contemporary movement and creative expression.</p>
+                <p className="text-muted-foreground">{t('programLevels.childrenDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
                 <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.teens')}</h3>
-                <p className="text-muted-foreground">Ages 13-17. Advanced technique training and choreography development.</p>
+                <p className="text-muted-foreground">{t('programLevels.teensDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
-                <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.adults')}</h3>
-                <p className="text-muted-foreground">Ages 18+. All levels welcome. Explore contemporary dance at your own pace.</p>
+                <h3 className="heading-sm font-semibold mb-3">{t('programLevels.adults')}</h3>
+                <p className="text-muted-foreground">{t('programLevels.adultsDescription')}</p>
               </div>
               <div className="bg-background rounded-xl p-6 shadow-sm">
-                <h3 className="heading-sm font-semibold mb-3">{t('programs.levels.preProfessional')}</h3>
-                <p className="text-muted-foreground">Advanced students pursuing professional dance careers.</p>
+                <h3 className="heading-sm font-semibold mb-3">{t('programLevels.preProfessional')}</h3>
+                <p className="text-muted-foreground">{t('programLevels.preProfessionalDescription')}</p>
               </div>
             </div>
           </div>

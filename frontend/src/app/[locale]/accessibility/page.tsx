@@ -12,7 +12,7 @@ export default function AccessibilityPage() {
         <Breadcrumbs items={[{ label: t('common.footer.accessibility'), href: 'accessibility' }]} />
         <h1 className="heading-xl mb-4">{t('common.footer.accessibility')}</h1>
         <p className="text-muted-foreground mb-8">
-          Grace Dance Academy is committed to ensuring accessibility for all members of our community.
+          Mulan Dance Studio is committed to making its classes and communications as accessible as possible for our community.
         </p>
 
         <div className="space-y-8 text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export default function AccessibilityPage() {
             <h2 className="heading-md mb-3 text-foreground">Feedback & Improvements</h2>
             <p>
               We welcome your feedback on how we can improve accessibility. Please contact us at
-              accessibility@gracedanceacademy.org or call +1 (555) 123-4567.
+              info@mulandance.com or call 343-777-1766.
             </p>
           </section>
         </div>

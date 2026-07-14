@@ -21,7 +21,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
     if (path.startsWith('http')) return path;
     if (path.startsWith('/')) {
       const withoutLeadingSlash = path.substring(1);
-      return `/${locale}${withoutLeadingSlash}`;
+      return withoutLeadingSlash ? `/${locale}/${withoutLeadingSlash}` : `/${locale}`;
     }
     return `/${locale}/${path}`;
   };

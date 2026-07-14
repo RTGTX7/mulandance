@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.permissions import require_user_permission
 from app.core.translations import (
     ensure_text_column,
     localized_payload,
@@ -43,10 +44,12 @@ def get_current_user(
     return user
 
 
-def require_admin_or_editor(user: User = Depends(get_current_user)) -> User:
-    if user.role not in ("super_admin", "admin"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-    return user
+def require_program_view(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "teaching.programs", "view")
+
+
+def require_admin_or_editor(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    return require_user_permission(user, db, "teaching.programs", "manage")
 
 
 def _ensure_program_columns(db: Session) -> None:
@@ -86,7 +89,7 @@ def list_programs(
 
 @router.get("/admin/list", response_model=List[ProgramResponse])
 def list_admin_programs(
-    user: User = Depends(require_admin_or_editor),
+    user: User = Depends(require_program_view),
     db: Session = Depends(get_db),
 ):
     _ensure_program_columns(db)

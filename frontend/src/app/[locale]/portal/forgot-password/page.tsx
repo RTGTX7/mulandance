@@ -3,6 +3,7 @@
 import { useTranslations } from '@/components/ui/i18n-client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,22 +11,25 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function ForgotPasswordPage() {
   const t = useTranslations();
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
   const [submitted, setSubmitted] = useState(false);
+  const [email, setEmail] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const subject = encodeURIComponent(t('portal.resetSubject'));
+    const body = encodeURIComponent(`Please help reset the password for: ${email.trim()}`);
+    window.location.href = `mailto:info@mulandance.com?subject=${subject}&body=${body}`;
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
     <div className="section-padding">
       <div className="container max-w-md">
-        <Breadcrumbs items={[{ label: t('common.nav.portal'), href: 'portal/login' }]} />
+        <Breadcrumbs items={[{ label: t('portal.title'), href: '/portal/login' }]} />
         <h1 className="heading-xl mb-4">{t('portal.forgotPassword')}</h1>
-        <p className="text-lead mb-12">
-          Enter your email address and we will send you a link to reset your password.
-        </p>
+        <p className="text-lead mb-12">{t('portal.forgotPasswordHelp')}</p>
 
         <Card>
           <CardContent className="pt-6">
@@ -34,23 +38,23 @@ export default function ForgotPasswordPage() {
                 <label className="text-sm font-medium mb-1.5 block">
                   {t('portal.email')}
                 </label>
-                <Input type="email" required placeholder="your@email.com" />
+                <Input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="your@email.com" />
               </div>
               <Button type="submit" className="w-full">
-                {t('common.buttons.submit')}
+                {t('portal.requestReset')}
               </Button>
 
               {submitted && (
                 <p className="text-sm text-green-600 text-center">
-                  If an account exists with that email, you will receive a password reset link shortly.
+                  {t('portal.resetEmailOpened')}
                 </p>
               )}
             </form>
 
             <div className="mt-6 text-center">
               <Link
-                href="/portal/login"
-                className="text-sm text-secondary hover:underline"
+                href={`/${locale}/portal/login`}
+                className="text-sm font-medium text-purple-700 hover:text-purple-900 hover:underline"
               >
                 {t('common.buttons.back')}
               </Link>
