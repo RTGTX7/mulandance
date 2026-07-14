@@ -7,10 +7,6 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: `${apiProxyTarget.replace(/\/$/, '')}/api/:path*`,
-      },
-      {
         source: '/static/uploads/:path*',
         destination: `${apiProxyTarget.replace(/\/$/, '')}/static/uploads/:path*`,
       },

@@ -14,6 +14,8 @@ import {
   type PermissionCatalogItem,
   type PermissionGrant,
   type PermissionPreset,
+  type LogtoBindingRequest,
+  type AccountTypeDefault,
 } from "@/lib/api";
 import { hasPermission, firstAllowedAdminRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -378,6 +380,8 @@ export function AccountsWorkspaceContent({
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [presetName, setPresetName] = useState("");
   const [presetDescription, setPresetDescription] = useState("");
+  const [bindingRequests, setBindingRequests] = useState<LogtoBindingRequest[]>([]);
+  const [accountTypeDefaults, setAccountTypeDefaults] = useState<AccountTypeDefault[]>([]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -388,7 +392,7 @@ export function AccountsWorkspaceContent({
 
   const [newAccount, setNewAccount] = useState({
     email: "",
-    password: "",
+    account_type: "teacher" as "teacher" | "staff_admin",
     first_name: "",
     last_name: "",
     nickname_zh: "",
@@ -413,8 +417,9 @@ export function AccountsWorkspaceContent({
       }),
       usersApi.permissionCatalog(),
       usersApi.permissionPresets(),
+      usersApi.accountTypeDefaults(),
     ])
-      .then(([me, accountPage, nextCatalog, nextPresets]) => {
+      .then(([me, accountPage, nextCatalog, nextPresets, nextTypeDefaults]) => {
         setCurrentUser(me);
         if (!hasPermission(me, "system.accounts")) {
           router.push(`/${locale}${firstAllowedAdminRoute(me)}`);
@@ -424,6 +429,10 @@ export function AccountsWorkspaceContent({
         setTotal(accountPage.total);
         setCatalog(nextCatalog);
         setPermissionPresets(nextPresets);
+        setAccountTypeDefaults(nextTypeDefaults);
+        if (me.role === "super_admin") {
+          void usersApi.logtoBindingRequests().then(setBindingRequests).catch(() => setBindingRequests([]));
+        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : "加载失败"))
       .finally(() => setLoading(false));
@@ -453,7 +462,7 @@ export function AccountsWorkspaceContent({
       await usersApi.createAdminAccount(newAccount);
       setNewAccount({
         email: "",
-        password: "",
+        account_type: "teacher",
         first_name: "",
         last_name: "",
         nickname_zh: "",
@@ -471,6 +480,39 @@ export function AccountsWorkspaceContent({
     }
   };
 
+  const reviewBinding = async (request: LogtoBindingRequest, accountType?: "teacher" | "staff_admin") => {
+    setSaving(`binding-${request.id}`);
+    setError("");
+    try {
+      if (accountType) await usersApi.approveLogtoBinding(request.id, accountType);
+      else await usersApi.rejectLogtoBinding(request.id);
+      setBindingRequests((items) => items.filter((item) => item.id !== request.id));
+      setSuccess(locale === "fr" ? "Demande d’identité traitée" : locale === "en" ? "Identity request reviewed" : "身份绑定申请已处理");
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to review identity request");
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const updateTypePreset = async (accountType: "teacher" | "staff_admin", presetId: string, sync = false) => {
+    setSaving(`type-${accountType}`);
+    setError("");
+    try {
+      await usersApi.updateAccountTypeDefault(accountType, presetId || null);
+      if (sync && window.confirm(locale === "fr" ? "Appliquer ce groupe aux comptes existants ?" : locale === "en" ? "Apply this group to existing accounts?" : "将此权限组同步到现有账号？")) {
+        await usersApi.syncAccountTypeDefault(accountType);
+      }
+      setAccountTypeDefaults((items) => items.map((item) => item.account_type === accountType ? { ...item, preset_id: presetId || null } : item));
+      setSuccess(locale === "fr" ? "Préréglage enregistré" : locale === "en" ? "Account type preset saved" : "账号类型权限预设已保存");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save account type preset");
+    } finally {
+      setSaving("");
+    }
+  };
+
   const updateAccount = (
     id: string,
     updater: (account: AdminAccount) => AdminAccount,
@@ -480,7 +522,7 @@ export function AccountsWorkspaceContent({
     );
   };
 
-  const saveAccount = async (account: AdminAccount, password: string) => {
+  const saveAccount = async (account: AdminAccount) => {
     setSaving(account.id);
     setError("");
     setSuccess("");
@@ -492,8 +534,8 @@ export function AccountsWorkspaceContent({
         nickname_en: account.nickname_en,
         nickname_fr: account.nickname_fr,
         is_active: account.is_active,
-        password: password || undefined,
         phone: account.phone || undefined,
+        account_type: account.account_type || undefined,
       });
       setSuccess("老师账号已保存");
       loadData();
@@ -783,6 +825,52 @@ export function AccountsWorkspaceContent({
           </div>
         )}
 
+        {currentUser?.role === "super_admin" && bindingRequests.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{locale === "fr" ? "Demandes de liaison Logto" : locale === "en" ? "Logto identity requests" : "Logto 身份绑定申请"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {bindingRequests.map((request) => (
+                <div key={request.id} className="flex flex-col gap-3 rounded-md border p-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{request.email}</p>
+                    <p className="text-sm text-muted-foreground">{new Date(request.created_at).toLocaleString()}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" disabled={saving === `binding-${request.id}`} onClick={() => reviewBinding(request, "teacher")}>Teacher</Button>
+                    <Button type="button" size="sm" variant="outline" disabled={saving === `binding-${request.id}`} onClick={() => reviewBinding(request, "staff_admin")}>Staff admin</Button>
+                    <Button type="button" size="sm" variant="destructive" disabled={saving === `binding-${request.id}`} onClick={() => reviewBinding(request)}>{locale === "fr" ? "Refuser" : locale === "en" ? "Reject" : "拒绝"}</Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {canManageAccounts && (
+          <Card>
+            <CardHeader><CardTitle>{locale === "fr" ? "Préréglages par type de compte" : locale === "en" ? "Account type permission presets" : "账号类型权限预设"}</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {(["teacher", "staff_admin"] as const).map((accountType) => {
+                const selected = accountTypeDefaults.find((item) => item.account_type === accountType)?.preset_id || "";
+                return (
+                  <div key={accountType} className="grid gap-2 md:grid-cols-[160px_1fr_auto] md:items-center">
+                    <span className="font-medium">{accountType === "teacher" ? "Teacher" : "Staff administrator"}</span>
+                    <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={selected} onChange={(e) => updateTypePreset(accountType, e.target.value)}>
+                      <option value="">{locale === "fr" ? "Aucun préréglage" : locale === "en" ? "No preset" : "未设置权限组"}</option>
+                      {permissionPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+                    </select>
+                    <Button type="button" variant="outline" disabled={!selected || saving === `type-${accountType}`} onClick={() => updateTypePreset(accountType, selected, true)}>
+                      {locale === "fr" ? "Synchroniser" : locale === "en" ? "Sync existing" : "同步现有账号"}
+                    </Button>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         {canManageAccounts && (
           <Card>
             <CardHeader>
@@ -803,15 +891,14 @@ export function AccountsWorkspaceContent({
                     }
                     required
                   />
-                  <Input
-                    placeholder={text.password}
-                    type="password"
-                    value={newAccount.password}
-                    onChange={(e) =>
-                      setNewAccount({ ...newAccount, password: e.target.value })
-                    }
-                    required
-                  />
+                  <select
+                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={newAccount.account_type}
+                    onChange={(e) => setNewAccount({ ...newAccount, account_type: e.target.value as "teacher" | "staff_admin" })}
+                  >
+                    <option value="teacher">Teacher</option>
+                    {currentUser?.role === "super_admin" && <option value="staff_admin">Staff administrator</option>}
+                  </select>
                   <Input
                     placeholder="中文昵称"
                     value={newAccount.nickname_zh}
@@ -942,7 +1029,7 @@ export function AccountsWorkspaceContent({
                     account={account}
                     saving={saving === account.id}
                     onChange={(next) => updateAccount(account.id, () => next)}
-                    onSave={(password) => saveAccount(account, password)}
+                    onSave={() => saveAccount(account)}
                     onPermissions={() => void openPermissions(account)}
                     canManage={canManageAccounts}
                     isSelf={currentUser?.id === account.id}
@@ -1264,14 +1351,13 @@ function TeacherAccountRow({
   account: AdminAccount;
   saving: boolean;
   onChange: (account: AdminAccount) => void;
-  onSave: (password: string) => void;
+  onSave: () => void;
   onPermissions: () => void;
   canManage: boolean;
   isSelf: boolean;
   permissionsLabel: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [password, setPassword] = useState("");
 
   return (
     <div className="rounded-lg border bg-white p-3">
@@ -1309,10 +1395,7 @@ function TeacherAccountRow({
             <Button
               type="button"
               disabled={saving}
-              onClick={() => {
-                onSave(password);
-                setPassword("");
-              }}
+              onClick={onSave}
             >
               <Save className="mr-2 h-4 w-4" />
               {saving ? "保存中..." : "保存"}
@@ -1365,12 +1448,15 @@ function TeacherAccountRow({
             <option value="active">启用</option>
             <option value="disabled">停用</option>
           </select>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="新密码，留空不改"
-          />
+          <select
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={account.account_type || ""}
+            onChange={(e) => onChange({ ...account, account_type: (e.target.value || null) as AdminAccount["account_type"] })}
+          >
+            <option value="">Account type not assigned</option>
+            <option value="teacher">Teacher</option>
+            <option value="staff_admin">Staff administrator</option>
+          </select>
         </div>
       )}
     </div>

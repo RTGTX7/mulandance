@@ -6,10 +6,11 @@ services:
       ENVIRONMENT: production
       DEBUG: "false"
       SECRET_KEY: ${SECRET_KEY:-change_me_to_a_long_random_secret}
-      ADMIN_EMAIL: "admin@mulanstudio.ca"
-      ADMIN_PASSWORD: "MuLanStudio!2026#Admin_7Qx9"
-      ADMIN_FIRST_NAME: ${ADMIN_FIRST_NAME:-Mulan}
-      ADMIN_LAST_NAME: ${ADMIN_LAST_NAME:-Admin}
+      LOGTO_ENDPOINT: ${LOGTO_ENDPOINT}
+      LOGTO_API_RESOURCE: ${LOGTO_API_RESOURCE}
+      LOGTO_SESSION_ASSERTION_SECRET: ${LOGTO_SESSION_ASSERTION_SECRET}
+      LOGTO_BOOTSTRAP_SUPER_ADMIN_EMAIL: ${LOGTO_BOOTSTRAP_SUPER_ADMIN_EMAIL:-}
+      LOGTO_BOOTSTRAP_SUPER_ADMIN_SUB: ${LOGTO_BOOTSTRAP_SUPER_ADMIN_SUB:-}
       DATABASE_URL: sqlite:////app/data/app.db
       DATA_DIR: /app/data
       NEWS_FILES_DIR: /app/data/news
@@ -44,6 +45,13 @@ services:
       NODE_ENV: production
       API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:8000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_LOGTO_ENDPOINT: ${NEXT_PUBLIC_LOGTO_ENDPOINT:-https://login.mulandance.ca}
+      LOGTO_ENDPOINT: ${LOGTO_ENDPOINT}
+      LOGTO_APP_ID: ${LOGTO_APP_ID}
+      LOGTO_APP_SECRET: ${LOGTO_APP_SECRET}
+      LOGTO_COOKIE_SECRET: ${LOGTO_COOKIE_SECRET}
+      LOGTO_API_RESOURCE: ${LOGTO_API_RESOURCE}
+      LOGTO_SESSION_ASSERTION_SECRET: ${LOGTO_SESSION_ASSERTION_SECRET}
     depends_on:
       - backend
     ports:

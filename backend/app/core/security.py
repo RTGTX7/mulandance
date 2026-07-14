@@ -1,61 +1,134 @@
-from datetime import datetime, timedelta
-from typing import Optional
+from functools import lru_cache
+from typing import Any, Optional
+import base64
+import hashlib
+import hmac
+import json
+import time
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-import bcrypt
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+import httpx
+import jwt as pyjwt
+from jwt import PyJWKClient
 from app.core.config import settings
 
-MAX_BCRYPT_PASSWORD_BYTES = 72
-
-
-def _password_bytes(password: str) -> bytes:
-    encoded = password.encode("utf-8")
-    if len(encoded) > MAX_BCRYPT_PASSWORD_BYTES:
-        raise ValueError("Password must be 72 bytes or fewer")
-    return encoded
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    try:
-        return bcrypt.checkpw(_password_bytes(plain_password), hashed_password.encode("utf-8"))
-    except (TypeError, ValueError):
-        return False
-
-
-def get_password_hash(password: str) -> str:
-    return bcrypt.hashpw(_password_bytes(password), bcrypt.gensalt()).decode("utf-8")
-
-
-def create_access_token(
-    data: dict, expires_delta: Optional[timedelta] = None
-) -> str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (
-        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
-def create_refresh_token(data: dict) -> str:
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode = data.copy()
-    to_encode.update({"exp": expire, "type": "refresh"})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
 def decode_token(token: str) -> Optional[dict]:
+    """Validate a Logto access token and expose the linked local user id.
+
+    Several existing API modules still consume ``payload['sub']`` as the local
+    user UUID. Keeping that contract here lets authentication migrate without
+    changing business authorization or foreign-key ownership semantics.
+    """
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        if token.startswith("dev."):
+            return _decode_development_token(token)
+        payload = validate_logto_token(token)
+        logto_subject = payload.get("sub")
+        if not logto_subject:
+            return None
+        from app.core.database import SessionLocal
+        from app.models import User
+
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.logto_subject == logto_subject).first()
+            if not user or not user.is_active or user.provisioning_status != "active":
+                return None
+            payload = dict(payload)
+            payload["logto_sub"] = logto_subject
+            payload["sub"] = user.id
+        finally:
+            db.close()
         return payload
-    except JWTError:
+    except Exception:
         return None
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
+def _decode_development_token(token: str) -> dict[str, Any]:
+    if settings.ENVIRONMENT.strip().lower() not in {"development", "dev", "local", "test"} or not settings.DEV_AUTH_BYPASS:
+        raise ValueError("Development authentication is disabled")
+    secret = settings.DEV_AUTH_SECRET.encode("utf-8")
+    if len(secret) < 32:
+        raise ValueError("DEV_AUTH_SECRET must contain at least 32 characters")
+    parts = token.split(".")
+    if len(parts) != 3:
+        raise ValueError("Invalid development token")
+    _, encoded, signature = parts
+    expected = hmac.new(secret, encoded.encode("ascii"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        raise ValueError("Invalid development token signature")
+    padded = encoded + "=" * (-len(encoded) % 4)
+    payload = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")))
+    if int(payload.get("exp", 0)) < int(time.time()):
+        raise ValueError("Development token expired")
+    email = str(payload.get("email") or "").strip().lower()
+    if not email or email != settings.DEV_AUTH_EMAIL.strip().lower():
+        raise ValueError("Development account mismatch")
+    from app.core.database import SessionLocal
+    from app.models import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user or not user.is_active:
+            raise ValueError("Development account is unavailable")
+        return {"sub": user.id, "email": email, "dev_auth": True, "exp": payload["exp"]}
+    finally:
+        db.close()
+
+
+def _normalized_endpoint() -> str:
+    endpoint = settings.LOGTO_ENDPOINT.strip().rstrip("/")
+    if not endpoint:
+        raise RuntimeError("LOGTO_ENDPOINT is not configured")
+    return endpoint
+
+
+@lru_cache(maxsize=1)
+def get_logto_oidc_configuration() -> dict[str, Any]:
+    url = f"{_normalized_endpoint()}/oidc/.well-known/openid-configuration"
+    response = httpx.get(url, timeout=10.0, follow_redirects=True)
+    response.raise_for_status()
+    data = response.json()
+    if not data.get("issuer") or not data.get("jwks_uri"):
+        raise RuntimeError("Logto OIDC discovery response is incomplete")
+    return data
+
+
+@lru_cache(maxsize=1)
+def get_logto_jwks_client() -> PyJWKClient:
+    return PyJWKClient(get_logto_oidc_configuration()["jwks_uri"], cache_keys=True)
+
+
+def validate_logto_token(token: str) -> dict[str, Any]:
+    if not settings.LOGTO_API_RESOURCE.strip():
+        raise RuntimeError("LOGTO_API_RESOURCE is not configured")
+    config = get_logto_oidc_configuration()
+    signing_key = get_logto_jwks_client().get_signing_key_from_jwt(token)
+    return pyjwt.decode(
+        token,
+        signing_key.key,
+        algorithms=["RS256"],
+        issuer=config["issuer"],
+        audience=settings.LOGTO_API_RESOURCE,
+        leeway=30,
+        options={"require": ["exp", "iat", "sub"]},
+    )
+
+
+http_bearer = HTTPBearer(auto_error=False)
+
+
+def oauth2_scheme(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(http_bearer),
+) -> str:
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header is missing",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 
 def get_current_user_id(

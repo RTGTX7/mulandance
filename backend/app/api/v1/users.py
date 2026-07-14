@@ -1,17 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
 import json
+import base64
+import hashlib
+import hmac
+import time
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.security import (
-    get_password_hash,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
     decode_token,
+    validate_logto_token,
 )
+from app.core.config import settings
 from app.schemas.user import (
     AdminAccountCreate,
     AdminAccountListResponse,
@@ -27,8 +31,16 @@ from app.schemas.user import (
     Token,
     LoginRequest,
     UserUpdate,
+    LogtoBindingRequestResponse,
+    LogtoBindingReview,
+    LogtoSessionIdentity,
+    LogtoSessionResponse,
+    AccountTypeDefaultResponse,
+    AccountTypeDefaultUpdate,
+    AccountTypePermissionSync,
+    AccountTypePermissionSyncResponse,
 )
-from app.models import PermissionAuditLog, PermissionPreset, User, UserPermission, UserProfile
+from app.models import AccountTypePermissionDefault, LogtoBindingRequest, PermissionAuditLog, PermissionPreset, User, UserPermission, UserProfile
 from app.core.permissions import (
     PERMISSION_DEFINITIONS,
     PERMISSION_MAP,
@@ -45,6 +57,8 @@ router = APIRouter()
 SUPER_ADMIN_ROLE = "super_admin"
 TEACHER_ADMIN_ROLE = "admin"
 ADMIN_ROLES = {SUPER_ADMIN_ROLE, TEACHER_ADMIN_ROLE}
+ACCOUNT_TYPES = ("teacher", "staff_admin", "parent", "student", "alumni")
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
@@ -105,6 +119,9 @@ def _response_for_user(user: User, db: Session) -> UserResponse:
         avatar_url=profile.avatar_url if profile else None,
         phone=profile.phone if profile else None,
         is_active=user.is_active,
+        account_type=user.account_type,
+        provisioning_status=user.provisioning_status or "active",
+        logto_linked=bool(user.logto_subject),
         created_at=user.created_at,
         permissions=effective_permissions(db, user) if user.role in ADMIN_ROLES else {},
     )
@@ -112,45 +129,12 @@ def _response_for_user(user: User, db: Session) -> UserResponse:
 
 @router.post("/register", response_model=UserResponse)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == user_data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    hashed = get_password_hash(user_data.password)
-    user = User(email=user_data.email, password_hash=hashed, role="public")
-    db.add(user)
-    db.flush()
-
-    profile = UserProfile(
-        user_id=user.id,
-        first_name=user_data.first_name,
-        last_name=user_data.last_name,
-        nickname_zh=user_data.nickname_zh or user_data.first_name,
-        nickname_en=user_data.nickname_en or "",
-        nickname_fr=user_data.nickname_fr or "",
-    )
-    db.add(profile)
-    db.commit()
-    db.refresh(user)
-
-    return _response_for_user(user, db)
+    raise HTTPException(status_code=410, detail={"code": "local_auth_removed"})
 
 
 @router.post("/login", response_model=Token)
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == login_data.email).first()
-    if not user or not verify_password(login_data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account disabled")
-
-    access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email}
-    )
-    refresh_token = create_refresh_token(data={"sub": str(user.id)})
-
-    return Token(access_token=access_token, refresh_token=refresh_token)
+    raise HTTPException(status_code=410, detail={"code": "local_auth_removed"})
 
 
 @router.get("/me", response_model=UserResponse)
@@ -181,11 +165,6 @@ def update_me(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    if user_update.new_password:
-        if not user_update.current_password or not verify_password(user_update.current_password, user.password_hash):
-            raise HTTPException(status_code=400, detail="Current password is incorrect")
-        user.password_hash = get_password_hash(user_update.new_password)
 
     profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
     if not profile:
@@ -250,15 +229,19 @@ def create_teacher_admin_account(
     actor: User = Depends(_require_accounts_manage),
     db: Session = Depends(get_db),
 ):
+    if account.account_type == "staff_admin" and actor.role != SUPER_ADMIN_ROLE:
+        raise HTTPException(status_code=403, detail={"code": "staff_admin_creation_forbidden"})
     existing = db.query(User).filter(User.email == account.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = User(
         email=account.email,
-        password_hash=get_password_hash(account.password),
+        password_hash="logto-managed",
         role=TEACHER_ADMIN_ROLE,
-        is_active=True,
+        is_active=False,
+        account_type=account.account_type,
+        provisioning_status="pending",
     )
     db.add(user)
     db.flush()
@@ -272,15 +255,24 @@ def create_teacher_admin_account(
         nickname_fr=account.nickname_fr or "",
         phone=account.phone,
     ))
-    defaults = TEACHER_DEFAULTS
-    if actor.role != SUPER_ADMIN_ROLE:
-        actor_permissions = effective_permissions(db, actor)
-        defaults = {
-            key: (can_view and bool(actor_permissions.get(key, {}).get("view")),
-                  can_manage and bool(actor_permissions.get(key, {}).get("manage")))
-            for key, (can_view, can_manage) in TEACHER_DEFAULTS.items()
-        }
-    grant_defaults(db, user, defaults)
+    type_default = db.query(AccountTypePermissionDefault).filter(
+        AccountTypePermissionDefault.account_type == account.account_type
+    ).first() if account.account_type else None
+    preset = db.query(PermissionPreset).filter(PermissionPreset.id == type_default.preset_id).first() if type_default and type_default.preset_id else None
+    if preset:
+        grants = _preset_grants(preset)
+        _assert_grants_within_actor(actor, db, grants)
+        _replace_permissions(db, user, grants, actor)
+    else:
+        defaults = TEACHER_DEFAULTS
+        if actor.role != SUPER_ADMIN_ROLE:
+            actor_permissions = effective_permissions(db, actor)
+            defaults = {
+                key: (can_view and bool(actor_permissions.get(key, {}).get("view")),
+                      can_manage and bool(actor_permissions.get(key, {}).get("manage")))
+                for key, (can_view, can_manage) in TEACHER_DEFAULTS.items()
+            }
+        grant_defaults(db, user, defaults)
     db.commit()
     db.refresh(user)
     return _response_for_user(user, db)
@@ -299,10 +291,16 @@ def update_teacher_admin_account(
     if user.id == actor.id:
         raise HTTPException(status_code=403, detail={"code": "self_account_change_forbidden"})
 
+    if account.account_type == "staff_admin" and actor.role != SUPER_ADMIN_ROLE:
+        raise HTTPException(status_code=403, detail={"code": "staff_admin_assignment_forbidden"})
     if account.is_active is not None:
         user.is_active = account.is_active
-    if account.password:
-        user.password_hash = get_password_hash(account.password)
+        if account.is_active and user.provisioning_status == "pending":
+            user.provisioning_status = "active"
+    if account.account_type is not None:
+        user.account_type = account.account_type
+    if account.provisioning_status is not None:
+        user.provisioning_status = account.provisioning_status
 
     profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
     if not profile:
@@ -327,6 +325,255 @@ def update_teacher_admin_account(
     db.commit()
     db.refresh(user)
     return _response_for_user(user, db)
+
+
+def _decode_identity_assertion(identity: LogtoSessionIdentity) -> dict:
+    secret = settings.LOGTO_SESSION_ASSERTION_SECRET.encode("utf-8")
+    if len(secret) < 32:
+        raise HTTPException(status_code=503, detail={"code": "logto_assertion_not_configured"})
+    expected = hmac.new(secret, identity.payload.encode("ascii"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, identity.signature):
+        raise HTTPException(status_code=401, detail={"code": "invalid_identity_assertion"})
+    try:
+        padded = identity.payload + "=" * (-len(identity.payload) % 4)
+        data = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        raise HTTPException(status_code=401, detail={"code": "invalid_identity_assertion"})
+    if abs(int(time.time()) - int(data.get("iat", 0))) > 120:
+        raise HTTPException(status_code=401, detail={"code": "expired_identity_assertion"})
+    return data
+
+
+def _binding_response(item: LogtoBindingRequest) -> LogtoBindingRequestResponse:
+    return LogtoBindingRequestResponse(
+        id=item.id,
+        user_id=item.user_id,
+        email=item.verified_email,
+        logto_subject=item.logto_subject,
+        requested_account_type=item.requested_account_type,
+        status=item.status,
+        review_note=item.review_note or "",
+        created_at=item.created_at,
+        reviewed_at=item.reviewed_at,
+    )
+
+
+def _preset_grants(preset: PermissionPreset) -> list[PermissionGrant]:
+    try:
+        raw = json.loads(preset.permissions_json or "[]")
+        return _normalize_permission_grants([PermissionGrant(**item) for item in raw])
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail={"code": "invalid_permission_preset"})
+
+
+def _replace_permissions(db: Session, target: User, grants: list[PermissionGrant], actor: User) -> None:
+    before = effective_permissions(db, target)
+    db.query(UserPermission).filter(UserPermission.user_id == target.id).delete(synchronize_session=False)
+    for grant in grants:
+        if grant.can_view or grant.can_manage:
+            db.add(UserPermission(
+                user_id=target.id,
+                permission_key=grant.key,
+                can_view=grant.can_view or grant.can_manage,
+                can_manage=grant.can_manage,
+                updated_by=actor.id,
+            ))
+    db.flush()
+    db.add(PermissionAuditLog(
+        actor_id=actor.id,
+        target_user_id=target.id,
+        before_json=json.dumps(before),
+        after_json=json.dumps(effective_permissions(db, target)),
+    ))
+
+
+@router.post("/auth/logto-session", response_model=LogtoSessionResponse)
+def complete_logto_session(
+    identity: LogtoSessionIdentity,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+):
+    if not credentials:
+        raise HTTPException(status_code=401, detail={"code": "missing_bearer_token"})
+    try:
+        claims = validate_logto_token(credentials.credentials)
+    except Exception:
+        raise HTTPException(status_code=401, detail={"code": "invalid_logto_token"})
+
+    asserted = _decode_identity_assertion(identity)
+    subject = str(claims.get("sub") or "")
+    if not subject or asserted.get("sub") != subject:
+        raise HTTPException(status_code=401, detail={"code": "identity_subject_mismatch"})
+    email = str(asserted.get("email") or "").strip().lower()
+    if not email or asserted.get("email_verified") is not True:
+        return LogtoSessionResponse(status="rejected")
+
+    linked = db.query(User).filter(User.logto_subject == subject).first()
+    if linked:
+        if linked.provisioning_status == "rejected":
+            return LogtoSessionResponse(status="rejected")
+        if not linked.is_active or linked.provisioning_status != "active":
+            return LogtoSessionResponse(status="pending_activation")
+        redirect_path = "/admin/dashboard" if linked.role in ADMIN_ROLES else "/portal/dashboard"
+        return LogtoSessionResponse(status="active", redirect_path=redirect_path, user=_response_for_user(linked, db))
+
+    user = db.query(User).filter(func.lower(User.email) == email).first()
+    if not user:
+        return LogtoSessionResponse(status="not_provisioned")
+    occupied = db.query(User).filter(User.logto_subject == subject, User.id != user.id).first()
+    if occupied:
+        raise HTTPException(status_code=409, detail={"code": "logto_subject_already_bound"})
+
+    auto_bind = user.account_type == "teacher" or user.role not in ADMIN_ROLES
+    if auto_bind:
+        user.logto_subject = subject
+        db.commit()
+        if not user.is_active or user.provisioning_status != "active":
+            return LogtoSessionResponse(status="pending_activation")
+        redirect_path = "/admin/dashboard" if user.role in ADMIN_ROLES else "/portal/dashboard"
+        return LogtoSessionResponse(status="active", redirect_path=redirect_path, user=_response_for_user(user, db))
+
+    request = db.query(LogtoBindingRequest).filter(
+        LogtoBindingRequest.user_id == user.id,
+        LogtoBindingRequest.logto_subject == subject,
+    ).first()
+    if not request:
+        request = LogtoBindingRequest(
+            user_id=user.id,
+            logto_subject=subject,
+            verified_email=email,
+            requested_account_type=user.account_type,
+            status="pending",
+        )
+        db.add(request)
+        db.commit()
+    elif request.status == "rejected":
+        return LogtoSessionResponse(status="rejected")
+    return LogtoSessionResponse(status="pending_binding")
+
+
+@router.get("/admin/logto-binding-requests", response_model=list[LogtoBindingRequestResponse])
+def list_logto_binding_requests(
+    status_filter: str = Query("pending", alias="status"),
+    _: User = Depends(_require_super_admin),
+    db: Session = Depends(get_db),
+):
+    query = db.query(LogtoBindingRequest)
+    if status_filter != "all":
+        query = query.filter(LogtoBindingRequest.status == status_filter)
+    return [_binding_response(item) for item in query.order_by(LogtoBindingRequest.created_at.desc()).all()]
+
+
+@router.post("/admin/logto-binding-requests/{request_id}/approve", response_model=LogtoBindingRequestResponse)
+def approve_logto_binding_request(
+    request_id: str,
+    review: LogtoBindingReview,
+    actor: User = Depends(_require_super_admin),
+    db: Session = Depends(get_db),
+):
+    item = db.query(LogtoBindingRequest).filter(LogtoBindingRequest.id == request_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Binding request not found")
+    target = db.query(User).filter(User.id == item.user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    account_type = review.account_type or target.account_type or item.requested_account_type
+    if target.role in ADMIN_ROLES and account_type not in {"teacher", "staff_admin"}:
+        raise HTTPException(status_code=422, detail={"code": "account_type_required"})
+    duplicate = db.query(User).filter(User.logto_subject == item.logto_subject, User.id != target.id).first()
+    if duplicate:
+        raise HTTPException(status_code=409, detail={"code": "logto_subject_already_bound"})
+    target.logto_subject = item.logto_subject
+    target.account_type = account_type
+    target.provisioning_status = "active"
+    target.is_active = True
+    item.requested_account_type = account_type
+    item.status = "approved"
+    item.reviewed_by = actor.id
+    item.review_note = review.note
+    item.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(item)
+    return _binding_response(item)
+
+
+@router.post("/admin/logto-binding-requests/{request_id}/reject", response_model=LogtoBindingRequestResponse)
+def reject_logto_binding_request(
+    request_id: str,
+    review: LogtoBindingReview,
+    actor: User = Depends(_require_super_admin),
+    db: Session = Depends(get_db),
+):
+    item = db.query(LogtoBindingRequest).filter(LogtoBindingRequest.id == request_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Binding request not found")
+    item.status = "rejected"
+    item.reviewed_by = actor.id
+    item.review_note = review.note
+    item.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(item)
+    return _binding_response(item)
+
+
+@router.get("/admin/account-type-defaults", response_model=list[AccountTypeDefaultResponse])
+def list_account_type_defaults(
+    _: User = Depends(_require_accounts_view),
+    db: Session = Depends(get_db),
+):
+    rows = {item.account_type: item for item in db.query(AccountTypePermissionDefault).all()}
+    return [AccountTypeDefaultResponse(account_type=kind, preset_id=rows.get(kind).preset_id if rows.get(kind) else None) for kind in ACCOUNT_TYPES]
+
+
+@router.put("/admin/account-type-defaults/{account_type}", response_model=AccountTypeDefaultResponse)
+def update_account_type_default(
+    account_type: str,
+    body: AccountTypeDefaultUpdate,
+    actor: User = Depends(_require_accounts_manage),
+    db: Session = Depends(get_db),
+):
+    if account_type not in ACCOUNT_TYPES:
+        raise HTTPException(status_code=404, detail="Unknown account type")
+    if body.preset_id:
+        preset = db.query(PermissionPreset).filter(PermissionPreset.id == body.preset_id).first()
+        if not preset:
+            raise HTTPException(status_code=404, detail="Permission preset not found")
+        _assert_grants_within_actor(actor, db, _preset_grants(preset))
+    row = db.query(AccountTypePermissionDefault).filter(AccountTypePermissionDefault.account_type == account_type).first()
+    if not row:
+        row = AccountTypePermissionDefault(account_type=account_type)
+        db.add(row)
+    row.preset_id = body.preset_id
+    row.updated_by = actor.id
+    db.commit()
+    return AccountTypeDefaultResponse(account_type=account_type, preset_id=row.preset_id)
+
+
+@router.post("/admin/account-type-defaults/{account_type}/sync", response_model=AccountTypePermissionSyncResponse)
+def sync_account_type_permissions(
+    account_type: str,
+    body: AccountTypePermissionSync,
+    actor: User = Depends(_require_accounts_manage),
+    db: Session = Depends(get_db),
+):
+    if not body.confirm:
+        raise HTTPException(status_code=422, detail={"code": "confirmation_required"})
+    row = db.query(AccountTypePermissionDefault).filter(AccountTypePermissionDefault.account_type == account_type).first()
+    preset = db.query(PermissionPreset).filter(PermissionPreset.id == row.preset_id).first() if row and row.preset_id else None
+    if not preset:
+        raise HTTPException(status_code=422, detail={"code": "account_type_preset_missing"})
+    grants = _preset_grants(preset)
+    _assert_grants_within_actor(actor, db, grants)
+    query = db.query(User).filter(User.account_type == account_type, User.role != SUPER_ADMIN_ROLE)
+    if body.user_ids:
+        query = query.filter(User.id.in_(body.user_ids))
+    targets = query.all()
+    for target in targets:
+        if target.id == actor.id:
+            continue
+        _replace_permissions(db, target, grants, actor)
+    db.commit()
+    return AccountTypePermissionSyncResponse(updated=sum(1 for target in targets if target.id != actor.id))
 
 
 @router.get("/permissions/catalog", response_model=list[PermissionCatalogItem])

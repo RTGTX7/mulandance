@@ -33,5 +33,5 @@ export const config = {
   // - The `/docs` and `/redoc` routes (Swagger)
   // - The `/_next` prefix (Next.js internals)
   // - The `/favicon.ico` and other root-level static files
-  matcher: ['/((?!api|docs|redoc|_next|_static|favicon.ico|.*\\..*|api).*)'],
+  matcher: ['/((?!api|auth|callback|docs|redoc|_next|_static|favicon.ico|.*\\..*).*)'],
 };

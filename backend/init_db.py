@@ -17,7 +17,6 @@ from app.models import (
     ArticleGroupTag,
     ArticleTranslation,
 )
-from app.core.security import get_password_hash
 
 
 def init_db():
@@ -48,7 +47,7 @@ def init_db():
         print(f"  - {t}")
 
 
-def create_admin(email: str, password: str, first_name: str, last_name: str, role: str = "admin"):
+def create_admin(email: str, logto_subject: str, first_name: str, last_name: str, role: str = "admin"):
     from sqlalchemy.orm import Session
     from app.core.database import SessionLocal
 
@@ -59,11 +58,12 @@ def create_admin(email: str, password: str, first_name: str, last_name: str, rol
             print(f"Admin user already exists: {admin.email}")
             return admin
 
-        hashed = get_password_hash(password)
         admin_user = User(
             id=str(uuid.uuid4()),
             email=email,
-            password_hash=hashed,
+            password_hash="logto-managed",
+            logto_subject=logto_subject,
+            provisioning_status="active",
             role=role,
             is_active=True,
         )
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Database initialization script")
     parser.add_argument("--create-admin", action="store_true", help="Create first admin user")
     parser.add_argument("--email", type=str, help="Admin email address")
-    parser.add_argument("--password", type=str, help="Admin password")
+    parser.add_argument("--logto-sub", type=str, help="Logto user subject")
     parser.add_argument("--first-name", type=str, default="Admin", help="Admin first name")
     parser.add_argument("--last-name", type=str, default="User", help="Admin last name")
     parser.add_argument("--seed-categories", action="store_true", help="Seed default categories")
@@ -193,10 +193,10 @@ if __name__ == "__main__":
     print()
 
     if args.create_admin:
-        if not args.email or not args.password:
-            print("Error: --email and --password are required with --create-admin")
+        if not args.email or not args.logto_sub:
+            print("Error: --email and --logto-sub are required with --create-admin")
             sys.exit(1)
-        create_admin(args.email, args.password, args.first_name, args.last_name, args.admin_role)
+        create_admin(args.email, args.logto_sub, args.first_name, args.last_name, args.admin_role)
         print()
 
     if args.seed_categories:

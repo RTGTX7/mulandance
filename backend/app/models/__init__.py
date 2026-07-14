@@ -21,7 +21,12 @@ class User(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    # Retained as nullable for one rollback window; application authentication
+    # no longer reads or writes local password hashes.
+    password_hash = Column(String(255), nullable=True)
+    logto_subject = Column(String(255), unique=True, nullable=True, index=True)
+    account_type = Column(String(30), nullable=True, index=True)
+    provisioning_status = Column(String(20), nullable=False, default="active", index=True)
     role = Column(String(20), default="public")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -155,6 +160,36 @@ class PermissionPreset(Base):
     updated_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class AccountTypePermissionDefault(Base):
+    __tablename__ = "account_type_permission_defaults"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_type = Column(String(30), nullable=False, unique=True, index=True)
+    preset_id = Column(String(36), ForeignKey("permission_presets.id", ondelete="SET NULL"), nullable=True)
+    updated_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class LogtoBindingRequest(Base):
+    __tablename__ = "logto_binding_requests"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    logto_subject = Column(String(255), nullable=False, index=True)
+    verified_email = Column(String(255), nullable=False, index=True)
+    requested_account_type = Column(String(30), nullable=True)
+    status = Column(String(20), nullable=False, default="pending", index=True)
+    reviewed_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    review_note = Column(Text, nullable=False, default="")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "logto_subject", name="uq_logto_binding_user_subject"),
+    )
 
 
 class PerformanceCast(Base):

@@ -7,8 +7,7 @@ import { useState, useEffect } from 'react';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { isAuthenticated, clearAuthToken, settingsApi, type SystemSettings } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import { settingsApi, type SystemSettings } from '@/lib/api';
 
 type NavSection = {
   key: string;
@@ -87,7 +86,6 @@ const defaultSettings: SystemSettings = {
 export function Header() {
   const t = useTranslations();
   const locale = useLocale();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
@@ -114,10 +112,10 @@ export function Header() {
       : 'Admin';
 
   useEffect(() => {
-    const checkAuth = () => setAuthenticated(isAuthenticated());
-    checkAuth();
-    const interval = setInterval(checkAuth, 1000);
-    return () => clearInterval(interval);
+    fetch('/auth/status', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((data) => setAuthenticated(data.authenticated === true))
+      .catch(() => setAuthenticated(false));
   }, []);
 
   useEffect(() => {
@@ -125,9 +123,7 @@ export function Header() {
   }, [locale]);
 
   const handleLogout = () => {
-    clearAuthToken();
-    setAuthenticated(false);
-    router.push(href('/admin/login'));
+    window.location.assign('/auth/sign-out');
   };
 
   return (

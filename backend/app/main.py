@@ -965,35 +965,62 @@ def _migrate_fixed_course_ai_drafts_if_needed():
         conn.close()
 
 
+def _migrate_logto_auth_schema_if_needed():
+    """Add Logto identity columns for existing SQLite-first deployments."""
+    from sqlalchemy import inspect, text
+
+    with engine.begin() as conn:
+        inspector = inspect(conn)
+        if "users" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("users")}
+        if "logto_subject" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN logto_subject VARCHAR(255)"))
+        if "account_type" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN account_type VARCHAR(30)"))
+        if "provisioning_status" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN provisioning_status VARCHAR(20) NOT NULL DEFAULT 'active'"))
+        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_logto_subject ON users (logto_subject)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_account_type ON users (account_type)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_provisioning_status ON users (provisioning_status)"))
+
+
 def _bootstrap_admin_from_env():
-    """Create or update the configured super admin from environment variables."""
-    if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
-        logger.info("ADMIN_EMAIL/ADMIN_PASSWORD not set; skipping admin bootstrap.")
+    """Bind the initial super admin to a Logto subject exactly once."""
+    email = (settings.LOGTO_BOOTSTRAP_SUPER_ADMIN_EMAIL or settings.ADMIN_EMAIL).strip().lower()
+    subject = settings.LOGTO_BOOTSTRAP_SUPER_ADMIN_SUB.strip()
+    if not email or not subject:
+        logger.info("Logto super-admin bootstrap values not set; skipping bootstrap.")
         return
 
     from app.core.database import SessionLocal
-    from app.core.security import get_password_hash
     from app.models import User, UserProfile
 
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+        user = db.query(User).filter(User.email == email).first()
         if not user:
             user = User(
-                email=settings.ADMIN_EMAIL,
-                password_hash=get_password_hash(settings.ADMIN_PASSWORD),
+                email=email,
+                password_hash="logto-managed",
                 role="super_admin",
                 is_active=True,
+                logto_subject=subject,
+                provisioning_status="active",
             )
             db.add(user)
             db.flush()
-            logger.info("Created super admin from ADMIN_EMAIL.")
+            logger.info("Created Logto-bound super admin.")
         else:
-            user.password_hash = get_password_hash(settings.ADMIN_PASSWORD)
             user.role = "super_admin"
             user.is_active = True
+            user.provisioning_status = "active"
+            if not user.logto_subject:
+                user.logto_subject = subject
+            elif user.logto_subject != subject:
+                raise RuntimeError("Configured Logto subject does not match the bound super admin")
             db.flush()
-            logger.info("Updated super admin from ADMIN_EMAIL.")
+            logger.info("Verified Logto super-admin binding.")
 
         profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
         if not profile:
@@ -1304,6 +1331,7 @@ async def startup_event():
     
     _ensure_data_directories()
     _ensure_database_tables()
+    _migrate_logto_auth_schema_if_needed()
     _migrate_admin_roles_if_needed()
     _migrate_multilingual_nicknames_if_needed()
     _bootstrap_admin_from_env()

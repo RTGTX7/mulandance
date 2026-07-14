@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { isAuthenticated, usersApi } from '@/lib/api';
+import { usersApi } from '@/lib/api';
 import { ADMIN_ROUTE_PERMISSIONS, firstAllowedAdminRoute, hasPermission } from '@/lib/permissions';
 
 export function AdminPermissionGate({ children }: { children: ReactNode }) {
@@ -17,11 +17,6 @@ export function AdminPermissionGate({ children }: { children: ReactNode }) {
 
     if (normalized.startsWith('/admin/login')) {
       setAllowed(true);
-      return;
-    }
-
-    if (!isAuthenticated()) {
-      router.push(`/${locale}/admin/login`);
       return;
     }
 
@@ -44,7 +39,7 @@ export function AdminPermissionGate({ children }: { children: ReactNode }) {
 
         setAllowed(true);
       })
-      .catch(() => router.push(`/${locale}/admin/login`));
+      .catch(() => router.push(`/auth/sign-in?returnTo=${encodeURIComponent(pathname)}`));
   }, [normalized, router, locale]);
 
   if (!allowed) {

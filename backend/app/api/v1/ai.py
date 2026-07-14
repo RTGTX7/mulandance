@@ -6,12 +6,11 @@ import re
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal, get_db
 from app.core.permissions import require_user_permission
-from app.core.security import decode_token
+from app.core.security import decode_token, oauth2_scheme
 from app.models import User, UserProfile, ArticleGroup, Studio, StudioRoom
 from app.core.config import settings as app_settings
 from app.api.v1.settings import _get_or_create_system_settings
@@ -59,7 +58,6 @@ from app.services.url_importer import import_url, import_urls
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
 
 _ai_import_jobs: dict[str, dict] = {}
 _ai_import_jobs_lock = threading.Lock()

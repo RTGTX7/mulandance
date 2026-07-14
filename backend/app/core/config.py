@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Mulan Dance Studio API"
     APP_VERSION: str = "2.2.0-alpha.0"
+    ENVIRONMENT: str = "development"
     DATABASE_URL: str = _DATABASE_URL
     SECRET_KEY: str = "change_me_in_production"
     ALGORITHM: str = "HS256"
@@ -47,11 +48,18 @@ class Settings(BaseSettings):
     AI_MAX_URLS: int = 10
     AI_MAX_IMAGES_PER_URL: int = 5
     ADMIN_EMAIL: str = ""
-    ADMIN_PASSWORD: str = ""
     ADMIN_FIRST_NAME: str = "Mulan"
     ADMIN_LAST_NAME: str = "Admin"
+    LOGTO_ENDPOINT: str = ""
+    LOGTO_API_RESOURCE: str = ""
+    LOGTO_SESSION_ASSERTION_SECRET: str = ""
+    LOGTO_BOOTSTRAP_SUPER_ADMIN_EMAIL: str = ""
+    LOGTO_BOOTSTRAP_SUPER_ADMIN_SUB: str = ""
+    DEV_AUTH_BYPASS: bool = False
+    DEV_AUTH_EMAIL: str = ""
+    DEV_AUTH_SECRET: str = ""
 
-    @field_validator("DEBUG", "USE_FILE_STORAGE", "SMTP_USE_TLS", "AI_ENABLED", mode="before")
+    @field_validator("DEBUG", "USE_FILE_STORAGE", "SMTP_USE_TLS", "AI_ENABLED", "DEV_AUTH_BYPASS", mode="before")
     @classmethod
     def parse_bool_like_env(cls, value):
         if isinstance(value, bool):

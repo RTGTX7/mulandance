@@ -1,38 +1,32 @@
-"""Create or reset the local development super admin account."""
+"""Bind or create the initial super administrator for Logto authentication."""
+
+import os
 
 from app.core.database import SessionLocal
-from app.core.security import get_password_hash, verify_password
 from app.models import User, UserProfile
 
 
-ADMIN_EMAIL = "admin@mulandance.com"
-ADMIN_PASSWORD = "admin123"
-
-
 def main():
+    email = os.environ.get("LOGTO_BOOTSTRAP_SUPER_ADMIN_EMAIL", "").strip().lower()
+    subject = os.environ.get("LOGTO_BOOTSTRAP_SUPER_ADMIN_SUB", "").strip()
+    if not email or not subject:
+        raise SystemExit("Set LOGTO_BOOTSTRAP_SUPER_ADMIN_EMAIL and LOGTO_BOOTSTRAP_SUPER_ADMIN_SUB")
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.email == ADMIN_EMAIL).first()
+        user = db.query(User).filter(User.email == email).first()
         if not user:
-            user = User(email=ADMIN_EMAIL)
+            user = User(email=email, password_hash="logto-managed")
             db.add(user)
             db.flush()
-
-        user.password_hash = get_password_hash(ADMIN_PASSWORD)
+        user.logto_subject = subject
         user.role = "super_admin"
         user.is_active = True
-
+        user.provisioning_status = "active"
         profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()
         if not profile:
-            profile = UserProfile(user_id=user.id, first_name="Admin", last_name="User")
-            db.add(profile)
-
+            db.add(UserProfile(user_id=user.id, first_name="Admin", last_name="User"))
         db.commit()
-        db.refresh(user)
-
-        print(f"Super admin ready: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
-        print(f"Password verification: {verify_password(ADMIN_PASSWORD, user.password_hash)}")
-        print(f"User ID: {user.id}")
+        print(f"Logto super admin ready: {email} ({user.id})")
     finally:
         db.close()
 

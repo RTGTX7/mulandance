@@ -164,9 +164,6 @@ export function ProfileWorkspaceContent({
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -283,10 +280,6 @@ export function ProfileWorkspaceContent({
 
   async function save() {
     if (!profile) return;
-    if (newPassword && newPassword !== confirmPassword) {
-      setError(text.mismatch);
-      return;
-    }
     setSaving(true);
     setError("");
     setMessage("");
@@ -298,9 +291,6 @@ export function ProfileWorkspaceContent({
         nickname_en: profile.nickname_en || "",
         nickname_fr: profile.nickname_fr || "",
         phone: profile.phone || "",
-        ...(newPassword
-          ? { current_password: currentPassword, new_password: newPassword }
-          : {}),
       });
       setProfile(account);
       if (profile.role === "admin") {
@@ -320,9 +310,6 @@ export function ProfileWorkspaceContent({
           is_active: member.is_active,
         }));
       }
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
       setMessage(text.saved);
     } catch (err) {
       setError(err instanceof Error ? err.message : text.saveFailed);
@@ -434,29 +421,17 @@ export function ProfileWorkspaceContent({
                   <h2 className="mb-3 text-sm font-semibold">
                     {text.security}
                   </h2>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <Input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(event) =>
-                        setCurrentPassword(event.target.value)
-                      }
-                      placeholder={text.currentPassword}
-                    />
-                    <Input
-                      type="password"
-                      value={newPassword}
-                      onChange={(event) => setNewPassword(event.target.value)}
-                      placeholder={text.newPassword}
-                    />
-                    <Input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(event) =>
-                        setConfirmPassword(event.target.value)
-                      }
-                      placeholder={text.confirmPassword}
-                    />
+                  <div className="flex flex-wrap gap-3">
+                    <Button asChild type="button" variant="outline">
+                      <a href={`/auth/account?section=password&locale=${encodeURIComponent(rawLocale)}`}>
+                        {locale === "zh" ? "在 Logto 修改密码" : locale === "fr" ? "Modifier le mot de passe dans Logto" : "Change password in Logto"}
+                      </a>
+                    </Button>
+                    <Button asChild type="button" variant="outline">
+                      <a href={`/auth/account?section=security&locale=${encodeURIComponent(rawLocale)}`}>
+                        {locale === "zh" ? "管理登录与安全" : locale === "fr" ? "Gérer la connexion et la sécurité" : "Manage sign-in and security"}
+                      </a>
+                    </Button>
                   </div>
                 </div>
               </CardContent>

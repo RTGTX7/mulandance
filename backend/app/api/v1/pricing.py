@@ -3,11 +3,10 @@ from datetime import datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import decode_token
+from app.core.security import decode_token, oauth2_scheme
 from app.core.permissions import require_user_permission
 from app.core.translations import localized_value, set_translation_bundle, translation_bundle
 from app.models import (
@@ -17,7 +16,6 @@ from app.models import (
 from app.schemas.pricing import PricingCatalogDraft, PricingCatalogResponse, PricingPublishResponse
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
 KINDS = {"program", "rental"}
 
 

@@ -497,9 +497,7 @@ export default function AdminSchedulesPage() {
     }
   };
   useEffect(() => {
-    if (!localStorage.getItem("dance_org_token"))
-      router.push(`/${locale}/admin/login`);
-    else load();
+    load();
   }, [locale]);
   useEffect(() => {
     const requestedTab = searchParams.get("tab");

@@ -1,11 +1,7 @@
 export function getApiBaseUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_API_URL;
-  if (configured) return configured.replace(/\/$/, '');
-
+  // All browser requests pass through the same-origin Next.js BFF.
   return '';
 }
-
-const TOKEN_KEY = 'dance_org_token';
 
 export class ApiRequestError extends Error {
   readonly status: number;
@@ -23,37 +19,20 @@ export type LocaleCode = 'zh' | 'en' | 'fr';
 export type LocalizedFieldMap = Partial<Record<LocaleCode, Record<string, string>>>;
 
 export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return null;
 }
 
-export function setAuthToken(token: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(TOKEN_KEY, token);
-  } catch {}
+export function setAuthToken(_token: string): void {
+  // Compatibility shim while legacy login routes redirect to Logto.
 }
 
 export function clearAuthToken(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  if (typeof window !== 'undefined') window.location.assign('/auth/sign-out');
 }
 
 export function isAuthenticated(): boolean {
-  const token = getAuthToken();
-  if (!token) return false;
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 > Date.now();
-  } catch {
-    return false;
-  }
+  // HttpOnly sessions are checked by server layouts and protected APIs.
+  return true;
 }
 
 /**
@@ -122,7 +101,6 @@ async function request<T>(
 ): Promise<T> {
   const apiUrl = getApiBaseUrl();
   const fullUrl = `${apiUrl}/api${endpoint}`;
-  const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -134,16 +112,13 @@ async function request<T>(
       }
     }
   }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
   const config: RequestInit = {
     ...options,
     headers,
+    credentials: 'include',
   };
 
-  console.log('[API Request]', options.method || 'GET', fullUrl, 'Token:', token ? 'yes' : 'no');
+  console.log('[API Request]', options.method || 'GET', fullUrl);
 
   let response: Response;
   try {
@@ -986,11 +961,13 @@ export interface AdminAccount {
   phone?: string | null;
   translations?: LocalizedFieldMap;
   permissions: Record<string, { view: boolean; manage: boolean }>;
+  account_type?: 'teacher' | 'staff_admin' | 'parent' | 'student' | 'alumni' | null;
+  provisioning_status: 'pending' | 'active' | 'rejected';
+  logto_linked: boolean;
 }
 
 export interface AdminAccountBody {
   email?: string;
-  password?: string;
   first_name?: string;
   last_name?: string;
   nickname_zh?: string;
@@ -998,6 +975,8 @@ export interface AdminAccountBody {
   nickname_fr?: string;
   is_active?: boolean;
   phone?: string;
+  account_type?: 'teacher' | 'staff_admin' | 'parent' | 'student' | 'alumni' | null;
+  provisioning_status?: 'pending' | 'active' | 'rejected';
 }
 
 export interface AdminAccountListResponse {
@@ -1019,18 +998,9 @@ export interface PortalUser {
   created_at: string;
 }
 
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-}
-
 export const usersApi = {
   me: () => api.get<AdminAccount>('/v1/users/me'),
   portalMe: () => api.get<PortalUser>('/v1/users/me'),
-  login: (body: { email: string; password: string }) => api.post<AuthTokens>('/v1/users/login', body),
-  register: (body: { email: string; password: string; first_name: string; last_name: string }) =>
-    api.post<PortalUser>('/v1/users/register', body),
   updatePortalMe: (body: { first_name?: string; last_name?: string; phone?: string }) =>
     api.put<PortalUser>('/v1/users/me', body),
   updateMe: (body: {
@@ -1040,8 +1010,6 @@ export const usersApi = {
     nickname_en?: string;
     nickname_fr?: string;
     phone?: string;
-    current_password?: string;
-    new_password?: string;
   }) => api.put<AdminAccount>('/v1/users/me', body),
   adminAccounts: (params?: {
     search?: string;
@@ -1057,7 +1025,7 @@ export const usersApi = {
     const qs = query.toString();
     return api.get<AdminAccountListResponse>(`/v1/users/admin/accounts${qs ? '?' + qs : ''}`);
   },
-  createAdminAccount: (body: Required<Pick<AdminAccountBody, 'email' | 'password' | 'first_name' | 'last_name'>>) =>
+  createAdminAccount: (body: Required<Pick<AdminAccountBody, 'email' | 'first_name' | 'last_name'>> & AdminAccountBody) =>
     api.post<AdminAccount>('/v1/users/admin/accounts', body),
   updateAdminAccount: (id: string, body: AdminAccountBody) =>
     api.put<AdminAccount>(`/v1/users/admin/accounts/${id}`, body),
@@ -1073,7 +1041,35 @@ export const usersApi = {
     api.put<PermissionPreset>(`/v1/users/admin/permission-presets/${id}`, body),
   deletePermissionPreset: (id: string) =>
     api.delete<{ detail: string }>(`/v1/users/admin/permission-presets/${id}`),
+  logtoBindingRequests: (status = 'pending') =>
+    api.get<LogtoBindingRequest[]>(`/v1/users/admin/logto-binding-requests?status=${encodeURIComponent(status)}`),
+  approveLogtoBinding: (id: string, account_type: 'teacher' | 'staff_admin', note = '') =>
+    api.post<LogtoBindingRequest>(`/v1/users/admin/logto-binding-requests/${id}/approve`, { account_type, note }),
+  rejectLogtoBinding: (id: string, note = '') =>
+    api.post<LogtoBindingRequest>(`/v1/users/admin/logto-binding-requests/${id}/reject`, { note }),
+  accountTypeDefaults: () => api.get<AccountTypeDefault[]>('/v1/users/admin/account-type-defaults'),
+  updateAccountTypeDefault: (accountType: AccountTypeDefault['account_type'], preset_id?: string | null) =>
+    api.put<AccountTypeDefault>(`/v1/users/admin/account-type-defaults/${accountType}`, { preset_id: preset_id || null }),
+  syncAccountTypeDefault: (accountType: AccountTypeDefault['account_type'], user_ids: string[] = []) =>
+    api.post<{ updated: number }>(`/v1/users/admin/account-type-defaults/${accountType}/sync`, { confirm: true, user_ids }),
 };
+
+export interface AccountTypeDefault {
+  account_type: 'teacher' | 'staff_admin' | 'parent' | 'student' | 'alumni';
+  preset_id?: string | null;
+}
+
+export interface LogtoBindingRequest {
+  id: string;
+  user_id: string;
+  email: string;
+  logto_subject: string;
+  requested_account_type?: string | null;
+  status: string;
+  review_note: string;
+  created_at: string;
+  reviewed_at?: string | null;
+}
 
 export interface SystemSettings {
   site_name: string;

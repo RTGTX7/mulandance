@@ -13,17 +13,15 @@ from alembic.script import ScriptDirectory
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordBearer
 
 from app.core.config import settings
 from app.core.database import SessionLocal, engine
-from app.core.security import decode_token
+from app.core.security import decode_token, oauth2_scheme
 from app.core.permissions import require_user_permission
 from app.models import User
 from app.schemas.backup import BackupInfo, BackupListResponse, BackupRestoreResponse
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/login")
 
 BACKUP_VERSION = 2
 BACKUP_PREFIX = "mulandance-content"
