@@ -41,7 +41,22 @@ export async function GET(request: Request) {
     cache: 'no-store',
   });
   if (!response.ok) {
-    return NextResponse.redirect(`${getAppBaseUrl()}/${locale}/auth/result?status=error`);
+    let code = 'logto_session_failed';
+    try {
+      const errorBody = await response.json() as { detail?: { code?: unknown } };
+      const candidate = errorBody.detail?.code;
+      if (typeof candidate === 'string' && /^[a-z0-9_]{1,64}$/.test(candidate)) {
+        code = candidate;
+      }
+    } catch {
+      // The status code still identifies failures that do not return JSON.
+    }
+    const query = new URLSearchParams({
+      status: 'error',
+      code,
+      http: String(response.status),
+    });
+    return NextResponse.redirect(`${getAppBaseUrl()}/${locale}/auth/result?${query.toString()}`);
   }
   const result = await response.json() as { status: string; redirect_path?: string };
   if (result.status === 'active') {

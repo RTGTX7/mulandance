@@ -33,6 +33,19 @@ class _JwksClient:
 
 
 class LogtoJwtTests(unittest.TestCase):
+    def test_safe_diagnostic_codes(self):
+        cases = (
+            (jwt.ExpiredSignatureError(), "logto_token_expired"),
+            (jwt.InvalidAudienceError(), "logto_token_wrong_audience"),
+            (jwt.InvalidIssuerError(), "logto_token_wrong_issuer"),
+            (jwt.InvalidAlgorithmError(), "logto_token_algorithm_rejected"),
+            (jwt.PyJWKClientError("unavailable"), "logto_jwks_error"),
+            (jwt.DecodeError(), "invalid_logto_token"),
+        )
+        for error, expected in cases:
+            with self.subTest(error=type(error).__name__):
+                self.assertEqual(security.logto_token_error_code(error), expected)
+
     def test_signature_issuer_audience_expiry_and_rotation(self):
         keys = {"one": rsa.generate_private_key(public_exponent=65537, key_size=2048), "two": rsa.generate_private_key(public_exponent=65537, key_size=2048)}
         old_config = security.get_logto_oidc_configuration

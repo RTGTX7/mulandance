@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import logging
 from typing import Optional
 import json
 import base64
@@ -13,6 +14,7 @@ from datetime import datetime, timezone
 from app.core.database import get_db
 from app.core.security import (
     decode_token,
+    logto_token_error_code,
     validate_logto_token,
 )
 from app.core.config import settings
@@ -40,6 +42,8 @@ from app.schemas.user import (
     AccountTypePermissionSync,
     AccountTypePermissionSyncResponse,
 )
+
+logger = logging.getLogger(__name__)
 from app.models import AccountTypePermissionDefault, LogtoBindingRequest, PermissionAuditLog, PermissionPreset, User, UserPermission, UserProfile
 from app.core.permissions import (
     PERMISSION_DEFINITIONS,
@@ -397,8 +401,14 @@ def complete_logto_session(
         raise HTTPException(status_code=401, detail={"code": "missing_bearer_token"})
     try:
         claims = validate_logto_token(credentials.credentials)
-    except Exception:
-        raise HTTPException(status_code=401, detail={"code": "invalid_logto_token"})
+    except Exception as error:
+        error_code = logto_token_error_code(error)
+        logger.warning(
+            "Logto session token validation failed: code=%s exception=%s",
+            error_code,
+            type(error).__name__,
+        )
+        raise HTTPException(status_code=401, detail={"code": error_code})
 
     asserted = _decode_identity_assertion(identity)
     subject = str(claims.get("sub") or "")

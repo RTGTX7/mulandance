@@ -125,6 +125,23 @@ def validate_logto_token(token: str) -> dict[str, Any]:
     )
 
 
+def logto_token_error_code(error: Exception) -> str:
+    """Map token validation failures to safe, non-sensitive diagnostics."""
+    if isinstance(error, pyjwt.ExpiredSignatureError):
+        return "logto_token_expired"
+    if isinstance(error, pyjwt.InvalidAudienceError):
+        return "logto_token_wrong_audience"
+    if isinstance(error, pyjwt.InvalidIssuerError):
+        return "logto_token_wrong_issuer"
+    if isinstance(error, pyjwt.InvalidAlgorithmError):
+        return "logto_token_algorithm_rejected"
+    if isinstance(error, (pyjwt.PyJWKClientError, pyjwt.PyJWKError, httpx.HTTPError)):
+        return "logto_jwks_error"
+    if isinstance(error, RuntimeError):
+        return "logto_oidc_configuration_error"
+    return "invalid_logto_token"
+
+
 http_bearer = HTTPBearer(auto_error=False)
 
 

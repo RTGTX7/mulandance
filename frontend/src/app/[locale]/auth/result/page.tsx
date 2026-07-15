@@ -30,17 +30,19 @@ const content = {
   },
 } as const;
 
-export default function AuthResult({ params, searchParams }: { params: { locale: string }; searchParams: { status?: string } }) {
+export default function AuthResult({ params, searchParams }: { params: { locale: string }; searchParams: { status?: string; code?: string; http?: string } }) {
   const locale = params.locale === 'fr' ? 'fr' : params.locale.startsWith('zh') ? 'zh' : 'en';
   const copy = content[locale];
   const status = (searchParams.status || 'error') as keyof Pick<typeof copy, 'pending_binding' | 'pending_activation' | 'not_provisioned' | 'rejected' | 'error'>;
   const message = copy[status] || copy.error;
+  const diagnosticCode = /^[a-z0-9_]{1,64}$/.test(searchParams.code || '') ? searchParams.code : undefined;
+  const httpStatus = /^\d{3}$/.test(searchParams.http || '') ? searchParams.http : undefined;
   const Icon = status === 'pending_binding' || status === 'pending_activation' ? Clock3 : status === 'error' ? AlertTriangle : ShieldCheck;
   return (
     <main className="container flex min-h-[70vh] items-center justify-center py-16">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center"><Icon className="mx-auto mb-3 h-9 w-9 text-primary" /><CardTitle>{message[0]}</CardTitle></CardHeader>
-        <CardContent className="space-y-5 text-center"><p className="text-muted-foreground">{message[1]}</p><div className="flex justify-center gap-3"><Button asChild><Link href={`/auth/sign-in?returnTo=${encodeURIComponent(`/${params.locale}/admin`)}`}>{copy.retry}</Link></Button><Button asChild variant="outline"><Link href={`/${params.locale}`}>{copy.home}</Link></Button></div></CardContent>
+        <CardContent className="space-y-5 text-center"><p className="text-muted-foreground">{message[1]}</p>{status === 'error' && (diagnosticCode || httpStatus) ? <div className="rounded-md border bg-muted/40 px-4 py-3 text-left font-mono text-xs text-muted-foreground">{diagnosticCode ? <p>Diagnostic code: {diagnosticCode}</p> : null}{httpStatus ? <p>HTTP status: {httpStatus}</p> : null}</div> : null}<div className="flex justify-center gap-3"><Button asChild><Link href={`/auth/sign-in?returnTo=${encodeURIComponent(`/${params.locale}/admin`)}`}>{copy.retry}</Link></Button><Button asChild variant="outline"><Link href={`/${params.locale}`}>{copy.home}</Link></Button></div></CardContent>
       </Card>
     </main>
   );
