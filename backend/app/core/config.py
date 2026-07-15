@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     PROJECT_NAME: str = "Mulan Dance Studio API"
-    APP_VERSION: str = "2.3.0-alpha.1"
+    APP_VERSION: str = "2.3.0-alpha.3"
     ENVIRONMENT: str = "development"
     DATABASE_URL: str = _DATABASE_URL
     SECRET_KEY: str = "change_me_in_production"

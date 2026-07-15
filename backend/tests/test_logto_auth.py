@@ -6,7 +6,7 @@ import time
 import unittest
 
 import jwt
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -54,6 +54,32 @@ class LogtoJwtTests(unittest.TestCase):
             for invalid in (make(aud="wrong"), make(iss="wrong"), make(exp=now - 120)):
                 with self.assertRaises(jwt.PyJWTError):
                     security.validate_logto_token(invalid)
+        finally:
+            security.get_logto_oidc_configuration = old_config
+            security.get_logto_jwks_client = old_client
+            settings.LOGTO_API_RESOURCE = old_resource
+
+    def test_es384_from_oidc_discovery(self):
+        key = ec.generate_private_key(ec.SECP384R1())
+        old_config = security.get_logto_oidc_configuration
+        old_client = security.get_logto_jwks_client
+        old_resource = settings.LOGTO_API_RESOURCE
+        security.get_logto_oidc_configuration = lambda: {
+            "issuer": "https://login.example/oidc",
+            "jwks_uri": "unused",
+            "id_token_signing_alg_values_supported": ["ES384"],
+        }
+        security.get_logto_jwks_client = lambda: _JwksClient({"ec-one": key})
+        settings.LOGTO_API_RESOURCE = "https://api.example"
+        now = int(time.time())
+        token = jwt.encode(
+            {"sub": "user", "iss": "https://login.example/oidc", "aud": "https://api.example", "iat": now, "exp": now + 300},
+            key,
+            algorithm="ES384",
+            headers={"kid": "ec-one"},
+        )
+        try:
+            self.assertEqual(security.validate_logto_token(token)["sub"], "user")
         finally:
             security.get_logto_oidc_configuration = old_config
             security.get_logto_jwks_client = old_client

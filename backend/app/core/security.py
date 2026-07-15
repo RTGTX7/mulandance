@@ -104,11 +104,20 @@ def validate_logto_token(token: str) -> dict[str, Any]:
     if not settings.LOGTO_API_RESOURCE.strip():
         raise RuntimeError("LOGTO_API_RESOURCE is not configured")
     config = get_logto_oidc_configuration()
+    algorithm = str(pyjwt.get_unverified_header(token).get("alg") or "")
+    supported = config.get("id_token_signing_alg_values_supported") or ["RS256"]
+    allowed = {
+        value
+        for value in supported
+        if value in {"RS256", "RS384", "RS512", "ES256", "ES384", "ES512"}
+    }
+    if algorithm not in allowed:
+        raise pyjwt.InvalidAlgorithmError(f"Unsupported Logto signing algorithm: {algorithm}")
     signing_key = get_logto_jwks_client().get_signing_key_from_jwt(token)
     return pyjwt.decode(
         token,
         signing_key.key,
-        algorithms=["RS256"],
+        algorithms=[algorithm],
         issuer=config["issuer"],
         audience=settings.LOGTO_API_RESOURCE,
         leeway=30,
