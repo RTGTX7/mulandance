@@ -22,7 +22,7 @@ export function getLogtoConfig(): LogtoNextConfig {
   const appId = process.env.LOGTO_APP_ID;
   const appSecret = process.env.LOGTO_APP_SECRET;
   const cookieSecret = process.env.LOGTO_COOKIE_SECRET;
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = getAppBaseUrl();
   const resource = process.env.LOGTO_API_RESOURCE;
 
   if (!endpoint || !appId || !appSecret || !cookieSecret || !resource) {
@@ -45,7 +45,9 @@ export function getLogtoConfig(): LogtoNextConfig {
 }
 
 export function getAppBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+  // NEXT_PUBLIC_* values are compiled into Next.js bundles. APP_URL remains
+  // runtime-configurable so the same image can be deployed behind any domain.
+  return (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 }
 
 export function getApiResource(): string {

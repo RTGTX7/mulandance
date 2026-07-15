@@ -55,6 +55,7 @@ services:
     environment:
       NODE_ENV: production
       API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:8000}
+      APP_URL: ${APP_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       NEXT_PUBLIC_LOGTO_ENDPOINT: ${NEXT_PUBLIC_LOGTO_ENDPOINT:-https://login.mulandance.ca}
       LOGTO_ENDPOINT: ${LOGTO_ENDPOINT}
