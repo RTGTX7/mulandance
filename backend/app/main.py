@@ -1319,7 +1319,7 @@ def _seed_course_schedule_if_needed():
 app = FastAPI(
     title="Mulan Dance Studio API",
     description="REST API for the Mulan Dance Studio website",
-    version="2.3.0-alpha.4",
+    version="2.3.0-alpha.5",
     docs_url="/docs",
     redoc_url="/redoc",
 )

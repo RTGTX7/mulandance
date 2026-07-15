@@ -4,12 +4,12 @@ import base64
 import hashlib
 import hmac
 import json
+import threading
 import time
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import httpx
 import jwt as pyjwt
-from jwt import PyJWKClient
 from app.core.config import settings
 
 def decode_token(token: str) -> Optional[dict]:
@@ -95,9 +95,52 @@ def get_logto_oidc_configuration() -> dict[str, Any]:
     return data
 
 
+class _HttpxJwksClient:
+    """Resolve OIDC signing keys through the same HTTP stack as discovery."""
+
+    def __init__(self, uri: str, cache_seconds: int = 300):
+        self.uri = uri
+        self.cache_seconds = cache_seconds
+        self._keys: dict[str, pyjwt.PyJWK] = {}
+        self._expires_at = 0.0
+        self._lock = threading.Lock()
+
+    def _refresh(self) -> None:
+        response = httpx.get(self.uri, timeout=10.0, follow_redirects=True)
+        response.raise_for_status()
+        raw_keys = response.json().get("keys")
+        if not isinstance(raw_keys, list) or not raw_keys:
+            raise pyjwt.PyJWKClientError("Logto JWKS response contains no keys")
+        parsed = [pyjwt.PyJWK.from_dict(item) for item in raw_keys]
+        keys = {key.key_id: key for key in parsed if key.key_id}
+        if not keys:
+            raise pyjwt.PyJWKClientError("Logto JWKS response contains no keyed signing keys")
+        self._keys = keys
+        self._expires_at = time.monotonic() + self.cache_seconds
+
+    def get_signing_key_from_jwt(self, token: str) -> pyjwt.PyJWK:
+        kid = str(pyjwt.get_unverified_header(token).get("kid") or "")
+        if not kid:
+            raise pyjwt.PyJWKClientError("Logto token does not contain a key id")
+        with self._lock:
+            cached = self._keys.get(kid)
+            needs_refresh = time.monotonic() >= self._expires_at or cached is None
+            if needs_refresh:
+                try:
+                    self._refresh()
+                except Exception:
+                    if cached is not None:
+                        return cached
+                    raise
+            signing_key = self._keys.get(kid)
+            if signing_key is None:
+                raise pyjwt.PyJWKClientError("No matching Logto signing key was found")
+            return signing_key
+
+
 @lru_cache(maxsize=1)
-def get_logto_jwks_client() -> PyJWKClient:
-    return PyJWKClient(get_logto_oidc_configuration()["jwks_uri"], cache_keys=True)
+def get_logto_jwks_client() -> _HttpxJwksClient:
+    return _HttpxJwksClient(get_logto_oidc_configuration()["jwks_uri"])
 
 
 def validate_logto_token(token: str) -> dict[str, Any]:

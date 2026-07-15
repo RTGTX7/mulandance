@@ -33,6 +33,51 @@ class _JwksClient:
 
 
 class LogtoJwtTests(unittest.TestCase):
+    def test_httpx_jwks_client_caches_and_refreshes_for_rotation(self):
+        keys = {
+            "one": rsa.generate_private_key(public_exponent=65537, key_size=2048),
+            "two": rsa.generate_private_key(public_exponent=65537, key_size=2048),
+        }
+        active = ["one"]
+        requests = []
+        original_get = security.httpx.get
+
+        class Response:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                key = keys[active[0]].public_key()
+                jwk = jwt.algorithms.RSAAlgorithm.to_jwk(key, as_dict=True)
+                jwk["kid"] = active[0]
+                jwk["use"] = "sig"
+                return {"keys": [jwk]}
+
+        def fake_get(*args, **kwargs):
+            requests.append(args[0])
+            return Response()
+
+        security.httpx.get = fake_get
+        client = security._HttpxJwksClient("https://login.example/oidc/jwks")
+        now = int(time.time())
+
+        def make(kid):
+            return jwt.encode(
+                {"sub": "user", "iat": now, "exp": now + 300},
+                keys[kid],
+                algorithm="RS256",
+                headers={"kid": kid},
+            )
+
+        try:
+            self.assertEqual(client.get_signing_key_from_jwt(make("one")).key_id, "one")
+            self.assertEqual(client.get_signing_key_from_jwt(make("one")).key_id, "one")
+            active[0] = "two"
+            self.assertEqual(client.get_signing_key_from_jwt(make("two")).key_id, "two")
+            self.assertEqual(len(requests), 2)
+        finally:
+            security.httpx.get = original_get
+
     def test_safe_diagnostic_codes(self):
         cases = (
             (jwt.ExpiredSignatureError(), "logto_token_expired"),
