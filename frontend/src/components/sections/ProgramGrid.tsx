@@ -46,11 +46,11 @@ function ProgramMedia({ program, className }: { program: ProgramItem; className?
   return <div className={cn('flex h-full w-full items-end bg-[#2b1a2c] p-6 font-heading text-3xl font-semibold text-white', className)}>{program.name}</div>;
 }
 
-export function ProgramGrid() {
+export function ProgramGrid({ sectionOverride, limit, category, sort = 'default' }: { sectionOverride?: HomepageSection; limit?: number; category?: string; sort?: 'default' | 'newest' | 'oldest' | 'manual' } = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
-  const [section, setSection] = useState<HomepageSection | null>(null);
+  const [section, setSection] = useState<HomepageSection | null>(sectionOverride || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,6 +74,7 @@ export function ProgramGrid() {
   }, [locale]);
 
   useEffect(() => {
+    if (sectionOverride) { setSection(sectionOverride); return; }
     let active = true;
     homepageApi.get(locale)
       .then((settings) => {
@@ -83,11 +84,14 @@ export function ProgramGrid() {
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [locale, sectionOverride]);
 
   const orderedPrograms = useMemo(
-    () => [...programs].sort((a, b) => a.order_index - b.order_index || a.name.localeCompare(b.name)),
-    [programs]
+    () => [...programs]
+      .filter((item) => !category || item.category?.toLowerCase() === category.toLowerCase() || item.slug?.toLowerCase() === category.toLowerCase())
+      .sort((a, b) => sort === 'oldest' ? b.order_index - a.order_index : a.order_index - b.order_index || a.name.localeCompare(b.name))
+      .slice(0, limit || undefined),
+    [programs, limit, category, sort]
   );
 
   if (section && !section.is_enabled) return null;

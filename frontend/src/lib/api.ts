@@ -1270,6 +1270,107 @@ export const homepageApi = {
   publish: () => api.post<{ bundle: HomepageSettingsBundle; is_dirty: boolean; published_at?: string | null }>('/v1/settings/homepage/publish', {}),
 };
 
+export type HomepageV2BlockType =
+  | 'hero_carousel'
+  | 'video_hero'
+  | 'media_story'
+  | 'video_player'
+  | 'image_marquee'
+  | 'masonry_gallery'
+  | 'awards_showcase'
+  | 'sponsor_wall'
+  | 'campaign'
+  | 'testimonials'
+  | 'statistics'
+  | 'feature_grid'
+  | 'program_directory'
+  | 'performances'
+  | 'latest_news'
+  | 'timeline'
+  | 'editorial_quote'
+  | 'cta';
+
+export interface HomepageV2LocalizedContent {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  body: string;
+  label: string;
+  caption: string;
+  alt_text: string;
+  primary_label: string;
+  secondary_label: string;
+  link_label: string;
+}
+
+export type HomepageV2Translations = Record<LocaleCode, HomepageV2LocalizedContent>;
+export interface HomepageV2Link { href: string; new_tab: boolean; }
+export interface HomepageV2Schedule { start_at: string | null; end_at: string | null; timezone: string; }
+export interface HomepageV2Design {
+  theme: 'white' | 'soft_lilac' | 'dark_plum' | 'transparent';
+  width: 'contained' | 'wide' | 'full';
+  spacing: 'compact' | 'normal' | 'spacious';
+  alignment: 'left' | 'center' | 'right';
+  media_ratio: 'auto' | 'square' | 'portrait' | 'landscape' | 'cinematic';
+  overlay: 'none' | 'light' | 'medium' | 'dark';
+}
+export interface HomepageV2Behavior {
+  animation: 'none' | 'fade_up' | 'stagger' | 'reveal' | 'soft_zoom';
+  autoplay: boolean;
+  loop: boolean;
+  speed: 'slow' | 'normal' | 'fast';
+}
+export interface HomepageV2DataSource {
+  source: 'none' | 'programs' | 'performances' | 'news';
+  limit: number;
+  sort: 'default' | 'newest' | 'oldest' | 'manual';
+  category: string;
+}
+export interface HomepageV2Item {
+  id: string;
+  is_enabled: boolean;
+  media_type: 'image' | 'video' | 'logo' | 'none';
+  media_url: string;
+  mobile_url: string;
+  poster_url: string;
+  focal_x: number;
+  focal_y: number;
+  content: HomepageV2Translations;
+  link: HomepageV2Link;
+  schedule: HomepageV2Schedule;
+  meta: Record<string, unknown>;
+}
+export interface HomepageV2Block {
+  id: string;
+  type: HomepageV2BlockType;
+  schema_version: number;
+  admin_label: string;
+  is_enabled: boolean;
+  schedule: HomepageV2Schedule;
+  design: HomepageV2Design;
+  behavior: HomepageV2Behavior;
+  content: HomepageV2Translations;
+  items: HomepageV2Item[];
+  primary_link: HomepageV2Link;
+  secondary_link: HomepageV2Link;
+  data_source: HomepageV2DataSource;
+  config: Record<string, unknown>;
+}
+export interface HomepageDocumentV2 { version: 2; blocks: HomepageV2Block[]; }
+export interface HomepageV2DraftResponse {
+  document: HomepageDocumentV2;
+  is_dirty: boolean;
+  published_at?: string | null;
+  warnings: string[];
+}
+
+export const homepageV2Api = {
+  get: (locale?: string) => api.get<HomepageDocumentV2>(`/v1/settings/homepage/v2${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+  draft: () => api.get<HomepageV2DraftResponse>('/v1/settings/homepage/v2/draft'),
+  saveDraft: (body: HomepageDocumentV2) => api.put<HomepageV2DraftResponse>('/v1/settings/homepage/v2/draft', body),
+  publish: () => api.post<HomepageV2DraftResponse>('/v1/settings/homepage/v2/publish', {}),
+};
+
 // ====================================================================
 // Faculty API helpers
 // ====================================================================

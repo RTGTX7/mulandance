@@ -488,6 +488,10 @@ def _migrate_system_settings_if_needed():
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
         if "homepage_draft_json" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_draft_json TEXT"))
+        if "homepage_v2_json" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_v2_json TEXT"))
+        if "homepage_v2_draft_json" not in columns:
+            conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_v2_draft_json TEXT"))
         if "homepage_published_at" not in columns:
             conn.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_published_at DATETIME"))
         if "site_draft_json" not in columns:
@@ -1315,7 +1319,7 @@ def _seed_course_schedule_if_needed():
 app = FastAPI(
     title="Mulan Dance Studio API",
     description="REST API for the Mulan Dance Studio website",
-    version="0.1.0",
+    version="2.3.0-alpha.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )

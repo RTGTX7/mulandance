@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  overflow-x: clip;
+}
+
 @layer base {
   :root {
     /* ============================================
@@ -596,6 +601,46 @@
   animation:
     danceTextDraw 1150ms cubic-bezier(0.37, 0, 0.12, 1) forwards,
     danceTextFill 420ms ease-out 900ms forwards;
+}
+
+@keyframes homepage-logo-loop {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.homepage-logo-loop-track {
+  animation: homepage-logo-loop var(--loop-duration, 28s) linear infinite;
+}
+
+.homepage-logo-loop-reverse {
+  animation-direction: reverse;
+}
+
+.homepage-logo-loop:hover .homepage-logo-loop-track,
+.homepage-logo-loop:focus-within .homepage-logo-loop-track {
+  animation-play-state: paused;
+}
+
+.homepage-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.homepage-spotlight::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(260px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgb(190 76 151 / 0.12), transparent 72%);
+  content: '';
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-logo-loop-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+  }
 }
 
 .dance-line-heading > span {

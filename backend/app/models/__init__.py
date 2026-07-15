@@ -376,6 +376,8 @@ class SystemSettings(Base):
     tiktok_url = Column(String(1000), default="")
     homepage_json = Column(Text)
     homepage_draft_json = Column(Text)
+    homepage_v2_json = Column(Text)
+    homepage_v2_draft_json = Column(Text)
     homepage_published_at = Column(DateTime(timezone=True))
     site_draft_json = Column(Text)
     site_published_at = Column(DateTime(timezone=True))

@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Any, Dict, List, Literal
 
 from pydantic import BaseModel, Field
 
@@ -137,6 +137,125 @@ class HomepageSettingsBundle(BaseModel):
 
 class HomepageSettingsBundleUpdate(HomepageSettingsBundle):
     pass
+
+
+HomepageV2BlockType = Literal[
+    "hero_carousel",
+    "video_hero",
+    "media_story",
+    "video_player",
+    "image_marquee",
+    "masonry_gallery",
+    "awards_showcase",
+    "sponsor_wall",
+    "campaign",
+    "testimonials",
+    "statistics",
+    "feature_grid",
+    "program_directory",
+    "performances",
+    "latest_news",
+    "timeline",
+    "editorial_quote",
+    "cta",
+]
+
+
+class HomepageV2LocalizedContent(BaseModel):
+    eyebrow: str = Field(default="", max_length=120)
+    title: str = Field(default="", max_length=300)
+    subtitle: str = Field(default="", max_length=1000)
+    body: str = ""
+    label: str = Field(default="", max_length=200)
+    caption: str = Field(default="", max_length=1000)
+    alt_text: str = Field(default="", max_length=500)
+    primary_label: str = Field(default="", max_length=120)
+    secondary_label: str = Field(default="", max_length=120)
+    link_label: str = Field(default="", max_length=120)
+
+
+class HomepageV2Translations(BaseModel):
+    zh: HomepageV2LocalizedContent = Field(default_factory=HomepageV2LocalizedContent)
+    en: HomepageV2LocalizedContent = Field(default_factory=HomepageV2LocalizedContent)
+    fr: HomepageV2LocalizedContent = Field(default_factory=HomepageV2LocalizedContent)
+
+
+class HomepageV2Link(BaseModel):
+    href: str = Field(default="", max_length=2000)
+    new_tab: bool = False
+
+
+class HomepageV2Schedule(BaseModel):
+    start_at: str | None = None
+    end_at: str | None = None
+    timezone: str = Field(default="America/Toronto", max_length=80)
+
+
+class HomepageV2Design(BaseModel):
+    theme: Literal["white", "soft_lilac", "dark_plum", "transparent"] = "white"
+    width: Literal["contained", "wide", "full"] = "contained"
+    spacing: Literal["compact", "normal", "spacious"] = "normal"
+    alignment: Literal["left", "center", "right"] = "left"
+    media_ratio: Literal["auto", "square", "portrait", "landscape", "cinematic"] = "landscape"
+    overlay: Literal["none", "light", "medium", "dark"] = "none"
+
+
+class HomepageV2Behavior(BaseModel):
+    animation: Literal["none", "fade_up", "stagger", "reveal", "soft_zoom"] = "fade_up"
+    autoplay: bool = False
+    loop: bool = False
+    speed: Literal["slow", "normal", "fast"] = "normal"
+
+
+class HomepageV2DataSource(BaseModel):
+    source: Literal["none", "programs", "performances", "news"] = "none"
+    limit: int = Field(default=6, ge=1, le=24)
+    sort: Literal["default", "newest", "oldest", "manual"] = "default"
+    category: str = Field(default="", max_length=120)
+
+
+class HomepageV2Item(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
+    is_enabled: bool = True
+    media_type: Literal["image", "video", "logo", "none"] = "image"
+    media_url: str = Field(default="", max_length=2000)
+    mobile_url: str = Field(default="", max_length=2000)
+    poster_url: str = Field(default="", max_length=2000)
+    focal_x: int = Field(default=50, ge=0, le=100)
+    focal_y: int = Field(default=50, ge=0, le=100)
+    content: HomepageV2Translations = Field(default_factory=HomepageV2Translations)
+    link: HomepageV2Link = Field(default_factory=HomepageV2Link)
+    schedule: HomepageV2Schedule = Field(default_factory=HomepageV2Schedule)
+    meta: Dict[str, Any] = Field(default_factory=dict)
+
+
+class HomepageV2Block(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
+    type: HomepageV2BlockType
+    schema_version: int = Field(default=1, ge=1, le=10)
+    admin_label: str = Field(default="", max_length=200)
+    is_enabled: bool = True
+    schedule: HomepageV2Schedule = Field(default_factory=HomepageV2Schedule)
+    design: HomepageV2Design = Field(default_factory=HomepageV2Design)
+    behavior: HomepageV2Behavior = Field(default_factory=HomepageV2Behavior)
+    content: HomepageV2Translations = Field(default_factory=HomepageV2Translations)
+    items: List[HomepageV2Item] = Field(default_factory=list, max_length=100)
+    primary_link: HomepageV2Link = Field(default_factory=HomepageV2Link)
+    secondary_link: HomepageV2Link = Field(default_factory=HomepageV2Link)
+    data_source: HomepageV2DataSource = Field(default_factory=HomepageV2DataSource)
+    config: Dict[str, Any] = Field(default_factory=dict)
+
+
+class HomepageDocumentV2(BaseModel):
+    version: Literal[2] = 2
+    blocks: List[HomepageV2Block] = Field(default_factory=list, max_length=100)
+
+
+class HomepageV2DraftResponse(BaseModel):
+    document: HomepageDocumentV2
+    is_dirty: bool = False
+    published_at: str | None = None
+    warnings: List[str] = Field(default_factory=list)
 
 
 class SchoolPolicyContent(BaseModel):

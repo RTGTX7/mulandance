@@ -1,6 +1,8 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy import inspect, text
@@ -25,13 +27,19 @@ from app.schemas.settings import (
     RegistrationLinks,
     RegistrationLinksUpdate,
     HomepageButton,
+    HomepageBlock,
     HomepageHeroSlide,
     HomepageSettings,
     HomepageSettingsBundle,
     HomepageSettingsBundleUpdate,
     HomepageSettingsUpdate,
     HomepageDraftResponse,
-    HomepageDraftResponse,
+    HomepageDocumentV2,
+    HomepageV2Block,
+    HomepageV2DraftResponse,
+    HomepageV2Item,
+    HomepageV2LocalizedContent,
+    HomepageV2Translations,
     AiProviderSettings,
     AiProviderSettingsUpdate,
     SchoolPolicyBundle,
@@ -264,10 +272,21 @@ def _get_or_create_system_settings(db: Session) -> SystemSettings:
     _ensure_system_settings_columns(db)
     settings = db.query(SystemSettings).filter(SystemSettings.id == 1).first()
     if settings:
+        if not settings.homepage_v2_json:
+            published_bundle = _homepage_bundle_from_raw(settings.homepage_json)
+            settings.homepage_v2_json = _legacy_homepage_to_v2(published_bundle).model_dump_json()
+            draft_bundle = _homepage_bundle_from_raw(settings.homepage_draft_json) if settings.homepage_draft_json else published_bundle
+            settings.homepage_v2_draft_json = _legacy_homepage_to_v2(draft_bundle).model_dump_json()
+            db.commit()
+            db.refresh(settings)
         return settings
 
     settings = SystemSettings(id=1)
     db.add(settings)
+    db.commit()
+    db.refresh(settings)
+    settings.homepage_v2_json = _legacy_homepage_to_v2(_homepage_bundle_from_raw(None)).model_dump_json()
+    settings.homepage_v2_draft_json = settings.homepage_v2_json
     db.commit()
     db.refresh(settings)
     return settings
@@ -279,6 +298,14 @@ def _ensure_system_settings_columns(db: Session) -> None:
     if "homepage_json" not in columns:
         db.execute(text("ALTER TABLE system_settings ADD COLUMN homepage_json TEXT"))
         db.commit()
+    homepage_v2_columns = {
+        "homepage_v2_json": "ALTER TABLE system_settings ADD COLUMN homepage_v2_json TEXT",
+        "homepage_v2_draft_json": "ALTER TABLE system_settings ADD COLUMN homepage_v2_draft_json TEXT",
+    }
+    for column, statement in homepage_v2_columns.items():
+        if column not in columns:
+            db.execute(text(statement))
+            db.commit()
     ai_columns = {
         "ai_enabled": "ALTER TABLE system_settings ADD COLUMN ai_enabled INTEGER DEFAULT 0",
         "ai_thinking_enabled": "ALTER TABLE system_settings ADD COLUMN ai_thinking_enabled INTEGER DEFAULT 0",
@@ -652,6 +679,268 @@ def _homepage_to_response(settings: SystemSettings, locale: str | None = None) -
     return getattr(bundle, normalize_locale(locale), bundle.zh)
 
 
+HOMEPAGE_V2_TYPE_MAP = {
+    "hero": "hero_carousel",
+    "stats": "statistics",
+    "performances": "performances",
+    "programs": "program_directory",
+    "news": "latest_news",
+    "media": "media_story",
+    "cta": "cta",
+}
+
+HOMEPAGE_V2_ADMIN_LABELS = {
+    "hero_carousel": "Hero Carousel",
+    "video_hero": "Video Hero",
+    "media_story": "Media Story",
+    "video_player": "Video Player",
+    "image_marquee": "Three-row Image Marquee",
+    "masonry_gallery": "Masonry Gallery",
+    "awards_showcase": "Awards Showcase",
+    "sponsor_wall": "Sponsor Wall",
+    "campaign": "Campaign / Advertisement",
+    "testimonials": "Testimonials",
+    "statistics": "Statistics",
+    "feature_grid": "Feature Grid",
+    "program_directory": "Program Directory",
+    "performances": "Performances",
+    "latest_news": "Latest News",
+    "timeline": "Timeline",
+    "editorial_quote": "Editorial Quote",
+    "cta": "Call to Action",
+}
+
+
+def _v2_content(**values) -> HomepageV2LocalizedContent:
+    return HomepageV2LocalizedContent(**{key: value or "" for key, value in values.items()})
+
+
+def _v2_translations(contents: dict[str, HomepageV2LocalizedContent]) -> HomepageV2Translations:
+    return HomepageV2Translations(
+        zh=contents.get("zh", HomepageV2LocalizedContent()),
+        en=contents.get("en", HomepageV2LocalizedContent()),
+        fr=contents.get("fr", HomepageV2LocalizedContent()),
+    )
+
+
+def _legacy_block(bundle: HomepageSettingsBundle, locale: str, block_id: str):
+    return next((item for item in getattr(bundle, locale).blocks if item.id == block_id), None)
+
+
+def _legacy_homepage_to_v2(bundle: HomepageSettingsBundle) -> HomepageDocumentV2:
+    reference = bundle.zh.blocks or [HomepageBlock.model_validate(item) for item in _default_homepage_blocks()]
+    blocks: list[HomepageV2Block] = []
+    used_ids: set[str] = set()
+
+    for index, reference_block in enumerate(reference):
+        block_id = reference_block.id if reference_block.id not in used_ids else f"{reference_block.id}-{index + 1}"
+        used_ids.add(block_id)
+        block_type = HOMEPAGE_V2_TYPE_MAP[reference_block.type]
+        localized: dict[str, HomepageV2LocalizedContent] = {}
+        items: list[HomepageV2Item] = []
+        config: dict = {"migrated_from_v1": True}
+
+        if reference_block.type == "hero":
+            max_slides = max(len(getattr(bundle, locale).hero_slides) for locale in LOCALES)
+            for slide_index in range(max_slides):
+                ref_slide = bundle.zh.hero_slides[slide_index] if slide_index < len(bundle.zh.hero_slides) else HomepageHeroSlide()
+                slide_content = {}
+                for locale in LOCALES:
+                    locale_slides = getattr(bundle, locale).hero_slides
+                    slide = locale_slides[slide_index] if slide_index < len(locale_slides) else ref_slide
+                    slide_content[locale] = _v2_content(
+                        eyebrow=slide.badge,
+                        title=slide.title,
+                        subtitle=slide.subtitle,
+                        primary_label=slide.primary.label,
+                        secondary_label=slide.secondary.label,
+                        alt_text=slide.title,
+                    )
+                items.append(HomepageV2Item(
+                    id=f"{block_id}-slide-{slide_index + 1}",
+                    is_enabled=ref_slide.is_active,
+                    media_type="video" if ref_slide.image_url.lower().split("?")[0].endswith((".mp4", ".webm", ".mov", ".ogg")) else "image",
+                    media_url=ref_slide.image_url,
+                    content=_v2_translations(slide_content),
+                    link={"href": ref_slide.primary.href},
+                    meta={"secondary_href": ref_slide.secondary.href, "legacy_overlay": ref_slide.overlay},
+                ))
+            config["legacy_media_fallback"] = not any(item.media_url for item in items)
+        elif reference_block.type == "stats":
+            max_stats = max(len(getattr(bundle, locale).stats) for locale in LOCALES)
+            for stat_index in range(max_stats):
+                ref_stat = bundle.zh.stats[stat_index] if stat_index < len(bundle.zh.stats) else None
+                if ref_stat is None:
+                    continue
+                stat_content = {}
+                for locale in LOCALES:
+                    locale_stats = getattr(bundle, locale).stats
+                    stat = locale_stats[stat_index] if stat_index < len(locale_stats) else ref_stat
+                    stat_content[locale] = _v2_content(label=stat.label)
+                items.append(HomepageV2Item(
+                    id=f"{block_id}-stat-{stat_index + 1}",
+                    media_type="none",
+                    content=_v2_translations(stat_content),
+                    meta={"value": ref_stat.value},
+                ))
+        elif reference_block.type in {"programs", "performances", "news"}:
+            section_name = {"programs": "programs", "performances": "performances", "news": "news"}[reference_block.type]
+            for locale in LOCALES:
+                section = getattr(getattr(bundle, locale).sections, section_name)
+                localized[locale] = _v2_content(title=section.title, subtitle=section.subtitle, link_label=section.link_label)
+        elif reference_block.type == "cta":
+            for locale in LOCALES:
+                cta = getattr(bundle, locale).cta
+                localized[locale] = _v2_content(
+                    title=cta.title,
+                    subtitle=cta.subtitle,
+                    body=cta.note,
+                    primary_label=cta.primary.label,
+                    secondary_label=cta.secondary.label,
+                )
+        else:
+            for locale in LOCALES:
+                legacy = _legacy_block(bundle, locale, reference_block.id) or reference_block
+                localized[locale] = _v2_content(
+                    title=legacy.title,
+                    subtitle=legacy.subtitle,
+                    body=legacy.body,
+                    link_label=legacy.link.label,
+                    alt_text=legacy.title,
+                )
+            if reference_block.media_url:
+                items.append(HomepageV2Item(
+                    id=f"{block_id}-media-1",
+                    media_type="video" if reference_block.media_type == "video" else "image",
+                    media_url=reference_block.media_url,
+                    content=_v2_translations({locale: _v2_content(alt_text=localized[locale].title) for locale in LOCALES}),
+                ))
+            config["legacy_layout"] = reference_block.layout
+
+        data_source = "none"
+        if reference_block.type == "programs":
+            data_source = "programs"
+        elif reference_block.type == "performances":
+            data_source = "performances"
+        elif reference_block.type == "news":
+            data_source = "news"
+
+        block = HomepageV2Block(
+            id=block_id,
+            type=block_type,
+            admin_label=HOMEPAGE_V2_ADMIN_LABELS[block_type],
+            is_enabled=reference_block.is_enabled,
+            content=_v2_translations(localized),
+            items=items,
+            primary_link={
+                "href": bundle.zh.cta.primary.href if reference_block.type == "cta" else reference_block.link.href,
+            },
+            secondary_link={
+                "href": bundle.zh.cta.secondary.href if reference_block.type == "cta" else "",
+            },
+            data_source={"source": data_source, "limit": 6},
+            config=config,
+        )
+        blocks.append(block)
+
+    return HomepageDocumentV2(blocks=blocks)
+
+
+def _homepage_v2_from_raw(raw_text: str | None, fallback: HomepageSettingsBundle) -> HomepageDocumentV2:
+    if raw_text:
+        try:
+            return HomepageDocumentV2.model_validate_json(raw_text)
+        except (TypeError, ValueError):
+            pass
+    return _legacy_homepage_to_v2(fallback)
+
+
+def _schedule_is_active(schedule, now: datetime | None = None) -> bool:
+    timezone_name = schedule.timezone or "America/Toronto"
+    try:
+        zone = ZoneInfo(timezone_name)
+    except (KeyError, ValueError):
+        try:
+            zone = ZoneInfo("America/Toronto")
+        except (KeyError, ValueError):
+            zone = timezone.utc
+    current = now or datetime.now(zone)
+
+    def parse(value: str | None):
+        if not value:
+            return None
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=zone) if parsed.tzinfo is None else parsed.astimezone(zone)
+
+    try:
+        start = parse(schedule.start_at)
+        end = parse(schedule.end_at)
+    except ValueError:
+        return False
+    return not ((start and current < start) or (end and current > end))
+
+
+def _public_homepage_v2(document: HomepageDocumentV2) -> HomepageDocumentV2:
+    blocks = []
+    for block in document.blocks:
+        if not block.is_enabled or not _schedule_is_active(block.schedule):
+            continue
+        items = [item for item in block.items if item.is_enabled and _schedule_is_active(item.schedule)]
+        blocks.append(block.model_copy(update={"items": items}))
+    return HomepageDocumentV2(blocks=blocks)
+
+
+def _valid_homepage_link(href: str) -> bool:
+    if not href:
+        return True
+    if href.startswith(("/", "#", "mailto:", "tel:")):
+        return True
+    return urlparse(href).scheme in {"http", "https"}
+
+
+def _validate_homepage_v2(document: HomepageDocumentV2) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    enabled = [block for block in document.blocks if block.is_enabled]
+    if not enabled or enabled[0].type not in {"hero_carousel", "video_hero"}:
+        errors.append("The first enabled block must be Hero Carousel or Video Hero.")
+    ids = [block.id for block in document.blocks]
+    if len(ids) != len(set(ids)):
+        errors.append("Homepage block IDs must be unique.")
+
+    media_required = {
+        "video_hero", "video_player", "image_marquee", "masonry_gallery",
+        "awards_showcase", "sponsor_wall",
+    }
+    for block in document.blocks:
+        if not block.is_enabled:
+            continue
+        prefix = block.admin_label or block.type
+        if block.type == "hero_carousel" and not [item for item in block.items if item.is_enabled]:
+            errors.append(f"{prefix}: add at least one enabled slide.")
+        if block.type in media_required and not any(item.is_enabled and item.media_url for item in block.items):
+            errors.append(f"{prefix}: add at least one media item.")
+        if block.type == "video_hero":
+            first = next((item for item in block.items if item.is_enabled), None)
+            if first and (first.media_type != "video" or not first.poster_url):
+                errors.append(f"{prefix}: the background video requires a poster image.")
+        for link in (block.primary_link, block.secondary_link):
+            if not _valid_homepage_link(link.href):
+                errors.append(f"{prefix}: invalid link {link.href!r}.")
+        for item in block.items:
+            if not _valid_homepage_link(item.link.href):
+                errors.append(f"{prefix}: item {item.id} has an invalid link.")
+            if not _valid_homepage_link(str(item.meta.get("secondary_href") or "")):
+                errors.append(f"{prefix}: item {item.id} has an invalid secondary link.")
+            if item.media_url and item.media_type in {"image", "logo"} and not item.content.zh.alt_text:
+                warnings.append(f"{prefix}: item {item.id} is missing Chinese alt text.")
+        if block.content.zh.title:
+            for locale in ("en", "fr"):
+                if not getattr(block.content, locale).title:
+                    warnings.append(f"{prefix}: {locale.upper()} title falls back to Chinese.")
+    return errors, warnings
+
+
 @router.get("/registration-links", response_model=RegistrationLinks)
 def get_registration_links(db: Session = Depends(get_db)):
     settings = _get_or_create_settings(db)
@@ -829,6 +1118,77 @@ def publish_homepage_draft(
     settings.homepage_published_at = datetime.now(timezone.utc)
     db.commit(); db.refresh(settings)
     return HomepageDraftResponse(bundle=bundle, is_dirty=False, published_at=settings.homepage_published_at.isoformat())
+
+
+@router.get("/homepage/v2", response_model=HomepageDocumentV2)
+def get_homepage_v2(
+    locale: str = "zh",
+    db: Session = Depends(get_db),
+):
+    # The locale is accepted for a stable public contract; the renderer performs
+    # Chinese fallback using the complete public translation bundle.
+    normalize_locale(locale)
+    settings = _get_or_create_system_settings(db)
+    document = _homepage_v2_from_raw(settings.homepage_v2_json, _homepage_bundle(settings))
+    return _public_homepage_v2(document)
+
+
+@router.get("/homepage/v2/draft", response_model=HomepageV2DraftResponse)
+def get_homepage_v2_draft(
+    user: User = Depends(require_homepage_view),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    raw = settings.homepage_v2_draft_json or settings.homepage_v2_json
+    document = _homepage_v2_from_raw(raw, _homepage_bundle(settings))
+    _, warnings = _validate_homepage_v2(document)
+    return HomepageV2DraftResponse(
+        document=document,
+        is_dirty=bool(settings.homepage_v2_draft_json and settings.homepage_v2_draft_json != settings.homepage_v2_json),
+        published_at=settings.homepage_published_at.isoformat() if settings.homepage_published_at else None,
+        warnings=warnings,
+    )
+
+
+@router.put("/homepage/v2/draft", response_model=HomepageV2DraftResponse)
+def save_homepage_v2_draft(
+    payload: HomepageDocumentV2,
+    user: User = Depends(require_homepage_manage),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    errors, warnings = _validate_homepage_v2(payload)
+    settings.homepage_v2_draft_json = payload.model_dump_json()
+    db.commit()
+    return HomepageV2DraftResponse(
+        document=payload,
+        is_dirty=settings.homepage_v2_draft_json != settings.homepage_v2_json,
+        published_at=settings.homepage_published_at.isoformat() if settings.homepage_published_at else None,
+        warnings=errors + warnings,
+    )
+
+
+@router.post("/homepage/v2/publish", response_model=HomepageV2DraftResponse)
+def publish_homepage_v2_draft(
+    user: User = Depends(require_homepage_manage),
+    db: Session = Depends(get_db),
+):
+    settings = _get_or_create_system_settings(db)
+    raw = settings.homepage_v2_draft_json or settings.homepage_v2_json
+    document = _homepage_v2_from_raw(raw, _homepage_bundle(settings))
+    errors, warnings = _validate_homepage_v2(document)
+    if errors:
+        raise HTTPException(status_code=422, detail={"code": "homepage_publish_invalid", "errors": errors, "warnings": warnings})
+    settings.homepage_v2_json = document.model_dump_json()
+    settings.homepage_v2_draft_json = settings.homepage_v2_json
+    settings.homepage_published_at = datetime.now(timezone.utc)
+    db.commit()
+    return HomepageV2DraftResponse(
+        document=document,
+        is_dirty=False,
+        published_at=settings.homepage_published_at.isoformat(),
+        warnings=warnings,
+    )
 
 
 @router.put("/homepage/all", response_model=HomepageSettingsBundle)

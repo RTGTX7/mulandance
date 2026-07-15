@@ -21,11 +21,11 @@ interface NewsArticle {
 
 const MAX_HOMEPAGE_ARTICLES = 4;
 
-export function NewsGrid() {
+export function NewsGrid({ sectionOverride, limit, category, sort = 'newest' }: { sectionOverride?: HomepageSection; limit?: number; category?: string; sort?: 'default' | 'newest' | 'oldest' | 'manual' } = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [section, setSection] = useState<HomepageSection | null>(null);
+  const [section, setSection] = useState<HomepageSection | null>(sectionOverride || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export function NewsGrid() {
     newsApi
       .list({ limit: 6, locale: articleLocaleFor(locale), homepage: true })
       .then((data) => {
-        if (active) setArticles(selectHomepageArticles(data as NewsArticle[]));
+        if (active) setArticles(selectHomepageArticles(data as NewsArticle[], limit, category, sort));
       })
       .catch(() => {
         if (active) setArticles([]);
@@ -47,9 +47,10 @@ export function NewsGrid() {
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [locale, limit, category, sort]);
 
   useEffect(() => {
+    if (sectionOverride) { setSection(sectionOverride); return; }
     let active = true;
     homepageApi.get(locale)
       .then((settings) => {
@@ -59,7 +60,7 @@ export function NewsGrid() {
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [locale, sectionOverride]);
 
   const featured = articles[0];
   const updates = articles.slice(1);
@@ -186,12 +187,13 @@ function NewsEditorialLoading() {
   );
 }
 
-function selectHomepageArticles(items: NewsArticle[]) {
-  const candidates = items.slice(0, 6);
+function selectHomepageArticles(items: NewsArticle[], limit?: number, category?: string, sort: 'default' | 'newest' | 'oldest' | 'manual' = 'newest') {
+  const filtered = items.filter((item) => !category || item.categories?.some((entry) => entry.slug.toLowerCase() === category.toLowerCase() || entry.name.toLowerCase() === category.toLowerCase()));
+  const candidates = (sort === 'oldest' ? [...filtered].reverse() : filtered).slice(0, 6);
   if (candidates.length === 0) return [];
 
   const featured = candidates.find((article) => Boolean(article.cover_image || article.summary?.trim())) || candidates[0];
-  return [featured, ...candidates.filter((article) => article.id !== featured.id)].slice(0, MAX_HOMEPAGE_ARTICLES);
+  return [featured, ...candidates.filter((article) => article.id !== featured.id)].slice(0, limit || MAX_HOMEPAGE_ARTICLES);
 }
 
 function formatNewsDate(value: string | undefined, locale: string) {

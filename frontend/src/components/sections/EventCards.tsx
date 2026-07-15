@@ -31,11 +31,11 @@ interface EventShowcase {
 const EMPTY_SHOWCASE: EventShowcase = { upcoming: [], hasPastHighlights: false };
 const MAX_UPCOMING_ROWS = 3;
 
-export function EventCards() {
+export function EventCards({ sectionOverride, limit }: { sectionOverride?: HomepageSection; limit?: number } = {}) {
   const t = useTranslations();
   const locale = useLocale();
   const [showcase, setShowcase] = useState<EventShowcase>(EMPTY_SHOWCASE);
-  const [section, setSection] = useState<HomepageSection | null>(null);
+  const [section, setSection] = useState<HomepageSection | null>(sectionOverride || null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function EventCards() {
 
     performanceApi.list({ locale })
       .then((items) => {
-        if (active) setShowcase(selectShowcase(items, locale));
+        if (active) setShowcase(selectShowcase(limit ? items.slice(0, limit) : items, locale));
       })
       .catch(() => {
         if (active) setShowcase(EMPTY_SHOWCASE);
@@ -56,9 +56,10 @@ export function EventCards() {
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [locale, limit]);
 
   useEffect(() => {
+    if (sectionOverride) { setSection(sectionOverride); return; }
     let active = true;
     homepageApi.get(locale)
       .then((settings) => {
@@ -68,7 +69,7 @@ export function EventCards() {
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, [locale, sectionOverride]);
 
   const featured = showcase.featured;
 
