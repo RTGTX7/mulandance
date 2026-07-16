@@ -527,6 +527,22 @@ class ArticleGroup(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
+class SitePageDocument(Base):
+    """Versioned, locale-aware content for public non-homepage pages."""
+    __tablename__ = "site_page_documents"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    slug = Column(String(80), nullable=False, unique=True, index=True)
+    schema_version = Column(Integer, nullable=False, default=1)
+    draft_json = Column(Text, nullable=False, default="{}")
+    published_json = Column(Text, nullable=False, default="{}")
+    is_dirty = Column(Boolean, nullable=False, default=True)
+    published_at = Column(DateTime(timezone=True), nullable=True)
+    updated_by_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
 # ============================================================
 # Unified scheduling (fixed public classes + internal bookings)
 # ============================================================

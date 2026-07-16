@@ -26,6 +26,7 @@ UPLOAD_PERMISSION_MAP = {
     "pricing": "teaching.pricing",
     "faculty": "teaching.faculty",
     "settings": "system.brand",
+    "pages": "content.pages",
 }
 
 

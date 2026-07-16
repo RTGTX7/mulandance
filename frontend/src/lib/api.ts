@@ -1635,6 +1635,32 @@ export interface CourseTemplateBody {
   translations?: LocalizedFieldMap;
 }
 
+export type SitePageSlug = 'about' | 'contact';
+export type SitePageBlockType = 'hero' | 'rich_text' | 'bullet_list' | 'media_story' | 'values_grid' | 'contact_details' | 'office_hours' | 'contact_form' | 'map_link' | 'cta';
+export interface SitePageLocalizedContent {
+  eyebrow: string; title: string; subtitle: string; body: string; label: string;
+  caption: string; alt_text: string; primary_label: string; secondary_label: string;
+  placeholder: string; success_message: string; name_label: string; email_label: string;
+  subject_label: string; message_label: string;
+}
+export interface SitePageTranslations { zh: SitePageLocalizedContent; en: SitePageLocalizedContent; fr: SitePageLocalizedContent; }
+export interface SitePageBlock {
+  id: string; type: SitePageBlockType; admin_label: string; is_enabled: boolean;
+  content: SitePageTranslations; items: Array<Record<string, unknown>>;
+  image_url: string; mobile_image_url: string; focal_point: string;
+  decorative_image: boolean; href: string; design: Record<string, unknown>;
+}
+export interface SitePageDocument { slug: SitePageSlug; schema_version: number; hero: SitePageBlock; blocks: SitePageBlock[]; }
+export interface SitePagePublicResponse { page: SitePageDocument; locale: string; contact: { email: string; phone: string; address: string; social: Record<string, string> }; }
+export interface SitePageDraftResponse { page: SitePageDocument; is_dirty: boolean; published_at?: string | null; warnings: string[]; }
+
+export const pagesApi = {
+  public: (slug: SitePageSlug, locale?: string) => api.get<SitePagePublicResponse>(`/v1/pages/${slug}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`),
+  draft: (slug: SitePageSlug) => api.get<SitePageDraftResponse>(`/v1/pages/admin/${slug}/draft`),
+  saveDraft: (slug: SitePageSlug, page: SitePageDocument) => api.put<SitePageDraftResponse>(`/v1/pages/admin/${slug}/draft`, page),
+  publish: (slug: SitePageSlug) => api.post<SitePageDraftResponse>(`/v1/pages/admin/${slug}/publish`, {}),
+};
+
 export interface PermissionCatalogItem {
   key: string;
   group: string;

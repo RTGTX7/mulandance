@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslations } from '@/components/ui/i18n-client';
-import { usersApi, type AdminAccount } from '@/lib/api';
+import { settingsApi, usersApi, type AdminAccount } from '@/lib/api';
 import { hasPermission } from '@/lib/permissions';
 import {
   BookOpen,
@@ -51,6 +51,7 @@ const groups: AdminGroup[] = [
     icon: LayoutGrid,
     tabs: [
       { key: 'homepage', labelKey: 'admin.tabs.homepage', icon: Home, href: '/admin/homepage', superOnly: false, teacherAccess: true, permission: 'content.homepage' },
+      { key: 'pages', labelKey: 'admin.tabs.pages', icon: FileText, href: '/admin/pages', superOnly: false, teacherAccess: true, permission: 'content.pages' },
       { key: 'dashboard', labelKey: 'admin.tabs.newsArticles', icon: FileText, href: '/admin/dashboard', superOnly: false, teacherAccess: true, permission: 'content.news.articles' },
       { key: 'performances', labelKey: 'admin.tabs.performance', icon: CalendarDays, href: '/admin/performances', superOnly: false, teacherAccess: true, permission: 'content.performances' },
     ],
@@ -112,7 +113,41 @@ const groupLabels = {
   },
 } as const;
 
-export function AdminSectionTabs() {
+const CentralAdminNavigationContext = createContext(false);
+
+export function AdminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const locale = pathname.split('/')[1] || 'en';
+  const [brand, setBrand] = useState({ site_name: 'Mulan Dance Studio', logo_url: '/logo.png' });
+  const isLogin = pathname.includes('/admin/login');
+
+  useEffect(() => {
+    settingsApi.site(locale)
+      .then((settings) => setBrand({ site_name: settings.site_name || 'Mulan Dance Studio', logo_url: settings.logo_url || '/logo.png' }))
+      .catch(() => {});
+  }, [locale]);
+
+  if (isLogin) return <>{children}</>;
+  return (
+    <CentralAdminNavigationContext.Provider value>
+      <div className="min-h-screen bg-[#f7f5f8]">
+        <header className="sticky top-0 z-50 border-b border-border/80 bg-white/95 backdrop-blur-xl">
+          <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-3 py-3 sm:gap-3 sm:px-6">
+            <Link href={`/${locale}`} className="flex min-h-10 shrink-0 items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-muted/70" aria-label={`${brand.site_name} - home`}>
+              <img src={brand.logo_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-border object-cover" />
+              <span className="max-w-24 truncate text-xs font-semibold text-foreground sm:max-w-40 sm:text-sm lg:max-w-52">{brand.site_name}</span>
+            </Link>
+            <div className="min-w-0 flex-1"><AdminSectionTabs force /></div>
+          </div>
+        </header>
+        <div className="min-w-0">{children}</div>
+      </div>
+    </CentralAdminNavigationContext.Provider>
+  );
+}
+
+export function AdminSectionTabs({ force = false }: { force?: boolean }) {
+  const centralized = useContext(CentralAdminNavigationContext);
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -152,6 +187,8 @@ export function AdminSectionTabs() {
       inline: 'center',
     });
   }, [activeKey, visibleGroups.length]);
+
+  if (centralized && !force) return null;
 
   return (
     <div className="relative -mx-2 w-[calc(100%+1rem)] rounded-lg border border-white/60 bg-white/75 p-1.5 shadow-sm shadow-purple-950/5 backdrop-blur-xl sm:mx-0 sm:w-full">

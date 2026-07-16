@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { LocaleChrome } from '@/components/layout/LocaleChrome';
 import { LocaleProvider, type TranslationMessages } from '@/components/ui/i18n-client';
 import { SUPPORTED_LOCALES, convertMessagesToTraditional, isTraditionalLocale, normalizeLocale } from '@/lib/i18n';
 import '../globals.css';
@@ -53,14 +52,8 @@ export default async function LocaleLayout({
   const messages = messagesByLocale[normalizedLocale] || en;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <LocaleProvider key={normalizedLocale} locale={normalizedLocale} messages={messages}>
-        <Header />
-        <main id="main-content" className="page-enter flex-1">
-          {children}
-        </main>
-        <Footer />
-      </LocaleProvider>
-    </div>
+    <LocaleProvider key={normalizedLocale} locale={normalizedLocale} messages={messages}>
+      <LocaleChrome>{children}</LocaleChrome>
+    </LocaleProvider>
   );
 }

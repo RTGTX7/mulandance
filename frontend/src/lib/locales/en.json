@@ -750,6 +750,7 @@
     },
     "tabs": {
       "homepage": "Homepage",
+      "pages": "Page Content",
       "newsArticles": "News Articles",
       "categories": "Categories",
       "tags": "Tags",

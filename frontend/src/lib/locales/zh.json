@@ -750,6 +750,7 @@
     },
     "tabs": {
       "homepage": "首页",
+      "pages": "页面内容",
       "newsArticles": "新闻文章",
       "categories": "分类",
       "tags": "标签",

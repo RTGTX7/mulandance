@@ -56,6 +56,62 @@ class SystemSettingsDraftResponse(BaseModel):
     published_at: str | None = None
 
 
+class SitePageLocalizedContent(BaseModel):
+    eyebrow: str = Field(default="", max_length=160)
+    title: str = Field(default="", max_length=300)
+    subtitle: str = Field(default="", max_length=1000)
+    body: str = Field(default="", max_length=12000)
+    label: str = Field(default="", max_length=300)
+    caption: str = Field(default="", max_length=2000)
+    alt_text: str = Field(default="", max_length=500)
+    primary_label: str = Field(default="", max_length=160)
+    secondary_label: str = Field(default="", max_length=160)
+    placeholder: str = Field(default="", max_length=300)
+    success_message: str = Field(default="", max_length=1000)
+    name_label: str = Field(default="", max_length=160)
+    email_label: str = Field(default="", max_length=160)
+    subject_label: str = Field(default="", max_length=160)
+    message_label: str = Field(default="", max_length=160)
+
+
+class SitePageTranslations(BaseModel):
+    zh: SitePageLocalizedContent = Field(default_factory=SitePageLocalizedContent)
+    en: SitePageLocalizedContent = Field(default_factory=SitePageLocalizedContent)
+    fr: SitePageLocalizedContent = Field(default_factory=SitePageLocalizedContent)
+
+
+class SitePageBlock(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
+    type: Literal[
+        "hero", "rich_text", "bullet_list", "media_story", "values_grid", "contact_details",
+        "office_hours", "contact_form", "map_link", "cta",
+    ]
+    admin_label: str = Field(default="", max_length=160)
+    is_enabled: bool = True
+    content: SitePageTranslations = Field(default_factory=SitePageTranslations)
+    items: list[dict[str, Any]] = Field(default_factory=list)
+    image_url: str = Field(default="", max_length=1000)
+    mobile_image_url: str = Field(default="", max_length=1000)
+    focal_point: str = Field(default="50% 50%", max_length=30)
+    decorative_image: bool = False
+    href: str = Field(default="", max_length=1000)
+    design: dict[str, Any] = Field(default_factory=dict)
+
+
+class SitePageDocument(BaseModel):
+    slug: Literal["about", "contact"]
+    schema_version: int = Field(default=1, ge=1, le=10)
+    hero: SitePageBlock
+    blocks: list[SitePageBlock] = Field(default_factory=list)
+
+
+class SitePageDraftResponse(BaseModel):
+    page: SitePageDocument
+    is_dirty: bool = False
+    published_at: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+
+
 class HomepageButton(BaseModel):
     label: str = Field(default="", max_length=100)
     href: str = Field(default="", max_length=1000)

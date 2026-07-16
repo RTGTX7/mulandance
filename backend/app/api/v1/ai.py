@@ -107,6 +107,7 @@ AI_MODULE_PERMISSIONS = {
     "faculty": "teaching.faculty",
     "settings": "system",
     "school_policy": "system.policy",
+    "pages": "content.pages",
 }
 
 

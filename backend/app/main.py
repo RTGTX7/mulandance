@@ -47,6 +47,7 @@ def _ensure_database_tables():
     metadata_tables = set(Base.metadata.tables.keys())
     missing_tables = metadata_tables - existing_tables
 
+    page_table_was_missing = "site_page_documents" in missing_tables
     if missing_tables:
         logger.warning(
             f"Creating {len(missing_tables)} missing table(s): {sorted(missing_tables)}"
@@ -59,6 +60,19 @@ def _ensure_database_tables():
     # Log all tables for debugging
     all_tables = sorted(existing_tables | missing_tables)
     logger.info(f"Database has {len(all_tables)} table(s): {all_tables}")
+
+    # Bootstrap the new page permissions only when this feature's table is
+    # first created. Later permission changes made by administrators persist.
+    if page_table_was_missing and "user_permissions" in all_tables and "users" in all_tables:
+        import uuid
+        from sqlalchemy import text
+        with engine.begin() as connection:
+            admin_ids = connection.execute(text("SELECT id FROM users WHERE role = 'admin'")).fetchall()
+            for (user_id,) in admin_ids:
+                for key in ("content.pages", "content.pages.about", "content.pages.contact"):
+                    exists = connection.execute(text("SELECT 1 FROM user_permissions WHERE user_id = :user_id AND permission_key = :key"), {"user_id": user_id, "key": key}).first()
+                    if exists is None:
+                        connection.execute(text("INSERT INTO user_permissions (id, user_id, permission_key, can_view, can_manage) VALUES (:id, :user_id, :key, 1, 1)"), {"id": str(uuid.uuid4()), "user_id": user_id, "key": key})
 
 
 def _migrate_article_groups_if_needed():

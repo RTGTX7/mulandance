@@ -750,6 +750,7 @@
     },
     "tabs": {
       "homepage": "Accueil",
+      "pages": "Contenu des pages",
       "newsArticles": "Articles",
       "categories": "Catégories",
       "tags": "Étiquettes",

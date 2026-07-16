@@ -15,6 +15,7 @@ from app.api.v1 import (
     ai,
     unified_schedule,
     pricing,
+    pages,
 )
 
 api_router = APIRouter()
@@ -34,3 +35,4 @@ api_router.include_router(site_settings.router, prefix="/settings", tags=["setti
 api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 api_router.include_router(unified_schedule.router, prefix="/schedule", tags=["unified schedule"])
 api_router.include_router(pricing.router, prefix="/pricing", tags=["pricing"])
+api_router.include_router(pages.router, prefix="/pages", tags=["pages"])

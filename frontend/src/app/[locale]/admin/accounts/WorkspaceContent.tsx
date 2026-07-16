@@ -149,6 +149,9 @@ const permissionNames: Record<string, { zh: string; en: string; fr: string }> =
       en: "Performances",
       fr: "Spectacles",
     },
+    "content.pages": { zh: "页面内容", en: "Page content", fr: "Contenu des pages" },
+    "content.pages.about": { zh: "关于我们页面", en: "About page", fr: "Page À propos" },
+    "content.pages.contact": { zh: "联系我们页面", en: "Contact page", fr: "Page Contact" },
     teaching: { zh: "教学管理", en: "Teaching", fr: "Enseignement" },
     "teaching.programs": { zh: "开设课程", en: "Programs", fr: "Programmes" },
     "teaching.schedules": {

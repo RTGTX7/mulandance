@@ -51,6 +51,8 @@ function HeroCarouselBlock({ block, locale }: { block: HomepageV2Block; locale: 
   const content = itemContent(slide, locale);
   const media = toPublicMediaUrl(slide.media_url || FALLBACK_HERO[current % FALLBACK_HERO.length]);
   const secondaryHref = String(slide.meta.secondary_href || '');
+  const showPrimaryButton = slide.meta.show_primary_button !== false;
+  const showSecondaryButton = slide.meta.show_secondary_button !== false;
   return (
     <section className="relative min-h-[440px] overflow-hidden bg-[#241328] text-white md:min-h-[620px]">
       {isVideo(media) || slide.media_type === 'video' ? <video key={media} poster={toPublicMediaUrl(slide.poster_url)} className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline>{slide.mobile_url && <source src={toPublicMediaUrl(slide.mobile_url)} media="(max-width: 640px)" />}<source src={media} /></video> : <picture>{slide.mobile_url && <source srcSet={toPublicMediaUrl(slide.mobile_url)} media="(max-width: 640px)" />}<img src={media} alt={content.alt_text || ''} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: `${slide.focal_x}% ${slide.focal_y}%` }} /></picture>}
@@ -61,8 +63,8 @@ function HeroCarouselBlock({ block, locale }: { block: HomepageV2Block; locale: 
           <h1 className="font-heading text-4xl font-semibold leading-tight md:text-6xl">{content.title}</h1>
           {content.subtitle && <p className="mt-4 max-w-2xl text-base leading-7 text-white/85 md:text-lg">{content.subtitle}</p>}
           <div className="mt-7 flex flex-wrap gap-3">
-            {content.primary_label && <SafeLink href={slide.link.href} locale={locale} newTab={slide.link.new_tab}><Button className="bg-white text-primary hover:bg-white/90">{content.primary_label}</Button></SafeLink>}
-            {content.secondary_label && secondaryHref && <SafeLink href={secondaryHref} locale={locale}><Button variant="outline" className="border-white/70 bg-transparent text-white hover:bg-white/10 hover:text-white">{content.secondary_label}</Button></SafeLink>}
+            {showPrimaryButton && content.primary_label && <SafeLink href={slide.link.href} locale={locale} newTab={slide.link.new_tab}><Button className="bg-white text-primary hover:bg-white/90">{content.primary_label}</Button></SafeLink>}
+            {showSecondaryButton && content.secondary_label && secondaryHref && <SafeLink href={secondaryHref} locale={locale}><Button variant="outline" className="border-white/70 bg-transparent text-white hover:bg-white/10 hover:text-white">{content.secondary_label}</Button></SafeLink>}
           </div>
         </HomepageReveal>
       </div>
@@ -100,12 +102,13 @@ function VideoHeroBlock({ block, locale }: { block: HomepageV2Block; locale: str
 function MediaStoryBlock({ block, locale }: { block: HomepageV2Block; locale: string }) {
   const content = contentFor(block, locale); const item = block.items[0];
   const reverse = block.config.legacy_layout === 'media_right' || block.config.media_position === 'right';
+  const showActionLink = block.config.show_primary_link !== false;
   return <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
     <HomepageReveal className={cn(reverse && 'md:order-2')} animation={block.behavior.animation}>{item && <Media item={item} locale={locale} className={cn(ratioClass(block.design.media_ratio), 'w-full rounded-md object-cover')} />}</HomepageReveal>
     <HomepageReveal className={cn(reverse && 'md:order-1')} delay={0.08} animation={block.behavior.animation}>
       {content.eyebrow && <p className="mb-2 text-xs font-semibold text-primary">{content.eyebrow}</p>}<h2 className="font-heading text-3xl font-semibold md:text-5xl">{content.title}</h2>
       {content.subtitle && <p className="mt-3 text-lg opacity-75">{content.subtitle}</p>} {content.body && <p className="mt-5 whitespace-pre-line text-sm leading-7 opacity-75 md:text-base">{content.body}</p>}
-      {content.link_label && <SafeLink href={block.primary_link.href} locale={locale} newTab={block.primary_link.new_tab} className="mt-6 inline-flex items-center gap-2 font-semibold text-primary">{content.link_label}<ArrowRight className="h-4 w-4" /></SafeLink>}
+      {showActionLink && content.link_label && <SafeLink href={block.primary_link.href} locale={locale} newTab={block.primary_link.new_tab} className="mt-6 inline-flex items-center gap-2 font-semibold text-primary">{content.link_label}<ArrowRight className="h-4 w-4" /></SafeLink>}
     </HomepageReveal>
   </div>;
 }

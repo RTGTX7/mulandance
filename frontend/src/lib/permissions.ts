@@ -17,6 +17,7 @@ export const ADMIN_ROUTE_PERMISSIONS: Array<{
   permission: string;
 }> = [
   { path: "/admin/homepage", permission: "content.homepage" },
+  { path: "/admin/pages", permission: "content.pages" },
   { path: "/admin/categories", permission: "content.news.categories" },
   { path: "/admin/tags", permission: "content.news.tags" },
   { path: "/admin/articles", permission: "content.news.articles" },
