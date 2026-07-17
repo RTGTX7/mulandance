@@ -1,6 +1,6 @@
 {
   "name": "dance-org-frontend",
-  "version": "2.3.0-alpha.4",
+  "version": "2.3.0-alpha.6",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
